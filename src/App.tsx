@@ -3,6 +3,7 @@ import { useWorldState } from "./hooks/useWorldState";
 import { TerrariumCanvas } from "./components/TerrariumCanvas";
 import { ChatOverlay } from "./components/ChatOverlay";
 import { AnimatedBackground } from "./components/AnimatedBackground";
+import { WindowFrame } from "./components/WindowFrame";
 import "./App.css";
 
 function App() {
@@ -53,6 +54,7 @@ function App() {
 
   return (
     <div className="terrarium-container">
+      <WindowFrame />
       <AnimatedBackground theme="meadow" />
       <TerrariumCanvas
         worldState={worldState}

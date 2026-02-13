@@ -26,6 +26,35 @@ html, body, #root {
   left: 0;
 }
 
+/* Drag region (custom title bar) */
+.drag-region {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  z-index: 150;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  user-select: none;
+  -webkit-user-select: none;
+  border-radius: 12px 12px 0 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.15) 0%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+.drag-label {
+  font-size: 11px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
 /* Chat Overlay */
 .chat-overlay {
   background: rgba(255, 255, 255, 0.95);
