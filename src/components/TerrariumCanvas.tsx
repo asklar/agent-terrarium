@@ -50,7 +50,7 @@ export function TerrariumCanvas({
     return pool[Math.floor(Math.random() * pool.length)];
   }, []);
 
-  // Play a tiny greeting chime via Web Audio API
+  // Play an Animalese-style cute voice greeting via Web Audio API
   const playGreetingSound = useCallback((agent: Agent) => {
     try {
       if (!audioCtxRef.current) {
@@ -59,26 +59,97 @@ export function TerrariumCanvas({
       const ctx = audioCtxRef.current;
       if (ctx.state === "suspended") ctx.resume();
 
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      // Different tones per avatar
-      const tones: Record<string, number> = {
-        cat: 880,
-        copilot: 660,
-        squirrel: 1100,
-        penguin: 440,
-        ghost: 330,
-        robot: 550,
+      // Each agent has a unique voice profile
+      const voices: Record<
+        string,
+        {
+          basePitch: number;
+          pitchVar: number;
+          wave: OscillatorType;
+          syllables: number;
+          speed: number;
+          volume: number;
+        }
+      > = {
+        cat: {
+          basePitch: 700,
+          pitchVar: 150,
+          wave: "triangle",
+          syllables: 3,
+          speed: 0.07,
+          volume: 0.1,
+        },
+        copilot: {
+          basePitch: 500,
+          pitchVar: 80,
+          wave: "sine",
+          syllables: 4,
+          speed: 0.06,
+          volume: 0.08,
+        },
+        squirrel: {
+          basePitch: 900,
+          pitchVar: 200,
+          wave: "triangle",
+          syllables: 5,
+          speed: 0.05,
+          volume: 0.08,
+        },
+        penguin: {
+          basePitch: 350,
+          pitchVar: 60,
+          wave: "sine",
+          syllables: 2,
+          speed: 0.1,
+          volume: 0.1,
+        },
+        ghost: {
+          basePitch: 280,
+          pitchVar: 40,
+          wave: "sine",
+          syllables: 3,
+          speed: 0.12,
+          volume: 0.06,
+        },
+        robot: {
+          basePitch: 400,
+          pitchVar: 100,
+          wave: "square",
+          syllables: 3,
+          speed: 0.08,
+          volume: 0.05,
+        },
       };
-      osc.frequency.value = tones[agent.avatar] ?? 660;
-      osc.type = "sine";
-      gain.gain.setValueAtTime(0.08, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.15);
+      const v = voices[agent.avatar] ?? voices.copilot;
+
+      let t = ctx.currentTime;
+      for (let i = 0; i < v.syllables; i++) {
+        const freq =
+          v.basePitch + (Math.random() - 0.5) * v.pitchVar * 2;
+
+        const osc = ctx.createOscillator();
+        osc.type = v.wave;
+        osc.frequency.setValueAtTime(freq, t);
+        // Slight pitch slide within each syllable for expressiveness
+        osc.frequency.linearRampToValueAtTime(
+          freq + (Math.random() - 0.5) * 60,
+          t + v.speed * 0.8,
+        );
+
+        const gain = ctx.createGain();
+        // Attack-sustain-release envelope for each syllable
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(v.volume, t + v.speed * 0.15);
+        gain.gain.setValueAtTime(v.volume * 0.8, t + v.speed * 0.6);
+        gain.gain.linearRampToValueAtTime(0.001, t + v.speed * 0.95);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + v.speed);
+
+        t += v.speed;
+      }
     } catch {
       // Audio not available, silently skip
     }
