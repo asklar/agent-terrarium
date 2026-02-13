@@ -1,0 +1,505 @@
+import { useRef, useEffect } from "react";
+
+export type ThemeName = "meadow" | "night" | "desert" | "ocean";
+
+interface AnimatedBackgroundProps {
+  theme: ThemeName;
+}
+
+interface Particle {
+  x: number;
+  y: number;
+  size: number;
+  speed: number;
+  opacity: number;
+  drift: number;
+  phase: number;
+}
+
+const THEMES: Record<
+  ThemeName,
+  {
+    sky: string[];
+    ground: string;
+    groundAccent: string;
+    particleColor: string;
+    particleCount: number;
+    particleType: "leaf" | "star" | "sand" | "bubble";
+    grassColor: string;
+    grassAccent: string;
+    features: string[];
+  }
+> = {
+  meadow: {
+    sky: ["#87CEEB", "#B4E4FF", "#E8F5E9"],
+    ground: "#7CB342",
+    groundAccent: "#689F38",
+    particleColor: "#A5D6A7",
+    particleCount: 12,
+    particleType: "leaf",
+    grassColor: "#66BB6A",
+    grassAccent: "#43A047",
+    features: ["flowers", "clouds", "grass"],
+  },
+  night: {
+    sky: ["#0D1B2A", "#1B2838", "#1A237E"],
+    ground: "#1B5E20",
+    groundAccent: "#2E7D32",
+    particleColor: "#FFECB3",
+    particleCount: 30,
+    particleType: "star",
+    grassColor: "#2E7D32",
+    grassAccent: "#1B5E20",
+    features: ["stars", "moon", "grass"],
+  },
+  desert: {
+    sky: ["#FF8F00", "#FFB74D", "#FFF8E1"],
+    ground: "#D4A053",
+    groundAccent: "#C49040",
+    particleColor: "#FFE0B2",
+    particleCount: 8,
+    particleType: "sand",
+    grassColor: "#C49040",
+    grassAccent: "#A67832",
+    features: ["cactus", "clouds"],
+  },
+  ocean: {
+    sky: ["#0277BD", "#4FC3F7", "#B3E5FC"],
+    ground: "#0277BD",
+    groundAccent: "#01579B",
+    particleColor: "#B3E5FC",
+    particleCount: 15,
+    particleType: "bubble",
+    grassColor: "#00838F",
+    grassAccent: "#006064",
+    features: ["waves", "seaweed"],
+  },
+};
+
+export function AnimatedBackground({ theme }: AnimatedBackgroundProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const particlesRef = useRef<Particle[]>([]);
+  const animRef = useRef<number>(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const t = THEMES[theme];
+
+    // Initialize particles
+    particlesRef.current = Array.from({ length: t.particleCount }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height * 0.7,
+      size: 2 + Math.random() * 4,
+      speed: 0.2 + Math.random() * 0.5,
+      opacity: 0.3 + Math.random() * 0.7,
+      drift: (Math.random() - 0.5) * 0.3,
+      phase: Math.random() * Math.PI * 2,
+    }));
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        canvas.width = entry.contentRect.width;
+        canvas.height = entry.contentRect.height;
+      }
+    });
+    resizeObserver.observe(canvas.parentElement!);
+
+    let lastTime = 0;
+
+    const render = (time: number) => {
+      const dt = Math.min((time - lastTime) / 1000, 0.1);
+      lastTime = time;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const w = canvas.width;
+      const h = canvas.height;
+
+      // Sky gradient
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.7);
+      t.sky.forEach((color, i) => {
+        skyGrad.addColorStop(i / (t.sky.length - 1), color);
+      });
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Draw theme features
+      if (t.features.includes("clouds")) {
+        drawClouds(ctx, w, h, time);
+      }
+      if (t.features.includes("moon")) {
+        drawMoon(ctx, w);
+      }
+      if (t.features.includes("stars")) {
+        drawStars(ctx, w, h, time);
+      }
+      if (t.features.includes("waves")) {
+        drawWaves(ctx, w, h, time);
+      }
+
+      // Ground
+      const groundY = h * 0.72;
+      const groundGrad = ctx.createLinearGradient(0, groundY, 0, h);
+      groundGrad.addColorStop(0, t.ground);
+      groundGrad.addColorStop(1, t.groundAccent);
+      ctx.fillStyle = groundGrad;
+      ctx.beginPath();
+      // Wavy ground line
+      ctx.moveTo(0, groundY);
+      for (let x = 0; x <= w; x += 20) {
+        const wave = Math.sin(x * 0.02 + time * 0.0005) * 4;
+        ctx.lineTo(x, groundY + wave);
+      }
+      ctx.lineTo(w, h);
+      ctx.lineTo(0, h);
+      ctx.closePath();
+      ctx.fill();
+
+      // Grass tufts
+      if (t.features.includes("grass")) {
+        drawGrass(ctx, w, groundY, time, t.grassColor, t.grassAccent);
+      }
+
+      // Flowers
+      if (t.features.includes("flowers")) {
+        drawFlowers(ctx, w, groundY, time);
+      }
+
+      // Seaweed
+      if (t.features.includes("seaweed")) {
+        drawSeaweed(ctx, w, h, time);
+      }
+
+      // Cactus
+      if (t.features.includes("cactus")) {
+        drawCacti(ctx, w, groundY);
+      }
+
+      // Particles
+      for (const p of particlesRef.current) {
+        drawParticle(ctx, p, t.particleColor, t.particleType, time);
+
+        // Update particle position
+        if (t.particleType === "leaf") {
+          p.y += p.speed * dt * 30;
+          p.x += Math.sin(time * 0.001 + p.phase) * p.drift * dt * 30;
+          if (p.y > canvas.height) {
+            p.y = -p.size;
+            p.x = Math.random() * canvas.width;
+          }
+        } else if (t.particleType === "bubble") {
+          p.y -= p.speed * dt * 20;
+          p.x += Math.sin(time * 0.002 + p.phase) * 0.5;
+          if (p.y < -p.size) {
+            p.y = canvas.height + p.size;
+            p.x = Math.random() * canvas.width;
+          }
+        } else if (t.particleType === "star") {
+          p.opacity = 0.3 + Math.sin(time * 0.003 + p.phase) * 0.4;
+        } else if (t.particleType === "sand") {
+          p.x += p.speed * dt * 40;
+          p.y += Math.sin(time * 0.001 + p.phase) * 0.2;
+          if (p.x > canvas.width + p.size) {
+            p.x = -p.size;
+            p.y = Math.random() * canvas.height * 0.7;
+          }
+        }
+      }
+
+      // Border with rounded corners (terrarium frame)
+      ctx.strokeStyle = "rgba(0,0,0,0.15)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(2, 2, w - 4, h - 4, 12);
+      ctx.stroke();
+
+      animRef.current = requestAnimationFrame(render);
+    };
+
+    animRef.current = requestAnimationFrame(render);
+
+    return () => {
+      cancelAnimationFrame(animRef.current);
+      resizeObserver.disconnect();
+    };
+  }, [theme]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+        zIndex: 0,
+        borderRadius: 12,
+      }}
+    />
+  );
+}
+
+function drawClouds(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  _h: number,
+  time: number,
+) {
+  ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+  for (let i = 0; i < 4; i++) {
+    const cx =
+      ((i * w * 0.3 + time * 0.01 * (0.5 + i * 0.2)) % (w + 120)) - 60;
+    const cy = 30 + i * 25;
+    const s = 20 + i * 8;
+    ctx.beginPath();
+    ctx.arc(cx, cy, s, 0, Math.PI * 2);
+    ctx.arc(cx + s * 0.8, cy - s * 0.2, s * 0.7, 0, Math.PI * 2);
+    ctx.arc(cx - s * 0.6, cy + s * 0.1, s * 0.6, 0, Math.PI * 2);
+    ctx.arc(cx + s * 0.3, cy + s * 0.3, s * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawMoon(ctx: CanvasRenderingContext2D, w: number) {
+  ctx.fillStyle = "#FFF9C4";
+  ctx.shadowColor = "#FFF9C4";
+  ctx.shadowBlur = 20;
+  ctx.beginPath();
+  ctx.arc(w * 0.8, 50, 25, 0, Math.PI * 2);
+  ctx.fill();
+  // Moon craters
+  ctx.fillStyle = "rgba(0,0,0,0.05)";
+  ctx.beginPath();
+  ctx.arc(w * 0.8 - 5, 45, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(w * 0.8 + 8, 55, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
+function drawStars(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  time: number,
+) {
+  // Use deterministic positions based on index
+  for (let i = 0; i < 40; i++) {
+    const x = ((i * 137.5) % w);
+    const y = ((i * 73.1) % (h * 0.6));
+    const twinkle = 0.3 + Math.sin(time * 0.002 + i * 1.7) * 0.4;
+    ctx.fillStyle = `rgba(255, 255, 240, ${twinkle})`;
+    const size = 1 + (i % 3);
+    ctx.fillRect(x, y, size, size);
+  }
+}
+
+function drawGrass(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  groundY: number,
+  time: number,
+  color: string,
+  accent: string,
+) {
+  for (let x = 0; x < w; x += 8) {
+    const sway = Math.sin(time * 0.002 + x * 0.05) * 3;
+    const h = 6 + (x * 7) % 10;
+    ctx.strokeStyle = (x % 16 === 0) ? accent : color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    const waveOffset = Math.sin(x * 0.02 + time * 0.0005) * 4;
+    ctx.moveTo(x, groundY + waveOffset);
+    ctx.quadraticCurveTo(x + sway, groundY + waveOffset - h * 0.6, x + sway * 0.5, groundY + waveOffset - h);
+    ctx.stroke();
+  }
+}
+
+function drawFlowers(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  groundY: number,
+  time: number,
+) {
+  const flowerColors = ["#F48FB1", "#CE93D8", "#FFF176", "#EF5350", "#FF8A65"];
+  for (let i = 0; i < 8; i++) {
+    const x = ((i * 97 + 30) % w);
+    const waveOffset = Math.sin(x * 0.02 + time * 0.0005) * 4;
+    const y = groundY + waveOffset - 2;
+    const sway = Math.sin(time * 0.003 + i) * 2;
+    const color = flowerColors[i % flowerColors.length];
+
+    // Stem
+    ctx.strokeStyle = "#4CAF50";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + sway, y - 12);
+    ctx.stroke();
+
+    // Petals
+    ctx.fillStyle = color;
+    const petalSize = 3;
+    for (let p = 0; p < 5; p++) {
+      const angle = (p / 5) * Math.PI * 2 + time * 0.001;
+      ctx.beginPath();
+      ctx.arc(
+        x + sway + Math.cos(angle) * petalSize,
+        y - 12 + Math.sin(angle) * petalSize,
+        2,
+        0,
+        Math.PI * 2,
+      );
+      ctx.fill();
+    }
+    // Center
+    ctx.fillStyle = "#FFF176";
+    ctx.beginPath();
+    ctx.arc(x + sway, y - 12, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawWaves(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  time: number,
+) {
+  for (let layer = 0; layer < 3; layer++) {
+    const y = h * (0.55 + layer * 0.08);
+    const alpha = 0.15 - layer * 0.03;
+    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    for (let x = 0; x <= w; x += 10) {
+      const wave =
+        Math.sin(x * 0.03 + time * 0.001 + layer * 2) * 8 +
+        Math.sin(x * 0.01 + time * 0.0015) * 4;
+      ctx.lineTo(x, y + wave);
+    }
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawSeaweed(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  time: number,
+) {
+  ctx.strokeStyle = "rgba(0, 100, 0, 0.4)";
+  ctx.lineWidth = 3;
+  for (let i = 0; i < 6; i++) {
+    const x = ((i * 130 + 40) % w);
+    const baseY = h - 10;
+    const height = 30 + (i % 3) * 15;
+    ctx.beginPath();
+    ctx.moveTo(x, baseY);
+    for (let s = 0; s < height; s += 5) {
+      const sway = Math.sin(time * 0.002 + i + s * 0.1) * 8;
+      ctx.lineTo(x + sway, baseY - s);
+    }
+    ctx.stroke();
+  }
+}
+
+function drawCacti(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  groundY: number,
+) {
+  ctx.fillStyle = "#2E7D32";
+  for (let i = 0; i < 3; i++) {
+    const x = ((i * 250 + 80) % w);
+    const waveOffset = Math.sin(x * 0.02) * 4;
+    const y = groundY + waveOffset;
+    const h = 25 + i * 10;
+
+    // Main trunk
+    ctx.beginPath();
+    ctx.roundRect(x - 5, y - h, 10, h, 3);
+    ctx.fill();
+
+    // Arms
+    ctx.beginPath();
+    ctx.roundRect(x - 15, y - h * 0.7, 10, 6, 3);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.roundRect(x - 15, y - h * 0.7 - 12, 6, 14, 3);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.roundRect(x + 5, y - h * 0.5, 10, 6, 3);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.roundRect(x + 9, y - h * 0.5 - 8, 6, 10, 3);
+    ctx.fill();
+  }
+}
+
+function drawParticle(
+  ctx: CanvasRenderingContext2D,
+  p: Particle,
+  color: string,
+  type: string,
+  time: number,
+) {
+  ctx.save();
+  ctx.globalAlpha = p.opacity;
+
+  switch (type) {
+    case "leaf": {
+      ctx.fillStyle = color;
+      ctx.translate(p.x, p.y);
+      const rot = Math.sin(time * 0.002 + p.phase) * 0.5;
+      ctx.rotate(rot);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, p.size, p.size * 0.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+    case "star": {
+      ctx.fillStyle = color;
+      ctx.fillRect(p.x, p.y, p.size * 0.8, p.size * 0.8);
+      break;
+    }
+    case "sand": {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+    case "bubble": {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.stroke();
+      // Highlight
+      ctx.fillStyle = "rgba(255,255,255,0.3)";
+      ctx.beginPath();
+      ctx.arc(
+        p.x - p.size * 0.3,
+        p.y - p.size * 0.3,
+        p.size * 0.3,
+        0,
+        Math.PI * 2,
+      );
+      ctx.fill();
+      break;
+    }
+  }
+
+  ctx.restore();
+}

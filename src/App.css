@@ -16,6 +16,14 @@ html, body, #root {
   height: 100%;
   position: relative;
   background: transparent;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.terrarium-container canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
 /* Chat Overlay */

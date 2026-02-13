@@ -6,6 +6,7 @@ interface TerrariumCanvasProps {
   worldState: WorldState | null;
   onAgentClick: (agentId: string) => void;
   onBallThrow: (x: number, y: number, vx: number, vy: number) => void;
+  onBackgroundClick: () => void;
 }
 
 const AGENT_SIZE = 32;
@@ -15,6 +16,7 @@ export function TerrariumCanvas({
   worldState,
   onAgentClick,
   onBallThrow,
+  onBackgroundClick,
 }: TerrariumCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(
@@ -35,12 +37,6 @@ export function TerrariumCanvas({
 
     // Clear with transparency
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw a subtle ground area
-    ctx.fillStyle = "rgba(139, 195, 74, 0.15)";
-    ctx.beginPath();
-    ctx.roundRect(4, 4, canvas.width - 8, canvas.height - 8, 12);
-    ctx.fill();
 
     // Sort agents by Y position for z-ordering
     const sortedAgents = [...worldState.agents].sort(
@@ -153,8 +149,11 @@ export function TerrariumCanvas({
       const pos = getCanvasPos(e);
       const agent = findAgentAt(pos.x, pos.y);
       if (agent) {
+        // Click on agent — open chat, don't start drag
+        e.stopPropagation();
         onAgentClick(agent.id);
       } else {
+        // Start potential drag for ball throw
         setDragStart(pos);
         setDragCurrent(pos);
       }
@@ -177,14 +176,19 @@ export function TerrariumCanvas({
         const end = getCanvasPos(e);
         const vx = (end.x - dragStart.x) * 5;
         const vy = (end.y - dragStart.y) * 5;
-        if (Math.sqrt(vx * vx + vy * vy) > 20) {
+        const dist = Math.sqrt(vx * vx + vy * vy);
+        if (dist > 20) {
+          // Throw ball
           onBallThrow(dragStart.x, dragStart.y, vx, vy);
+        } else {
+          // Short click on background — dismiss chats
+          onBackgroundClick();
         }
         setDragStart(null);
         setDragCurrent(null);
       }
     },
-    [dragStart, getCanvasPos, onBallThrow],
+    [dragStart, getCanvasPos, onBallThrow, onBackgroundClick],
   );
 
   return (
@@ -194,6 +198,7 @@ export function TerrariumCanvas({
         width: "100%",
         height: "100%",
         cursor: dragStart ? "crosshair" : "default",
+        zIndex: 1,
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}

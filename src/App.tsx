@@ -1,7 +1,8 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useWorldState } from "./hooks/useWorldState";
 import { TerrariumCanvas } from "./components/TerrariumCanvas";
 import { ChatOverlay } from "./components/ChatOverlay";
+import { AnimatedBackground } from "./components/AnimatedBackground";
 import "./App.css";
 
 function App() {
@@ -15,16 +16,14 @@ function App() {
   } = useWorldState();
 
   // Sync canvas size to world bounds
-  const handleResize = useCallback(() => {
-    resizeWorld(window.innerWidth, window.innerHeight);
-  }, [resizeWorld]);
-
-  // Resize on mount
-  if (typeof window !== "undefined") {
+  useEffect(() => {
+    const handleResize = () => {
+      resizeWorld(window.innerWidth, window.innerHeight);
+    };
+    handleResize();
     window.addEventListener("resize", handleResize);
-    // Initial resize
-    setTimeout(handleResize, 100);
-  }
+    return () => window.removeEventListener("resize", handleResize);
+  }, [resizeWorld]);
 
   const handleAgentClick = useCallback(
     async (agentId: string) => {
@@ -40,24 +39,26 @@ function App() {
     [dismissChat],
   );
 
+  const handleCanvasClick = useCallback(() => {
+    // Light dismiss: clicking canvas (not on an agent) dismisses all chats
+    const sessions = worldState?.chat_sessions.filter((s) => s.active) ?? [];
+    for (const session of sessions) {
+      dismissChat(session.agent_id);
+    }
+  }, [worldState, dismissChat]);
+
   // Find active chat sessions
   const activeSessions =
     worldState?.chat_sessions.filter((s) => s.active) ?? [];
 
   return (
-    <div
-      className="terrarium-container"
-      onClick={() => {
-        // Light dismiss: clicking background dismisses all chats
-        for (const session of activeSessions) {
-          dismissChat(session.agent_id);
-        }
-      }}
-    >
+    <div className="terrarium-container">
+      <AnimatedBackground theme="meadow" />
       <TerrariumCanvas
         worldState={worldState}
         onAgentClick={handleAgentClick}
         onBallThrow={throwBall}
+        onBackgroundClick={handleCanvasClick}
       />
       {activeSessions.map((session) => {
         const agent = worldState?.agents.find(
