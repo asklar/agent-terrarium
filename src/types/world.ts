@@ -68,5 +68,6 @@ export interface WorldState {
   bubbles: ChatBubble[];
   chat_sessions: ChatSession[];
   bounds: Vec2;
+  ground_y_ratio: number;
   tick: number;
 }

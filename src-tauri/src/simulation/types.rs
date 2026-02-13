@@ -140,5 +140,23 @@ pub struct WorldState {
     pub bubbles: Vec<ChatBubble>,
     pub chat_sessions: Vec<ChatSession>,
     pub bounds: Vec2,
+    /// Fraction of window height where the ground starts (0.0 = top, 1.0 = bottom)
+    pub ground_y_ratio: f64,
     pub tick: u64,
+}
+
+/// Saved agent definition for config persistence
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentConfig {
+    pub id: String,
+    pub name: String,
+    pub avatar: String,
+    pub personality: Personality,
+}
+
+/// Persisted app configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppConfig {
+    pub theme: String,
+    pub agents: Vec<AgentConfig>,
 }

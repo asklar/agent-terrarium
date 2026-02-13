@@ -23,6 +23,7 @@ impl World {
                 bubbles: Vec::new(),
                 chat_sessions: Vec::new(),
                 bounds,
+                ground_y_ratio: 0.72,
                 tick: 0,
             }),
         }
@@ -34,6 +35,7 @@ impl World {
 
         // Update agents
         let bounds = state.bounds;
+        let ground_y = bounds.y * state.ground_y_ratio;
         let agent_count = state.agents.len();
 
         // Collect agent positions for interaction checks
@@ -84,7 +86,7 @@ impl World {
             if !chasing_ball && state.agents[i].state != AgentState::Interacting {
                 // Wander behavior
                 if state.agents[i].target.is_none() || state.agents[i].state_timer <= 0.0 {
-                    pick_new_target(&mut state.agents[i], &bounds);
+                    pick_new_target(&mut state.agents[i], &bounds, ground_y);
                 }
 
                 if let Some(target) = state.agents[i].target {
@@ -125,7 +127,7 @@ impl World {
             let vel = state.agents[i].velocity;
             state.agents[i].position = state.agents[i].position + vel * TICK_RATE;
 
-            // Bounce off bounds
+            // Bounce off bounds (agents stay on ground surface)
             if state.agents[i].position.x < 16.0 {
                 state.agents[i].position.x = 16.0;
                 state.agents[i].velocity.x = state.agents[i].velocity.x.abs();
@@ -136,8 +138,14 @@ impl World {
                 state.agents[i].velocity.x = -state.agents[i].velocity.x.abs();
                 state.agents[i].direction = Direction::Left;
             }
-            if state.agents[i].position.y < 16.0 {
-                state.agents[i].position.y = 16.0;
+            // Ghost can float above ground, others stay on ground
+            let min_y = if state.agents[i].personality.movement_style == MovementStyle::Float {
+                ground_y * 0.3
+            } else {
+                ground_y
+            };
+            if state.agents[i].position.y < min_y {
+                state.agents[i].position.y = min_y;
                 state.agents[i].velocity.y = state.agents[i].velocity.y.abs();
             }
             if state.agents[i].position.y > bounds.y - 16.0 {
@@ -304,12 +312,13 @@ impl World {
 }
 
 fn create_default_agents(bounds: &Vec2) -> Vec<Agent> {
+    let ground_y = bounds.y * 0.72;
     vec![
         Agent {
             id: "cat".into(),
             name: "Pixel Cat".into(),
             avatar: "cat".into(),
-            position: Vec2::new(bounds.x * 0.2, bounds.y * 0.5),
+            position: Vec2::new(bounds.x * 0.2, ground_y + 20.0),
             velocity: Vec2::zero(),
             state: AgentState::Idle,
             direction: Direction::Right,
@@ -326,20 +335,20 @@ fn create_default_agents(bounds: &Vec2) -> Vec<Agent> {
             interaction_cooldown: 0.0,
         },
         Agent {
-            id: "robot".into(),
-            name: "Robot".into(),
-            avatar: "robot".into(),
-            position: Vec2::new(bounds.x * 0.4, bounds.y * 0.5),
+            id: "copilot".into(),
+            name: "Copilot".into(),
+            avatar: "copilot".into(),
+            position: Vec2::new(bounds.x * 0.4, ground_y + 20.0),
             velocity: Vec2::zero(),
             state: AgentState::Idle,
             direction: Direction::Right,
             personality: Personality {
-                speed_min: 20.0,
-                speed_max: 60.0,
+                speed_min: 25.0,
+                speed_max: 80.0,
                 movement_style: MovementStyle::Patrol,
-                interaction_chance: 0.4,
-                ball_interest: 0.3,
-                chat_emojis: vec!["🤖".into(), "⚡".into(), "🔧".into(), "💡".into(), "🔋".into()],
+                interaction_chance: 0.8,
+                ball_interest: 0.5,
+                chat_emojis: vec!["✨".into(), "💡".into(), "🚀".into(), "💻".into(), "🤝".into()],
             },
             target: None,
             state_timer: 0.0,
@@ -349,7 +358,7 @@ fn create_default_agents(bounds: &Vec2) -> Vec<Agent> {
             id: "squirrel".into(),
             name: "Squirrel".into(),
             avatar: "squirrel".into(),
-            position: Vec2::new(bounds.x * 0.6, bounds.y * 0.5),
+            position: Vec2::new(bounds.x * 0.6, ground_y + 20.0),
             velocity: Vec2::zero(),
             state: AgentState::Idle,
             direction: Direction::Left,
@@ -369,7 +378,7 @@ fn create_default_agents(bounds: &Vec2) -> Vec<Agent> {
             id: "penguin".into(),
             name: "Penguin".into(),
             avatar: "penguin".into(),
-            position: Vec2::new(bounds.x * 0.8, bounds.y * 0.5),
+            position: Vec2::new(bounds.x * 0.8, ground_y + 20.0),
             velocity: Vec2::zero(),
             state: AgentState::Idle,
             direction: Direction::Left,
@@ -389,7 +398,7 @@ fn create_default_agents(bounds: &Vec2) -> Vec<Agent> {
             id: "ghost".into(),
             name: "Ghost".into(),
             avatar: "ghost".into(),
-            position: Vec2::new(bounds.x * 0.5, bounds.y * 0.3),
+            position: Vec2::new(bounds.x * 0.5, ground_y * 0.5),
             velocity: Vec2::zero(),
             state: AgentState::Idle,
             direction: Direction::Right,
@@ -408,11 +417,17 @@ fn create_default_agents(bounds: &Vec2) -> Vec<Agent> {
     ]
 }
 
-fn pick_new_target(agent: &mut Agent, bounds: &Vec2) {
+fn pick_new_target(agent: &mut Agent, bounds: &Vec2, ground_y: f64) {
     let margin = 32.0;
+    // Float-style agents can go above ground, others stay on ground
+    let min_y = if agent.personality.movement_style == MovementStyle::Float {
+        ground_y * 0.3
+    } else {
+        ground_y
+    };
     agent.target = Some(Vec2::new(
         margin + rand_f64() * (bounds.x - margin * 2.0),
-        margin + rand_f64() * (bounds.y - margin * 2.0),
+        min_y + rand_f64() * (bounds.y - min_y - margin),
     ));
     agent.state_timer = 3.0 + rand_f64() * 5.0;
 }

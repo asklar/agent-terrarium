@@ -27,6 +27,63 @@ export function TerrariumCanvas({
     y: number;
   } | null>(null);
 
+  // Hover greeting state
+  const hoveredAgentRef = useRef<string | null>(null);
+  const hoverBubbleRef = useRef<{
+    agentId: string;
+    emoji: string;
+    startTime: number;
+    duration: number;
+  } | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  // Pick a mood-based greeting emoji for an agent
+  const pickGreetingEmoji = useCallback((agent: Agent): string => {
+    const greetings: Record<string, string[]> = {
+      Idle: ["👋", "😊", "🙂", "🫡"],
+      Walking: ["🚶", "😄", "✌️", "🎵"],
+      Running: ["💨", "😅", "🏃", "⚡"],
+      Interacting: ["💬", "🤗", "😁", "🥰"],
+      Chatting: ["💭", "🗨️", "😇"],
+    };
+    const pool = greetings[agent.state] ?? agent.personality.chat_emojis;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }, []);
+
+  // Play a tiny greeting chime via Web Audio API
+  const playGreetingSound = useCallback((agent: Agent) => {
+    try {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new AudioContext();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === "suspended") ctx.resume();
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      // Different tones per avatar
+      const tones: Record<string, number> = {
+        cat: 880,
+        copilot: 660,
+        squirrel: 1100,
+        penguin: 440,
+        ghost: 330,
+        robot: 550,
+      };
+      osc.frequency.value = tones[agent.avatar] ?? 660;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.15);
+    } catch {
+      // Audio not available, silently skip
+    }
+  }, []);
+
   // Render loop
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -83,6 +140,37 @@ export function TerrariumCanvas({
           agent.position.y - AGENT_SIZE - 10,
           bubble.content,
         );
+      }
+    }
+
+    // Draw hover greeting bubble
+    const hb = hoverBubbleRef.current;
+    if (hb) {
+      const elapsed = (Date.now() - hb.startTime) / 1000;
+      if (elapsed < hb.duration) {
+        const agent = worldState.agents.find((a) => a.id === hb.agentId);
+        if (agent) {
+          // Fade in for first 0.2s, fade out for last 0.3s
+          let alpha = 1;
+          if (elapsed < 0.2) alpha = elapsed / 0.2;
+          else if (elapsed > hb.duration - 0.3)
+            alpha = (hb.duration - elapsed) / 0.3;
+
+          // Float upward slightly
+          const floatY = -elapsed * 8;
+
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+          drawBubble(
+            ctx,
+            agent.position.x,
+            agent.position.y - AGENT_SIZE - 16 + floatY,
+            hb.emoji,
+          );
+          ctx.restore();
+        }
+      } else {
+        hoverBubbleRef.current = null;
       }
     }
 
@@ -165,9 +253,35 @@ export function TerrariumCanvas({
     (e: React.MouseEvent) => {
       if (dragStart) {
         setDragCurrent(getCanvasPos(e));
+        return;
+      }
+
+      // Hover detection for greeting bubbles
+      const pos = getCanvasPos(e);
+      const agent = findAgentAt(pos.x, pos.y);
+      const newId = agent?.id ?? null;
+
+      if (newId !== hoveredAgentRef.current) {
+        hoveredAgentRef.current = newId;
+        if (agent) {
+          // New hover — show greeting and play sound
+          hoverBubbleRef.current = {
+            agentId: agent.id,
+            emoji: pickGreetingEmoji(agent),
+            startTime: Date.now(),
+            duration: 1.8,
+          };
+          playGreetingSound(agent);
+        }
+      }
+
+      // Update cursor
+      const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.style.cursor = agent ? "pointer" : "default";
       }
     },
-    [dragStart, getCanvasPos],
+    [dragStart, getCanvasPos, findAgentAt, pickGreetingEmoji, playGreetingSound],
   );
 
   const handleMouseUp = useCallback(
@@ -206,6 +320,7 @@ export function TerrariumCanvas({
       onMouseLeave={() => {
         setDragStart(null);
         setDragCurrent(null);
+        hoveredAgentRef.current = null;
       }}
     />
   );
@@ -320,6 +435,40 @@ function drawAgentDetails(
       ctx.arc(0, -AGENT_SIZE / 4 - 20 + bob, 3, 0, Math.PI * 2);
       ctx.fill();
       break;
+    case "copilot": {
+      // Copilot visor / headset shape
+      const hy = -AGENT_SIZE / 4 + bob;
+      // Visor band
+      ctx.fillStyle = "#0D1117";
+      ctx.beginPath();
+      ctx.roundRect(-9, hy - 10, 18, 7, 3);
+      ctx.fill();
+      // Visor glow
+      ctx.fillStyle = "#58A6FF";
+      ctx.beginPath();
+      ctx.roundRect(-7, hy - 9, 14, 5, 2);
+      ctx.fill();
+      // Sparkle on top (animated)
+      const sparklePhase = (Date.now() / 400) % (Math.PI * 2);
+      const sparkleAlpha = 0.4 + Math.sin(sparklePhase) * 0.4;
+      ctx.fillStyle = `rgba(88, 166, 255, ${sparkleAlpha})`;
+      ctx.beginPath();
+      ctx.arc(0, hy - 16, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      // Small wing/cape accent
+      ctx.fillStyle = "rgba(31, 111, 235, 0.5)";
+      ctx.beginPath();
+      ctx.moveTo(-8, 2 + bob);
+      ctx.quadraticCurveTo(-14, 6 + bob, -10, 12 + bob);
+      ctx.lineTo(-6, 8 + bob);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(8, 2 + bob);
+      ctx.quadraticCurveTo(14, 6 + bob, 10, 12 + bob);
+      ctx.lineTo(6, 8 + bob);
+      ctx.fill();
+      break;
+    }
     case "squirrel":
       // Tail
       ctx.fillStyle = AGENT_COLORS.squirrel.body;
