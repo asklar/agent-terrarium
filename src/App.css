@@ -1,0 +1,129 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+}
+
+.terrarium-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: transparent;
+}
+
+/* Chat Overlay */
+.chat-overlay {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  z-index: 100;
+  border: 2px solid rgba(139, 195, 74, 0.4);
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: linear-gradient(135deg, #8BC34A, #4CAF50);
+  color: white;
+}
+
+.chat-agent-name {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.chat-close {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.chat-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  max-height: 120px;
+}
+
+.chat-message {
+  margin-bottom: 4px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  max-width: 85%;
+  word-wrap: break-word;
+}
+
+.chat-message.user {
+  background: #E3F2FD;
+  margin-left: auto;
+  text-align: right;
+  border-bottom-right-radius: 2px;
+}
+
+.chat-message.agent {
+  background: #F1F8E9;
+  margin-right: auto;
+  border-bottom-left-radius: 2px;
+}
+
+.chat-input-row {
+  display: flex;
+  padding: 4px;
+  gap: 4px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.chat-input {
+  flex: 1;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  outline: none;
+  background: white;
+}
+
+.chat-input:focus {
+  border-color: #8BC34A;
+}
+
+.chat-send {
+  background: #8BC34A;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.chat-send:hover:not(:disabled) {
+  background: #7CB342;
+}
+
+.chat-send:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

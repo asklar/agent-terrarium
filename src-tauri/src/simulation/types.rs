@@ -1,0 +1,144 @@
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub struct Vec2 {
+    pub x: f64,
+    pub y: f64,
+}
+
+impl Vec2 {
+    pub fn new(x: f64, y: f64) -> Self {
+        Self { x, y }
+    }
+
+    pub fn zero() -> Self {
+        Self { x: 0.0, y: 0.0 }
+    }
+
+    pub fn distance_to(&self, other: &Vec2) -> f64 {
+        ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()
+    }
+
+    pub fn magnitude(&self) -> f64 {
+        (self.x.powi(2) + self.y.powi(2)).sqrt()
+    }
+
+    pub fn normalized(&self) -> Vec2 {
+        let mag = self.magnitude();
+        if mag < f64::EPSILON {
+            Vec2::zero()
+        } else {
+            Vec2::new(self.x / mag, self.y / mag)
+        }
+    }
+}
+
+impl std::ops::Add for Vec2 {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        Vec2::new(self.x + rhs.x, self.y + rhs.y)
+    }
+}
+
+impl std::ops::Sub for Vec2 {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        Vec2::new(self.x - rhs.x, self.y - rhs.y)
+    }
+}
+
+impl std::ops::Mul<f64> for Vec2 {
+    type Output = Self;
+    fn mul(self, rhs: f64) -> Self {
+        Vec2::new(self.x * rhs, self.y * rhs)
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum AgentState {
+    Idle,
+    Walking,
+    Running,
+    Sprinting,
+    Jumping,
+    Crawling,
+    Interacting,
+    Chatting,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum MovementStyle {
+    Wander,
+    Patrol,
+    Bounce,
+    Float,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum Direction {
+    Left,
+    Right,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Personality {
+    pub speed_min: f64,
+    pub speed_max: f64,
+    pub movement_style: MovementStyle,
+    pub interaction_chance: f64,
+    pub ball_interest: f64,
+    pub chat_emojis: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Agent {
+    pub id: String,
+    pub name: String,
+    pub avatar: String,
+    pub position: Vec2,
+    pub velocity: Vec2,
+    pub state: AgentState,
+    pub direction: Direction,
+    pub personality: Personality,
+    pub target: Option<Vec2>,
+    pub state_timer: f64,
+    pub interaction_cooldown: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Ball {
+    pub position: Vec2,
+    pub velocity: Vec2,
+    pub active: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatBubble {
+    pub agent_id: String,
+    pub content: String,
+    pub timer: f64,
+    pub is_emoji: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatMessage {
+    pub from_user: bool,
+    pub text: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatSession {
+    pub agent_id: String,
+    pub messages: Vec<ChatMessage>,
+    pub active: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WorldState {
+    pub agents: Vec<Agent>,
+    pub ball: Option<Ball>,
+    pub bubbles: Vec<ChatBubble>,
+    pub chat_sessions: Vec<ChatSession>,
+    pub bounds: Vec2,
+    pub tick: u64,
+}
