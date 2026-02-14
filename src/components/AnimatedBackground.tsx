@@ -85,16 +85,23 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
 
     // Initialize particles
     const pc = t.particles;
+    const initGroundY = canvas.height * 0.72;
     particlesRef.current = pc
-      ? Array.from({ length: pc.count }, () => ({
-          x: Math.random() * canvas.width,
-          y: Math.random() * canvas.height * 0.7,
-          size: 2 + Math.random() * 4,
-          speed: 0.2 + Math.random() * 0.5,
-          opacity: 0.3 + Math.random() * 0.7,
-          drift: (Math.random() - 0.5) * 0.3,
-          phase: Math.random() * Math.PI * 2,
-        }))
+      ? Array.from({ length: pc.count }, () => {
+          // Bubbles spawn below the water line; others in the sky area
+          const isBubble = pc.type === "bubble";
+          return {
+            x: Math.random() * canvas.width,
+            y: isBubble
+              ? initGroundY + Math.random() * (canvas.height - initGroundY)
+              : Math.random() * canvas.height * 0.7,
+            size: 2 + Math.random() * 4,
+            speed: 0.2 + Math.random() * 0.5,
+            opacity: 0.3 + Math.random() * 0.7,
+            drift: (Math.random() - 0.5) * 0.3,
+            phase: Math.random() * Math.PI * 2,
+          };
+        })
       : [];
 
     const resizeObserver = new ResizeObserver((entries) => {
@@ -485,7 +492,7 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
       if (pc) {
         for (const p of particlesRef.current) {
           drawParticle(ctx, p, pc.color, pc.type, time);
-          updateParticle(p, pc.type, dt, time, canvas.width, canvas.height);
+          updateParticle(p, pc.type, dt, time, canvas.width, canvas.height, groundY);
         }
       }
 
@@ -576,6 +583,7 @@ function updateParticle(
   time: number,
   canvasW: number,
   canvasH: number,
+  groundY: number,
 ) {
   switch (type) {
     case "leaf":
@@ -586,7 +594,8 @@ function updateParticle(
     case "bubble":
       p.y -= p.speed * dt * 20;
       p.x += Math.sin(time * 0.002 + p.phase) * 0.5;
-      if (p.y < -p.size) { p.y = canvasH + p.size; p.x = Math.random() * canvasW; }
+      // Bubbles stay below the water line (groundY) and respawn at bottom
+      if (p.y < groundY) { p.y = canvasH + p.size; p.x = Math.random() * canvasW; }
       break;
     case "star":
       p.opacity = 0.3 + Math.sin(time * 0.003 + p.phase) * 0.4;
