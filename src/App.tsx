@@ -69,6 +69,8 @@ function App() {
 
   const [theme, setTheme] = useState("meadow");
   const [dynamicSky, setDynamicSky] = useState(false);
+  const [debugTime, setDebugTime] = useState<number | null>(null);
+  const [debugWeather, setDebugWeather] = useState<string | null>(null);
   const [musicMuted, setMusicMuted] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -382,7 +384,7 @@ function App() {
   return (
     <div className="terrarium-container" onContextMenu={handleContextMenu}>
       <WindowFrame />
-      <AnimatedBackground theme={theme} dynamicSky={dynamicSky} />
+      <AnimatedBackground theme={theme} dynamicSky={dynamicSky} debugTime={debugTime} debugWeather={debugWeather as import("./weather/types").WeatherOverlay | null} />
       <ThemeMusic theme={theme} muted={musicMuted} onToggleMute={() => {
         setMusicMuted((m) => {
           const next = !m;
@@ -427,6 +429,8 @@ function App() {
           agents={worldState?.agents ?? []}
           currentTheme={theme}
           dynamicSky={dynamicSky}
+          debugTime={debugTime}
+          debugWeather={debugWeather}
           onClose={() => setContextMenu(null)}
           onThemeChange={setTheme}
           onDynamicSkyToggle={() => {
@@ -436,6 +440,8 @@ function App() {
               return next;
             });
           }}
+          onDebugTime={setDebugTime}
+          onDebugWeather={setDebugWeather}
           onAddAgent={async (avatar, name) => {
             await addAgent(avatar, name);
             saveConfig(theme, undefined, musicMutedRef.current, dynamicSkyRef.current);

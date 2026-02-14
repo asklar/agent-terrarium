@@ -3,22 +3,28 @@ import { registry } from "../themes";
 import type { GearSlot } from "../themes/PackageTypes";
 import type { Agent } from "../types/world";
 
+import type { WeatherOverlay } from "../weather/types";
+
 interface ContextMenuProps {
   x: number;
   y: number;
   agents: Agent[];
   currentTheme: string;
   dynamicSky: boolean;
+  debugTime: number | null;
+  debugWeather: string | null;
   onClose: () => void;
   onThemeChange: (theme: string) => void;
   onDynamicSkyToggle: () => void;
+  onDebugTime: (time: number | null) => void;
+  onDebugWeather: (weather: string | null) => void;
   onAddAgent: (avatar: string, name: string) => void;
   onRemoveAgent: (agentId: string) => void;
   onSetGear: (agentId: string, gearIds: string[]) => void;
   onRequestAttention: (agentId: string) => void;
 }
 
-type SubMenu = null | "theme" | "add" | "remove" | "gear" | "gear-agent" | "gear-slot" | "attention";
+type SubMenu = null | "theme" | "add" | "remove" | "gear" | "gear-agent" | "gear-slot" | "attention" | "debug" | "debug-time" | "debug-weather";
 
 export function ContextMenu({
   x,
@@ -26,9 +32,13 @@ export function ContextMenu({
   agents,
   currentTheme,
   dynamicSky,
+  debugTime,
+  debugWeather,
   onClose,
   onThemeChange,
   onDynamicSkyToggle,
+  onDebugTime,
+  onDebugWeather,
   onAddAgent,
   onRemoveAgent,
   onSetGear,
@@ -193,6 +203,19 @@ export function ContextMenu({
             🔔 Request Attention
             <span className="context-menu-arrow">▸</span>
           </button>
+          {dynamicSky && (
+            <>
+              <div className="context-menu-divider" />
+              <button
+                className="context-menu-item"
+                onClick={guardedClick(() => setSubMenu("debug"))}
+              >
+                🔧 Debug Sky
+                {(debugTime != null || debugWeather != null) && <span className="context-menu-check">⚡</span>}
+                <span className="context-menu-arrow">▸</span>
+              </button>
+            </>
+          )}
         </>
       )}
 
@@ -397,6 +420,130 @@ export function ContextMenu({
           )}
         </>
       )}
+      {subMenu === "debug" && (
+        <>
+          <button
+            className="context-menu-item context-menu-back"
+            onClick={() => setSubMenu(null)}
+          >
+            ◂ Back
+          </button>
+          <div className="context-menu-divider" />
+          <button
+            className="context-menu-item"
+            onClick={guardedClick(() => setSubMenu("debug-time"))}
+          >
+            🕐 Time Override
+            {debugTime != null && <span className="context-menu-check">⚡</span>}
+            <span className="context-menu-arrow">▸</span>
+          </button>
+          <button
+            className="context-menu-item"
+            onClick={guardedClick(() => setSubMenu("debug-weather"))}
+          >
+            🌦️ Weather Override
+            {debugWeather != null && <span className="context-menu-check">⚡</span>}
+            <span className="context-menu-arrow">▸</span>
+          </button>
+          <div className="context-menu-divider" />
+          <button
+            className="context-menu-item"
+            onClick={guardedClick(() => {
+              onDebugTime(null);
+              onDebugWeather(null);
+              onClose();
+            })}
+          >
+            🔄 Reset All
+          </button>
+        </>
+      )}
+      {subMenu === "debug-time" && (() => {
+        const makeTime = (hour: number) => {
+          const d = new Date();
+          d.setHours(hour, 0, 0, 0);
+          return d.getTime();
+        };
+        const TIME_PRESETS: { label: string; icon: string; hour: number }[] = [
+          { label: "Night (2 AM)", icon: "🌙", hour: 2 },
+          { label: "Dawn (6 AM)", icon: "🌅", hour: 6 },
+          { label: "Morning (9 AM)", icon: "☀️", hour: 9 },
+          { label: "Noon (12 PM)", icon: "🔆", hour: 12 },
+          { label: "Afternoon (3 PM)", icon: "🌤️", hour: 15 },
+          { label: "Dusk (6 PM)", icon: "🌇", hour: 18 },
+          { label: "Evening (9 PM)", icon: "🌆", hour: 21 },
+          { label: "Midnight", icon: "🌑", hour: 0 },
+        ];
+        return (
+          <>
+            <button
+              className="context-menu-item context-menu-back"
+              onClick={() => setSubMenu("debug")}
+            >
+              ◂ Back
+            </button>
+            <div className="context-menu-divider" />
+            <button
+              className={`context-menu-item ${debugTime == null ? "active" : ""}`}
+              onClick={guardedClick(() => {
+                onDebugTime(null);
+                onClose();
+              })}
+            >
+              🔄 Real Time
+              {debugTime == null && <span className="context-menu-check">✓</span>}
+            </button>
+            {TIME_PRESETS.map((p) => (
+              <button
+                key={p.hour}
+                className={`context-menu-item ${debugTime === makeTime(p.hour) ? "active" : ""}`}
+                onClick={guardedClick(() => {
+                  onDebugTime(makeTime(p.hour));
+                  onClose();
+                })}
+              >
+                {p.icon} {p.label}
+              </button>
+            ))}
+          </>
+        );
+      })()}
+      {subMenu === "debug-weather" && (() => {
+        const WEATHER_PRESETS: { label: string; icon: string; value: WeatherOverlay | null }[] = [
+          { label: "Real Weather", icon: "🔄", value: null },
+          { label: "Clear", icon: "☀️", value: "none" },
+          { label: "Cloudy", icon: "☁️", value: "cloudy" },
+          { label: "Fog", icon: "🌫️", value: "fog" },
+          { label: "Drizzle", icon: "🌦️", value: "drizzle" },
+          { label: "Rain", icon: "🌧️", value: "rain" },
+          { label: "Snow", icon: "🌨️", value: "snow" },
+          { label: "Storm", icon: "⛈️", value: "storm" },
+        ];
+        return (
+          <>
+            <button
+              className="context-menu-item context-menu-back"
+              onClick={() => setSubMenu("debug")}
+            >
+              ◂ Back
+            </button>
+            <div className="context-menu-divider" />
+            {WEATHER_PRESETS.map((p) => (
+              <button
+                key={p.value ?? "real"}
+                className={`context-menu-item ${debugWeather === p.value ? "active" : (p.value == null && debugWeather == null) ? "active" : ""}`}
+                onClick={guardedClick(() => {
+                  onDebugWeather(p.value);
+                  onClose();
+                })}
+              >
+                {p.icon} {p.label}
+                {(debugWeather === p.value || (p.value == null && debugWeather == null)) && <span className="context-menu-check">✓</span>}
+              </button>
+            ))}
+          </>
+        );
+      })()}
     </div>
   );
 }
