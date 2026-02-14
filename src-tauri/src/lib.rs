@@ -31,8 +31,8 @@ fn push_bubble(world: tauri::State<'_, Arc<World>>, agent_id: String, content: S
 }
 
 #[tauri::command]
-fn speak_sapi(text: String, pitch: i32, rate: i32, volume: u16) {
-    tts::speak(text, pitch, rate, volume);
+fn speak_sapi(text: String, rate: i32, volume: u16, voice_index: u32) {
+    tts::speak(text, rate, volume, voice_index);
 }
 
 #[tauri::command]
