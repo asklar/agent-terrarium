@@ -437,7 +437,7 @@ pub fn run() {
                                     let copilot = backend.as_any()
                                         .downcast_ref::<CopilotBackend>()
                                         .expect("copilot backend");
-                                    match copilot.dispatch_with_tools(&config, &prompt, tools, handlers).await {
+                                    match copilot.dispatch_with_tools(&aid, &config, &prompt, tools, handlers).await {
                                         Ok(text) => {
                                             if !text.trim().is_empty() {
                                                 log::debug!("Event text response from {} (ignored, tools should handle): {}", aname, text.trim());

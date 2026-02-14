@@ -1,18 +1,28 @@
 use async_trait::async_trait;
-use copilot_sdk::{Client, CustomAgentConfig, SessionConfig, SessionEventData, SystemMessageConfig, SystemMessageMode, Tool};
+use copilot_sdk::{Client, CustomAgentConfig, Session, SessionConfig, SessionEventData, SystemMessageConfig, SystemMessageMode, Tool};
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use super::backend::{AgentBackend, AgentOption, BackendConfig, BackendMessage, BackendResponse, MessageRole, ModelOption};
 
+struct AgentSession {
+    session: Arc<Session>,
+    idle_notify: Arc<tokio::sync::Notify>,
+    collected: Arc<std::sync::Mutex<String>>,
+}
+
 pub struct CopilotBackend {
     client: Arc<RwLock<Option<Client>>>,
+    /// Persistent sessions keyed by agent_id
+    awareness_sessions: Arc<RwLock<HashMap<String, AgentSession>>>,
 }
 
 impl CopilotBackend {
     pub fn new() -> Self {
         Self {
             client: Arc::new(RwLock::new(None)),
+            awareness_sessions: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -40,23 +50,37 @@ impl CopilotBackend {
         Ok(())
     }
 
-    /// Dispatch awareness events using tool-enabled session.
-    /// Tool handlers are pre-registered and execute actions directly.
-    /// Returns any text the model produced after tool calls.
-    pub async fn dispatch_with_tools(
+    /// Get or create a persistent awareness session for an agent.
+    async fn get_or_create_awareness_session(
         &self,
+        agent_id: &str,
         config: &BackendConfig,
-        prompt: &str,
-        tools: Vec<Tool>,
-        tool_handlers: Vec<(String, Arc<dyn Fn(&str, &serde_json::Value) -> copilot_sdk::ToolResultObject + Send + Sync>)>,
-    ) -> Result<String, String> {
+        tools: &[Tool],
+        tool_handlers: &[(String, Arc<dyn Fn(&str, &serde_json::Value) -> copilot_sdk::ToolResultObject + Send + Sync>)],
+    ) -> Result<(), String> {
+        // Check if session already exists
+        {
+            let sessions = self.awareness_sessions.read().await;
+            if sessions.contains_key(agent_id) {
+                // Update tool handlers (they capture fresh World state)
+                let agent_session = sessions.get(agent_id).unwrap();
+                for (name, handler) in tool_handlers {
+                    agent_session.session
+                        .register_tool_with_handler(Tool::new(name), Some(handler.clone()))
+                        .await;
+                }
+                return Ok(());
+            }
+        }
+
+        // Create new session
         self.ensure_client().await?;
         let client_lock = self.client.read().await;
         let client = client_lock.as_ref().unwrap();
 
         let mut session_config = SessionConfig {
             model: config.model.clone(),
-            tools: tools.clone(),
+            tools: tools.to_vec(),
             ..Default::default()
         };
 
@@ -79,6 +103,7 @@ impl CopilotBackend {
             }]);
         }
 
+        log::info!("Creating persistent awareness session for agent {}", agent_id);
         let session = client
             .create_session(session_config)
             .await
@@ -87,11 +112,11 @@ impl CopilotBackend {
         // Register tool handlers
         for (name, handler) in tool_handlers {
             session
-                .register_tool_with_handler(Tool::new(&name), Some(handler))
+                .register_tool_with_handler(Tool::new(name), Some(handler.clone()))
                 .await;
         }
 
-        // Use event-based approach: send + subscribe for tool logging
+        // Set up event listener for this session
         let idle_notify = Arc::new(tokio::sync::Notify::new());
         let idle_clone = Arc::clone(&idle_notify);
         let collected = Arc::new(std::sync::Mutex::new(String::new()));
@@ -121,22 +146,65 @@ impl CopilotBackend {
             })
             .await;
 
-        session.send(prompt).await.map_err(|e| format!("Send failed: {}", e))?;
+        let mut sessions = self.awareness_sessions.write().await;
+        sessions.insert(agent_id.to_string(), AgentSession {
+            session,
+            idle_notify,
+            collected,
+        });
+
+        Ok(())
+    }
+
+    /// Dispatch awareness events using a persistent tool-enabled session.
+    pub async fn dispatch_with_tools(
+        &self,
+        agent_id: &str,
+        config: &BackendConfig,
+        prompt: &str,
+        tools: Vec<Tool>,
+        tool_handlers: Vec<(String, Arc<dyn Fn(&str, &serde_json::Value) -> copilot_sdk::ToolResultObject + Send + Sync>)>,
+    ) -> Result<String, String> {
+        // Ensure session exists and handlers are current
+        self.get_or_create_awareness_session(agent_id, config, &tools, &tool_handlers).await?;
+
+        let sessions = self.awareness_sessions.read().await;
+        let agent_session = sessions.get(agent_id).ok_or("Session not found")?;
+
+        // Clear collected text from previous turn
+        agent_session.collected.lock().unwrap().clear();
+
+        // Send the prompt on the existing session
+        agent_session.session.send(prompt).await.map_err(|e| {
+            // If send fails, drop the session so it gets recreated next time
+            log::warn!("Session send failed for {}, will recreate: {}", agent_id, e);
+            format!("Send failed: {}", e)
+        })?;
 
         // Wait for idle with timeout
         let timeout_result = tokio::time::timeout(
             std::time::Duration::from_secs(15),
-            idle_notify.notified(),
+            agent_session.idle_notify.notified(),
         ).await;
 
-        let _ = session.destroy().await;
-
         if timeout_result.is_err() {
+            // Drop broken session so it gets recreated
+            drop(sessions);
+            self.awareness_sessions.write().await.remove(agent_id);
             return Err("Timed out waiting for response (15s)".to_string());
         }
 
-        let result = collected.lock().unwrap().clone();
+        let result = agent_session.collected.lock().unwrap().clone();
         Ok(result)
+    }
+
+    /// Remove a persistent session (e.g. when agent is removed)
+    pub async fn remove_session(&self, agent_id: &str) {
+        let mut sessions = self.awareness_sessions.write().await;
+        if let Some(agent_session) = sessions.remove(agent_id) {
+            let _ = agent_session.session.destroy().await;
+            log::info!("Destroyed awareness session for {}", agent_id);
+        }
     }
 }
 
