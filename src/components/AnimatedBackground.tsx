@@ -246,6 +246,33 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
         ctx.save();
         ctx.globalAlpha = cloudOpacity;
         drawClouds(ctx, w, time, cloudColor, cloudCount);
+        // Draw cloud cover anchored over sun/moon when weather is overcast
+        if (sky.weatherOverlay !== "none" && sky.weatherIntensity > 0.1) {
+          const coverAlpha = sky.weatherIntensity;
+          ctx.globalAlpha = cloudOpacity * coverAlpha;
+          ctx.fillStyle = cloudColor;
+          if (sky.sunPosition !== null && sky.sunOpacity > 0.01) {
+            const sx = sky.sunPosition * w * 0.8 + w * 0.1;
+            const sy = h * 0.55 - Math.sin(sky.sunPosition * Math.PI) * h * 0.45;
+            const wobble = Math.sin(time * 0.0003) * 5;
+            ctx.beginPath();
+            ctx.arc(sx + wobble, sy, 28, 0, Math.PI * 2);
+            ctx.arc(sx - 18 + wobble, sy + 5, 22, 0, Math.PI * 2);
+            ctx.arc(sx + 20 + wobble, sy + 3, 20, 0, Math.PI * 2);
+            ctx.arc(sx + wobble, sy - 12, 18, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          if (sky.moonPosition !== null && sky.moonOpacity > 0.01) {
+            const mx = sky.moonPosition * w * 0.8 + w * 0.1;
+            const my = h * 0.5 - Math.sin(sky.moonPosition * Math.PI) * h * 0.4;
+            const wobble = Math.sin(time * 0.00025 + 2) * 4;
+            ctx.beginPath();
+            ctx.arc(mx + wobble, my, 26, 0, Math.PI * 2);
+            ctx.arc(mx - 16 + wobble, my + 4, 20, 0, Math.PI * 2);
+            ctx.arc(mx + 18 + wobble, my + 2, 18, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
         ctx.restore();
       } else {
         for (const dec of t.decorators) {
