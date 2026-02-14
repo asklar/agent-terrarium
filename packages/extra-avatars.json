@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "name": "Extra Avatars",
+  "agents": [
+    {
+      "id": "chicken_jockey",
+      "name": "Chicken Jockey",
+      "icon": "🐔",
+      "shape": "chicken_jockey",
+      "voice": {
+        "basePitch": 800,
+        "pitchVar": 250,
+        "wave": "square",
+        "syllables": 4,
+        "speed": 0.05,
+        "volume": 0.12
+      },
+      "personality": {
+        "speedMin": 60,
+        "speedMax": 200,
+        "movementStyle": "bounce",
+        "interactionChance": 0.8,
+        "ballInterest": 0.95,
+        "chatEmojis": ["🐔", "⚔️", "🗡️", "😤", "💥"]
+      },
+      "drawSpec": {
+        "waddleAmount": 3,
+        "layers": [
+          { "type": "legs", "color": "#FF8F00", "spread": 6, "length": 6, "footStyle": "flat", "footRx": 4 },
+          { "type": "body", "color": "#F5F5F5", "rx": 11, "ry": 10 },
+          { "type": "patch", "position": "belly", "color": "#EEEEEE", "rx": 7, "ry": 6 },
+          { "type": "wings", "wingStyle": "flap", "color": "#E0E0E0", "speed": 150 },
+          { "type": "head", "color": "#F5F5F5", "rx": 9, "ry": 8 },
+          { "type": "beak", "color": "#FF8F00" },
+          { "type": "ears", "style": "comb", "color": "#E53935", "size": 8, "innerColor": "#EF5350" },
+          { "type": "eyes", "style": "standard", "color": "#333", "size": 2 },
+          { "type": "accessory", "accessoryKind": "rider", "riderColor": "#4CAF50", "helmetColor": "#795548", "swordColor": "#9E9E9E" }
+        ]
+      }
+    },
+    {
+      "id": "fluffy_chicken",
+      "name": "Fluffy Chicken",
+      "icon": "🐥",
+      "shape": "fluffy_chicken",
+      "voice": {
+        "basePitch": 950,
+        "pitchVar": 200,
+        "wave": "triangle",
+        "syllables": 3,
+        "speed": 0.06,
+        "volume": 0.09
+      },
+      "personality": {
+        "speedMin": 20,
+        "speedMax": 70,
+        "movementStyle": "wander",
+        "interactionChance": 0.7,
+        "ballInterest": 0.5,
+        "chatEmojis": ["🐥", "🐣", "🌾", "💛", "☺️"]
+      },
+      "drawSpec": {
+        "waddleAmount": 5,
+        "layers": [
+          { "type": "legs", "color": "#FF8F00", "spread": 4, "length": 4, "footStyle": "flat", "footRx": 3 },
+          { "type": "glow", "color": "rgba(255, 249, 196, 0.15)", "radius": 20, "pulseSpeed": 600 },
+          { "type": "body", "color": "#FFF9C4", "rx": 13, "ry": 13 },
+          { "type": "patch", "position": "belly", "color": "#FFF59D", "rx": 9, "ry": 9 },
+          { "type": "sparkles", "sparkleStyle": "floating", "color": "#FFF9C4", "count": 3, "speed": 500 },
+          { "type": "wings", "wingStyle": "flap", "color": "#FFF176", "speed": 200 },
+          { "type": "head", "color": "#FFF9C4", "rx": 11, "ry": 11 },
+          { "type": "beak", "color": "#FF8F00" },
+          { "type": "ears", "style": "comb", "color": "#EF5350", "size": 5, "innerColor": "#E53935" },
+          { "type": "eyes", "style": "standard", "color": "#333", "size": 2.5 },
+          { "type": "cheeks", "color": "#FFCC80" },
+          { "type": "mouth", "style": "small" }
+        ]
+      }
+    },
+    {
+      "id": "rubber_duck",
+      "name": "Rubber Duck",
+      "icon": "🦆",
+      "shape": "rubber_duck",
+      "voice": {
+        "basePitch": 600,
+        "pitchVar": 100,
+        "wave": "square",
+        "syllables": 1,
+        "speed": 0.08,
+        "volume": 0.15
+      },
+      "personality": {
+        "speedMin": 15,
+        "speedMax": 50,
+        "movementStyle": "float",
+        "interactionChance": 0.4,
+        "ballInterest": 0.3,
+        "chatEmojis": ["🦆", "🛁", "💛", "🫧", "😌"]
+      },
+      "drawSpec": {
+        "movement": "float",
+        "layers": [
+          { "type": "glow", "color": "rgba(255, 235, 59, 0.1)", "radius": 18, "pulseSpeed": 700 },
+          { "type": "body", "color": "#FFEB3B", "rx": 12, "ry": 11 },
+          { "type": "patch", "position": "belly", "color": "#FFF176", "rx": 8, "ry": 7 },
+          { "type": "head", "color": "#FFEE58", "rx": 10, "ry": 10 },
+          { "type": "beak", "color": "#FF8F00" },
+          { "type": "eyes", "style": "standard", "color": "#333", "size": 3 },
+          { "type": "cheeks", "color": "#FFD54F" },
+          { "type": "sparkles", "sparkleStyle": "floating", "color": "#E1F5FE", "count": 2, "speed": 400 }
+        ]
+      }
+    }
+  ]
+}

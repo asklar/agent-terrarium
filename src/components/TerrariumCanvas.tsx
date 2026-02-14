@@ -1146,6 +1146,20 @@ function drawLayer(
         ctx.lineTo(sz - 4.5, headY - 13);
         ctx.lineTo(sz - 3, headY - 6);
         ctx.fill();
+      } else if (layer.style === "comb") {
+        // Chicken comb — three bumps on top of head
+        const sz = layer.size ?? 6;
+        ctx.fillStyle = layer.color ?? "#E53935";
+        for (let i = -1; i <= 1; i++) {
+          ctx.beginPath();
+          ctx.arc(i * (sz * 0.6), headY - 10 - Math.abs(i) * 2, sz * 0.4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        // Wattle under beak
+        ctx.fillStyle = layer.innerColor ?? layer.color ?? "#E53935";
+        ctx.beginPath();
+        ctx.ellipse(0, headY + 4, 2, 3, 0, 0, Math.PI * 2);
+        ctx.fill();
       } else {
         const sz = layer.size ?? 4;
         ctx.fillStyle = layer.color;
@@ -1402,6 +1416,34 @@ function drawLayer(
         ctx.fillStyle = "#4E342E";
         ctx.beginPath();
         ctx.roundRect(4, 2 + bob, 5, 3, 2);
+        ctx.fill();
+      } else if (layer.accessoryKind === "rider") {
+        // Tiny rider sitting on top — like a chicken jockey
+        const ry = headY - 14 + bob * 0.5;
+        // Body
+        ctx.fillStyle = layer.riderColor ?? "#4CAF50";
+        ctx.beginPath();
+        ctx.roundRect(-4, ry - 4, 8, 8, 2);
+        ctx.fill();
+        // Head/helmet
+        ctx.fillStyle = layer.helmetColor ?? "#795548";
+        ctx.beginPath();
+        ctx.arc(0, ry - 7, 4, 0, Math.PI * 2);
+        ctx.fill();
+        // Eyes
+        ctx.fillStyle = "#FFF";
+        ctx.beginPath();
+        ctx.arc(-1.5, ry - 7, 1, 0, Math.PI * 2);
+        ctx.arc(1.5, ry - 7, 1, 0, Math.PI * 2);
+        ctx.fill();
+        // Sword
+        ctx.fillStyle = layer.swordColor ?? "#9E9E9E";
+        ctx.beginPath();
+        ctx.roundRect(5, ry - 10, 2, 14, 1);
+        ctx.fill();
+        ctx.fillStyle = "#795548";
+        ctx.beginPath();
+        ctx.roundRect(3, ry - 1, 6, 2, 1);
         ctx.fill();
       }
       break;

@@ -69,6 +69,9 @@ export interface ThemeDefinition {
 
   /** Optional lofi 8-bit music configuration */
   music?: ThemeMusic;
+
+  /** If true, dynamic sky (weather/time-of-day) is disabled for this theme */
+  disableDynamicSky?: boolean;
 }
 
 export interface ThemeMusic {
@@ -214,7 +217,7 @@ export interface HeadLayer {
 export interface EarsLayer {
   type: "ears";
   /** Ear shape style */
-  style: "pointed" | "round";
+  style: "pointed" | "round" | "comb";
   /** Outer ear color */
   color: string;
   /** Outer ear size (default: 11 for pointed, 4 for round) */
@@ -350,11 +353,17 @@ export interface NoseLayer {
 export interface AccessoryLayer {
   type: "accessory";
   /** Accessory type */
-  accessoryKind: "scarf" | "idle-prop";
+  accessoryKind: "scarf" | "idle-prop" | "rider";
   /** Primary color */
   color?: string;
   /** For idle-prop: only show when not moving (default: true) */
   idleOnly?: boolean;
+  /** For rider: body color */
+  riderColor?: string;
+  /** For rider: helmet color */
+  helmetColor?: string;
+  /** For rider: sword color */
+  swordColor?: string;
 }
 
 export interface GhostBodyLayer {

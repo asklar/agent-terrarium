@@ -56,7 +56,7 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
     const t = registry.getTheme(theme);
     if (!t) return;
 
-    const isDynamic = !!dynamicSky;
+    const isDynamic = !!dynamicSky && !t.disableDynamicSky;
 
     // Initialize weather data for dynamic sky
     if (isDynamic) {
@@ -554,6 +554,92 @@ type DecoratorFn = (
   shootingStarsRef: React.RefObject<ShootingStar[]>,
 ) => void;
 
+// --- Space decorators ---
+
+function drawNebula(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  time: number,
+) {
+  // Soft colorful nebula clouds
+  const nebulae = [
+    { x: w * 0.2, y: h * 0.25, r: 80, color: "rgba(156, 39, 176, 0.06)" },
+    { x: w * 0.7, y: h * 0.15, r: 100, color: "rgba(33, 150, 243, 0.05)" },
+    { x: w * 0.5, y: h * 0.5, r: 70, color: "rgba(233, 30, 99, 0.04)" },
+    { x: w * 0.85, y: h * 0.6, r: 60, color: "rgba(0, 188, 212, 0.05)" },
+  ];
+  for (const n of nebulae) {
+    const drift = Math.sin(time * 0.0002 + n.x) * 10;
+    const grad = ctx.createRadialGradient(
+      n.x + drift, n.y, 0,
+      n.x + drift, n.y, n.r,
+    );
+    grad.addColorStop(0, n.color);
+    grad.addColorStop(1, "transparent");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+  }
+}
+
+function drawPlanets(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  time: number,
+) {
+  // Small distant planet with ring
+  const px = w * 0.15 + Math.sin(time * 0.00005) * 5;
+  const py = 55;
+  ctx.save();
+  ctx.fillStyle = "#CE93D8";
+  ctx.shadowColor = "#CE93D8";
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.arc(px, py, 12, 0, Math.PI * 2);
+  ctx.fill();
+  // Ring
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = "rgba(206, 147, 216, 0.5)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.ellipse(px, py, 20, 5, -0.2, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // Tiny red planet
+  const px2 = w * 0.65;
+  const py2 = 35 + Math.sin(time * 0.0001) * 3;
+  ctx.fillStyle = "#E57373";
+  ctx.shadowColor = "#E57373";
+  ctx.shadowBlur = 4;
+  ctx.beginPath();
+  ctx.arc(px2, py2, 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
+function drawSpaceDust(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  time: number,
+) {
+  // Drifting dust particles with subtle glow
+  ctx.save();
+  for (let i = 0; i < 25; i++) {
+    const seed = i * 137.5;
+    const x = ((seed * 7.3 + time * 0.003 * (0.5 + (i % 5) * 0.1)) % (w + 20)) - 10;
+    const y = ((seed * 3.7 + time * 0.001 * (0.3 + (i % 3) * 0.1)) % (h * 0.85));
+    const size = 0.5 + (i % 4) * 0.4;
+    const alpha = 0.15 + Math.sin(time * 0.002 + seed) * 0.1;
+    ctx.fillStyle = `rgba(200, 200, 255, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 /** Registry of built-in decorator draw functions, keyed by name */
 const DECORATORS: Record<string, DecoratorFn> = {
   clouds: (ctx, w, _h, _gy, time) => drawClouds(ctx, w, time),
@@ -574,6 +660,9 @@ const DECORATORS: Record<string, DecoratorFn> = {
   castle_walls: (ctx, w, _h, gy) => drawCastleWalls(ctx, w, gy),
   torches: (ctx, w, _h, gy, time) => drawTorches(ctx, w, gy, time),
   banners: (ctx, w, _h, gy, time) => drawBanners(ctx, w, gy, time),
+  nebula: (ctx, w, h, _gy, time) => drawNebula(ctx, w, h, time),
+  planets: (ctx, w, _h, _gy, time) => drawPlanets(ctx, w, time),
+  space_dust: (ctx, w, h, _gy, time) => drawSpaceDust(ctx, w, h, time),
 };
 
 function updateParticle(
