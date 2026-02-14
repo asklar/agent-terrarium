@@ -216,14 +216,36 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
           const fn = DECORATORS[dec];
           if (fn) fn(ctx, w, h, groundY, time, dt, t, shootingStarsRef);
         }
-        // Draw clouds with dynamic opacity based on weather
+        // Draw clouds with dynamic opacity and color based on weather
         const sky = skyStateRef.current;
-        const cloudOpacity = sky.weatherOverlay === "cloudy" || sky.weatherOverlay === "rain" || sky.weatherOverlay === "storm" || sky.weatherOverlay === "drizzle" || sky.weatherOverlay === "fog"
+        // Cloud color: white for clear, grey for cloudy, dark for storm
+        let cloudColor = "rgba(255, 255, 255, 0.6)";
+        let cloudCount = 4;
+        if (sky.weatherOverlay === "storm") {
+          cloudColor = "rgba(60, 65, 80, 0.8)";
+          cloudCount = 8;
+        } else if (sky.weatherOverlay === "rain") {
+          cloudColor = "rgba(100, 110, 130, 0.7)";
+          cloudCount = 7;
+        } else if (sky.weatherOverlay === "drizzle") {
+          cloudColor = "rgba(140, 150, 165, 0.65)";
+          cloudCount = 6;
+        } else if (sky.weatherOverlay === "fog") {
+          cloudColor = "rgba(180, 185, 195, 0.5)";
+          cloudCount = 5;
+        } else if (sky.weatherOverlay === "snow") {
+          cloudColor = "rgba(170, 175, 190, 0.6)";
+          cloudCount = 6;
+        } else if (sky.weatherOverlay === "cloudy") {
+          cloudColor = "rgba(200, 205, 215, 0.6)";
+          cloudCount = 6;
+        }
+        const cloudOpacity = sky.weatherOverlay !== "none"
           ? 0.3 + sky.weatherIntensity * 0.5
           : sky.brightness < 0.5 ? 0.15 : 0.4;
         ctx.save();
         ctx.globalAlpha = cloudOpacity;
-        drawClouds(ctx, w, time);
+        drawClouds(ctx, w, time, cloudColor, cloudCount);
         ctx.restore();
       } else {
         for (const dec of t.decorators) {
@@ -307,27 +329,26 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
             ctx.restore();
           }
         } else if (sky.weatherOverlay === "drizzle") {
-          // Lighter, fewer, slower drops than rain
-          while (wp.length < 25) {
+          while (wp.length < 40) {
             wp.push({
               x: Math.random() * w, y: Math.random() * h,
-              size: 0.5 + Math.random() * 1, speed: 4 + Math.random() * 3,
-              opacity: 0.2 + Math.random() * 0.3, drift: -0.3 - Math.random() * 0.3,
+              size: 0.8 + Math.random() * 1.2, speed: 5 + Math.random() * 4,
+              opacity: 0.3 + Math.random() * 0.4, drift: -0.4 - Math.random() * 0.4,
               phase: Math.random() * Math.PI * 2,
             });
           }
           ctx.save();
-          ctx.globalAlpha = sky.weatherIntensity * 0.7;
-          ctx.strokeStyle = "rgba(180, 210, 255, 0.4)";
-          ctx.lineWidth = 0.5;
+          ctx.globalAlpha = sky.weatherIntensity;
+          ctx.strokeStyle = "rgba(170, 200, 255, 0.5)";
+          ctx.lineWidth = 0.8;
           for (const p of wp) {
-            p.y += p.speed * dt * 50;
-            p.x += p.drift * dt * 20;
+            p.y += p.speed * dt * 55;
+            p.x += p.drift * dt * 25;
             if (p.y > h) { p.y = -5; p.x = Math.random() * w; }
             if (p.x < 0) p.x = w;
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p.x + p.drift * 1.5, p.y + p.size * 3);
+            ctx.lineTo(p.x + p.drift * 2, p.y + p.size * 3.5);
             ctx.stroke();
           }
           ctx.restore();
@@ -515,13 +536,15 @@ function drawClouds(
   ctx: CanvasRenderingContext2D,
   w: number,
   time: number,
+  color: string = "rgba(255, 255, 255, 0.6)",
+  count: number = 4,
 ) {
-  ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-  for (let i = 0; i < 4; i++) {
+  ctx.fillStyle = color;
+  for (let i = 0; i < count; i++) {
     const cx =
       ((i * w * 0.3 + time * 0.01 * (0.5 + i * 0.2)) % (w + 120)) - 60;
-    const cy = 30 + i * 25;
-    const s = 20 + i * 8;
+    const cy = 20 + (i % 4) * 25 + (i >= 4 ? 15 : 0);
+    const s = 20 + (i % 4) * 8;
     ctx.beginPath();
     ctx.arc(cx, cy, s, 0, Math.PI * 2);
     ctx.arc(cx + s * 0.8, cy - s * 0.2, s * 0.7, 0, Math.PI * 2);

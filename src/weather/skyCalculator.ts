@@ -206,7 +206,7 @@ export function computeTargetSky(
     weatherOverlay === "rain" ? 0.7 :
     weatherOverlay === "snow" ? 0.6 :
     weatherOverlay === "fog" ? 0.5 :
-    weatherOverlay === "drizzle" ? 0.4 :
+    weatherOverlay === "drizzle" ? 0.55 :
     0.3; // cloudy
 
   // Tint sky colors based on weather
