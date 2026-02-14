@@ -38,20 +38,30 @@ export function ThemeMusic({ theme }: ThemeMusicProps) {
       return;
     }
 
-    // Create audio context on first interaction (autoplay policy)
-    const startOnInteraction = () => {
-      if (ctxRef.current) return;
-      startMusic(music);
-      document.removeEventListener("click", startOnInteraction);
-      document.removeEventListener("keydown", startOnInteraction);
+    // Try to start immediately — works in Tauri and after user gesture
+    startMusic(music);
+
+    // If the AudioContext was suspended by autoplay policy, resume on interaction
+    const resumeOnInteraction = () => {
+      const ctx = ctxRef.current;
+      if (ctx && ctx.state === "suspended") {
+        ctx.resume();
+      }
+      if (ctx && ctx.state === "running") {
+        document.removeEventListener("click", resumeOnInteraction);
+        document.removeEventListener("keydown", resumeOnInteraction);
+        document.removeEventListener("mousedown", resumeOnInteraction);
+      }
     };
 
-    document.addEventListener("click", startOnInteraction);
-    document.addEventListener("keydown", startOnInteraction);
+    document.addEventListener("click", resumeOnInteraction);
+    document.addEventListener("keydown", resumeOnInteraction);
+    document.addEventListener("mousedown", resumeOnInteraction);
 
     return () => {
-      document.removeEventListener("click", startOnInteraction);
-      document.removeEventListener("keydown", startOnInteraction);
+      document.removeEventListener("click", resumeOnInteraction);
+      document.removeEventListener("keydown", resumeOnInteraction);
+      document.removeEventListener("mousedown", resumeOnInteraction);
       stopMusic();
     };
   }, [theme, stopMusic]);

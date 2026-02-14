@@ -11,7 +11,8 @@ export type AgentState =
   | "Jumping"
   | "Crawling"
   | "Interacting"
-  | "Chatting";
+  | "Chatting"
+  | "NeedsAttention";
 
 export type Direction = "Left" | "Right";
 
@@ -71,4 +72,5 @@ export interface WorldState {
   bounds: Vec2;
   ground_y_ratio: number;
   tick: number;
+  attention_interval_secs: number;
 }

@@ -4,22 +4,53 @@ import type {
   GearDefinition,
   Package,
 } from "./PackageTypes";
-import { BUILTIN_THEMES, BUILTIN_AGENTS, BUILTIN_GEAR } from "./builtins";
+
+/** URLs of built-in package JSON files (served from public/) */
+const BUILTIN_PACKAGE_URLS = [
+  "/packages/themes.json",
+  "/packages/agents.json",
+  "/packages/gear.json",
+];
 
 /**
  * PackageRegistry manages all loaded themes, agent avatars, and gear.
- * Built-in packages are always loaded. External packages can be added
- * at runtime (e.g. from ~/agent-terrarium/packages/).
+ * Built-in packages are loaded from JSON files at startup.
+ * External packages can be added at runtime.
  */
 class PackageRegistry {
   private themes = new Map<string, ThemeDefinition>();
   private agents = new Map<string, AgentDefinition>();
   private gear = new Map<string, GearDefinition>();
+  private _ready: Promise<void>;
+  private _loaded = false;
 
   constructor() {
-    this.loadPackage(BUILTIN_THEMES);
-    this.loadPackage(BUILTIN_AGENTS);
-    this.loadPackage(BUILTIN_GEAR);
+    this._ready = this.loadBuiltins();
+  }
+
+  /** Wait until all built-in packages are loaded */
+  get ready(): Promise<void> {
+    return this._ready;
+  }
+
+  get loaded(): boolean {
+    return this._loaded;
+  }
+
+  private async loadBuiltins() {
+    const results = await Promise.allSettled(
+      BUILTIN_PACKAGE_URLS.map((url) =>
+        fetch(url).then((r) => r.json() as Promise<Package>)
+      )
+    );
+    for (const result of results) {
+      if (result.status === "fulfilled") {
+        this.loadPackage(result.value);
+      } else {
+        console.warn("Failed to load built-in package:", result.reason);
+      }
+    }
+    this._loaded = true;
   }
 
   /** Register all themes, agents, and gear from a package */

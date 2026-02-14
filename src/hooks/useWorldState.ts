@@ -59,6 +59,14 @@ export function useWorldState() {
     await invoke("set_gear", { agentId, gearIds });
   }, []);
 
+  const requestAttention = useCallback(async (agentId: string) => {
+    await invoke("request_attention", { agentId });
+  }, []);
+
+  const dismissAttention = useCallback(async (agentId: string) => {
+    await invoke("dismiss_attention", { agentId });
+  }, []);
+
   const updateMouse = useCallback(async (x: number | null, y: number | null) => {
     await invoke("update_mouse", { x, y });
   }, []);
@@ -95,6 +103,8 @@ export function useWorldState() {
     addAgent,
     removeAgent,
     setGear,
+    requestAttention,
+    dismissAttention,
     updateMouse,
     saveConfig,
     loadConfig,

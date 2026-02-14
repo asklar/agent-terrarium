@@ -4,11 +4,21 @@ import { TerrariumCanvas } from "./components/TerrariumCanvas";
 import { ChatOverlay } from "./components/ChatOverlay";
 import { AnimatedBackground } from "./components/AnimatedBackground";
 import { WindowFrame } from "./components/WindowFrame";
+import { ThemeMusic } from "./components/ThemeMusic";
 import { ContextMenu } from "./components/ContextMenu";
+import { registry } from "./themes";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import "./App.css";
 
 function App() {
+  const [registryReady, setRegistryReady] = useState(registry.loaded);
+
+  useEffect(() => {
+    if (!registryReady) {
+      registry.ready.then(() => setRegistryReady(true));
+    }
+  }, [registryReady]);
+
   const {
     worldState,
     throwBall,
@@ -19,6 +29,8 @@ function App() {
     addAgent,
     removeAgent,
     setGear,
+    requestAttention,
+    dismissAttention,
     updateMouse,
     saveConfig,
     loadConfig,
@@ -99,11 +111,58 @@ function App() {
     return () => window.removeEventListener("resize", handleResize);
   }, [resizeWorld]);
 
+  // Handle agents needing attention: flash taskbar + play sound periodically
+  const attentionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const prevAttentionRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const needingAttention = worldState?.agents.filter(
+      (a) => a.state === "NeedsAttention",
+    ) ?? [];
+    const currentIds = new Set(needingAttention.map((a) => a.id));
+
+    // New agents that just started needing attention
+    for (const id of currentIds) {
+      if (!prevAttentionRef.current.has(id)) {
+        // Flash taskbar once when attention first requested
+        getCurrentWindow().requestUserAttention(2).catch(() => {});
+      }
+    }
+    prevAttentionRef.current = currentIds;
+
+    // Set up periodic sound + flash
+    if (needingAttention.length > 0 && !attentionTimerRef.current) {
+      const intervalMs = (worldState?.attention_interval_secs ?? 5) * 1000;
+      attentionTimerRef.current = setInterval(() => {
+        getCurrentWindow().requestUserAttention(2).catch(() => {});
+      }, intervalMs);
+    } else if (needingAttention.length === 0 && attentionTimerRef.current) {
+      clearInterval(attentionTimerRef.current);
+      attentionTimerRef.current = null;
+    }
+
+    return () => {};
+  }, [worldState?.agents, worldState?.attention_interval_secs]);
+
+  // Clean up attention timer on unmount
+  useEffect(() => {
+    return () => {
+      if (attentionTimerRef.current) {
+        clearInterval(attentionTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleAgentClick = useCallback(
     async (agentId: string) => {
+      // If agent needs attention, dismiss it first
+      const agent = worldState?.agents.find((a) => a.id === agentId);
+      if (agent?.state === "NeedsAttention") {
+        await dismissAttention(agentId);
+      }
       await clickAgent(agentId);
     },
-    [clickAgent],
+    [clickAgent, dismissAttention, worldState?.agents],
   );
 
   const handleDismiss = useCallback(
@@ -136,10 +195,15 @@ function App() {
   const activeSessions =
     worldState?.chat_sessions.filter((s) => s.active) ?? [];
 
+  if (!registryReady) {
+    return <div className="terrarium-container" style={{ background: "#1a1a2e" }} />;
+  }
+
   return (
     <div className="terrarium-container" onContextMenu={handleContextMenu}>
       <WindowFrame />
       <AnimatedBackground theme={theme} />
+      <ThemeMusic theme={theme} />
       <TerrariumCanvas
         worldState={worldState}
         onAgentClick={handleAgentClick}
@@ -182,6 +246,9 @@ function App() {
           onSetGear={async (agentId, gearIds) => {
             await setGear(agentId, gearIds);
             saveConfig(theme);
+          }}
+          onRequestAttention={async (agentId) => {
+            await requestAttention(agentId);
           }}
         />
       )}

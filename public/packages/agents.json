@@ -1,0 +1,151 @@
+{
+  "version": 1,
+  "name": "Built-in Agents",
+  "agents": [
+    {
+      "id": "cat",
+      "name": "Cat",
+      "icon": "🐱",
+      "shape": "cat",
+      "colors": {
+        "body": "#FF9800",
+        "head": "#FFB74D",
+        "eyes": "#333",
+        "accent": "#E65100",
+        "cheek": "#FF8A80"
+      },
+      "voice": {
+        "basePitch": 700,
+        "pitchVar": 150,
+        "wave": "triangle",
+        "syllables": 3,
+        "speed": 0.07,
+        "volume": 0.1
+      },
+      "personality": {
+        "speedMin": 30,
+        "speedMax": 120,
+        "movementStyle": "wander",
+        "interactionChance": 0.7,
+        "ballInterest": 0.9,
+        "chatEmojis": ["😺", "😻", "🐱", "✨", "💕"]
+      }
+    },
+    {
+      "id": "copilot",
+      "name": "Copilot",
+      "icon": "🤖",
+      "shape": "copilot",
+      "colors": {
+        "body": "#1F6FEB",
+        "head": "#58A6FF",
+        "eyes": "#FFFFFF",
+        "accent": "#0D1117",
+        "cheek": "#90CAF9"
+      },
+      "voice": {
+        "basePitch": 500,
+        "pitchVar": 80,
+        "wave": "sine",
+        "syllables": 4,
+        "speed": 0.06,
+        "volume": 0.08
+      },
+      "personality": {
+        "speedMin": 25,
+        "speedMax": 80,
+        "movementStyle": "patrol",
+        "interactionChance": 0.8,
+        "ballInterest": 0.5,
+        "chatEmojis": ["✨", "💡", "🚀", "💻", "🤝"]
+      }
+    },
+    {
+      "id": "squirrel",
+      "name": "Squirrel",
+      "icon": "🐿️",
+      "shape": "squirrel",
+      "colors": {
+        "body": "#8D6E63",
+        "head": "#A1887F",
+        "eyes": "#333",
+        "accent": "#5D4037",
+        "cheek": "#FFAB91"
+      },
+      "voice": {
+        "basePitch": 900,
+        "pitchVar": 200,
+        "wave": "triangle",
+        "syllables": 5,
+        "speed": 0.05,
+        "volume": 0.08
+      },
+      "personality": {
+        "speedMin": 50,
+        "speedMax": 180,
+        "movementStyle": "bounce",
+        "interactionChance": 0.6,
+        "ballInterest": 0.8,
+        "chatEmojis": ["🐿️", "🌰", "🍂", "😆", "💨"]
+      }
+    },
+    {
+      "id": "penguin",
+      "name": "Penguin",
+      "icon": "🐧",
+      "shape": "penguin",
+      "colors": {
+        "body": "#37474F",
+        "head": "#455A64",
+        "eyes": "#333",
+        "accent": "#FF9800",
+        "cheek": "#F48FB1"
+      },
+      "voice": {
+        "basePitch": 350,
+        "pitchVar": 60,
+        "wave": "sine",
+        "syllables": 2,
+        "speed": 0.1,
+        "volume": 0.1
+      },
+      "personality": {
+        "speedMin": 15,
+        "speedMax": 40,
+        "movementStyle": "wander",
+        "interactionChance": 0.5,
+        "ballInterest": 0.4,
+        "chatEmojis": ["🐧", "❄️", "🧊", "😊", "🐟"]
+      }
+    },
+    {
+      "id": "ghost",
+      "name": "Ghost",
+      "icon": "👻",
+      "shape": "ghost",
+      "colors": {
+        "body": "#E8EAF6",
+        "head": "#F5F5F5",
+        "eyes": "#7E57C2",
+        "accent": "#B39DDB",
+        "cheek": "#CE93D8"
+      },
+      "voice": {
+        "basePitch": 280,
+        "pitchVar": 40,
+        "wave": "sine",
+        "syllables": 3,
+        "speed": 0.12,
+        "volume": 0.06
+      },
+      "personality": {
+        "speedMin": 10,
+        "speedMax": 50,
+        "movementStyle": "float",
+        "interactionChance": 0.2,
+        "ballInterest": 0.1,
+        "chatEmojis": ["👻", "💀", "🌙", "✨", "😶"]
+      }
+    }
+  ]
+}

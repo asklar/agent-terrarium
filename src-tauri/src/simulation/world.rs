@@ -5,8 +5,10 @@ use crate::simulation::types::*;
 const TICK_RATE: f64 = 1.0 / 20.0; // 20 ticks/sec
 const INTERACTION_DISTANCE: f64 = 60.0;
 const INTERACTION_COOLDOWN: f64 = 5.0;
-const BALL_FRICTION: f64 = 0.97;
+const BALL_FRICTION: f64 = 0.99;
 const BALL_MIN_SPEED: f64 = 0.5;
+const BALL_GRAVITY: f64 = 400.0; // px/sec² downward
+const BALL_BOUNCE_DAMPING: f64 = 0.6;
 const WANDER_TARGET_MARGIN: f64 = 10.0;
 
 pub struct World {
@@ -26,6 +28,9 @@ impl World {
                 ground_y_ratio: 0.72,
                 tick: 0,
                 mouse_pos: None,
+                ball_max_captures: 3,
+                ball_kick_on_capture: true,
+                attention_interval_secs: 5.0,
             }),
         }
     }
@@ -46,9 +51,13 @@ impl World {
             .map(|a| (a.id.clone(), a.position))
             .collect();
 
+        let mut ball_capture_agent: Option<usize> = None;
+
         for i in 0..agent_count {
-            // Skip agents that are chatting with user
-            if state.agents[i].state == AgentState::Chatting {
+            // Skip agents that are chatting or need attention
+            if state.agents[i].state == AgentState::Chatting
+                || state.agents[i].state == AgentState::NeedsAttention
+            {
                 continue;
             }
 
@@ -75,6 +84,10 @@ impl World {
                         };
                         true
                     } else {
+                        // Agent reached the ball — record a capture
+                        if ball_capture_agent.is_none() {
+                            ball_capture_agent = Some(i);
+                        }
                         false
                     }
                 } else {
@@ -213,24 +226,64 @@ impl World {
         }
         state.bubbles.extend(new_bubbles);
 
+        // Handle ball capture by agent
+        if let Some(agent_idx) = ball_capture_agent {
+            if let Some(ref mut ball) = state.ball {
+                if ball.active {
+                    ball.captures += 1;
+                    let max_captures = state.ball_max_captures;
+                    let kick = state.ball_kick_on_capture;
+                    if ball.captures >= max_captures {
+                        // Ball disappears after max captures
+                        ball.active = false;
+                    } else if kick {
+                        // Kick the ball in a random-ish direction away from the agent
+                        let agent_pos = state.agents[agent_idx].position;
+                        let agent_dir = state.agents[agent_idx].direction;
+                        let kick_dir_x = if agent_dir == Direction::Right { 1.0 } else { -1.0 };
+                        // Add some variation using tick counter
+                        let variation = ((state.tick % 7) as f64 - 3.0) * 0.15;
+                        let kick_speed = 200.0 + (state.tick % 5) as f64 * 30.0;
+                        ball.velocity = Vec2::new(
+                            kick_dir_x * kick_speed * (1.0 + variation),
+                            -150.0 - (state.tick % 4) as f64 * 25.0,
+                        );
+                        ball.position = agent_pos + Vec2::new(kick_dir_x * 20.0, -10.0);
+                    }
+                }
+            }
+        }
+
         // Update ball physics
         if let Some(ref mut ball) = state.ball {
             if ball.active {
-                ball.position = ball.position + ball.velocity * TICK_RATE;
-                ball.velocity = ball.velocity * BALL_FRICTION;
+                // Apply gravity
+                ball.velocity.y += BALL_GRAVITY * TICK_RATE;
 
-                // Bounce off walls
+                ball.position = ball.position + ball.velocity * TICK_RATE;
+                ball.velocity.x *= BALL_FRICTION;
+
+                // Bounce off left/right walls
                 if ball.position.x < 8.0 || ball.position.x > bounds.x - 8.0 {
-                    ball.velocity.x = -ball.velocity.x;
+                    ball.velocity.x = -ball.velocity.x * BALL_BOUNCE_DAMPING;
                     ball.position.x = ball.position.x.clamp(8.0, bounds.x - 8.0);
                 }
-                if ball.position.y < 8.0 || ball.position.y > bounds.y - 8.0 {
-                    ball.velocity.y = -ball.velocity.y;
-                    ball.position.y = ball.position.y.clamp(8.0, bounds.y - 8.0);
+                // Bounce off ceiling
+                if ball.position.y < 8.0 {
+                    ball.velocity.y = -ball.velocity.y * BALL_BOUNCE_DAMPING;
+                    ball.position.y = 8.0;
+                }
+                // Bounce off ground
+                if ball.position.y > ground_y {
+                    ball.velocity.y = -ball.velocity.y * BALL_BOUNCE_DAMPING;
+                    ball.position.y = ground_y;
+                    // Extra horizontal friction on ground
+                    ball.velocity.x *= 0.92;
                 }
 
-                if ball.velocity.magnitude() < BALL_MIN_SPEED {
+                if ball.velocity.magnitude() < BALL_MIN_SPEED && (ball.position.y - ground_y).abs() < 2.0 {
                     ball.active = false;
+                    ball.position.y = ground_y;
                 }
             }
         }
@@ -260,6 +313,7 @@ impl World {
             position: Vec2::new(x, y),
             velocity: Vec2::new(vx, vy),
             active: true,
+            captures: 0,
         });
     }
 
@@ -357,6 +411,24 @@ impl World {
         }
     }
 
+    pub fn request_attention(&self, agent_id: &str) {
+        let mut state = self.state.lock().unwrap();
+        if let Some(agent) = state.agents.iter_mut().find(|a| a.id == agent_id) {
+            agent.state = AgentState::NeedsAttention;
+            agent.velocity = Vec2::zero();
+            agent.target = None;
+        }
+    }
+
+    pub fn dismiss_attention(&self, agent_id: &str) {
+        let mut state = self.state.lock().unwrap();
+        if let Some(agent) = state.agents.iter_mut().find(|a| a.id == agent_id) {
+            if agent.state == AgentState::NeedsAttention {
+                agent.state = AgentState::Idle;
+            }
+        }
+    }
+
     pub fn get_agent_configs(&self) -> Vec<AgentConfig> {
         let state = self.state.lock().unwrap();
         state.agents.iter().map(|a| AgentConfig {
@@ -375,6 +447,9 @@ impl World {
         state.agents.clear();
         state.chat_sessions.clear();
         state.bubbles.clear();
+        state.ball_max_captures = config.ball_max_captures;
+        state.ball_kick_on_capture = config.ball_kick_on_capture;
+        state.attention_interval_secs = config.attention_interval_secs;
         for ac in &config.agents {
             let mut agent = create_agent(&ac.id, &ac.name, &ac.avatar, &bounds, ground_y);
             agent.personality = ac.personality.clone();

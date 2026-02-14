@@ -50,6 +50,7 @@ export function TerrariumCanvas({
     duration: number;
   } | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const attentionSoundTimers = useRef<Map<string, number>>(new Map());
 
   // Pick a mood-based greeting emoji for an agent
   const pickGreetingEmoji = useCallback((agent: Agent): string => {
@@ -136,6 +137,21 @@ export function TerrariumCanvas({
     // Draw agents
     for (const agent of sortedAgents) {
       drawAgent(ctx, agent);
+    }
+
+    // Play attention sounds periodically
+    const now = Date.now();
+    const intervalMs = (worldState.attention_interval_secs ?? 5) * 1000;
+    for (const agent of worldState.agents) {
+      if (agent.state === "NeedsAttention") {
+        const lastPlayed = attentionSoundTimers.current.get(agent.id) ?? 0;
+        if (now - lastPlayed >= intervalMs) {
+          attentionSoundTimers.current.set(agent.id, now);
+          playGreetingSound(agent);
+        }
+      } else {
+        attentionSoundTimers.current.delete(agent.id);
+      }
     }
 
     // Draw ball
@@ -427,6 +443,27 @@ function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent) {
       ctx.arc(px, py + bob, 2, 0, Math.PI * 2);
       ctx.fill();
     }
+  }
+
+  // Attention indicator — pulsing bell above head
+  if (agent.state === "NeedsAttention") {
+    const pulse = 0.6 + Math.sin(t / 300) * 0.4;
+    const bounce = Math.sin(t / 200) * 3;
+    const bellY = -AGENT_SIZE / 2 - 18 + bob + bounce;
+    // Glow ring
+    ctx.fillStyle = `rgba(255, 193, 7, ${pulse * 0.25})`;
+    ctx.beginPath();
+    ctx.arc(0, bellY, 12, 0, Math.PI * 2);
+    ctx.fill();
+    // Bell emoji
+    if (flip) ctx.scale(-1, 1); // unflip for text
+    ctx.font = "14px serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.globalAlpha = pulse;
+    ctx.fillText("🔔", 0, bellY);
+    ctx.globalAlpha = 1;
+    if (flip) ctx.scale(-1, 1); // re-flip
   }
 
   // Draw equipped gear (front slots: hat, face, neck, body)

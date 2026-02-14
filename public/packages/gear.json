@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "name": "Built-in Gear",
+  "gear": [
+    {
+      "id": "top-hat",
+      "name": "Top Hat",
+      "icon": "🎩",
+      "slot": "hat",
+      "shape": "top-hat",
+      "color": "#1A1A1A",
+      "accentColor": "#C62828"
+    },
+    {
+      "id": "party-hat",
+      "name": "Party Hat",
+      "icon": "🥳",
+      "slot": "hat",
+      "shape": "party-hat",
+      "color": "#E91E63",
+      "accentColor": "#FFC107"
+    },
+    {
+      "id": "crown",
+      "name": "Crown",
+      "icon": "👑",
+      "slot": "hat",
+      "shape": "crown",
+      "color": "#FFC107",
+      "accentColor": "#FF5722"
+    },
+    {
+      "id": "bow-tie",
+      "name": "Bow Tie",
+      "icon": "🎀",
+      "slot": "neck",
+      "shape": "bow-tie",
+      "color": "#E53935"
+    },
+    {
+      "id": "scarf",
+      "name": "Scarf",
+      "icon": "🧣",
+      "slot": "neck",
+      "shape": "scarf",
+      "color": "#1565C0",
+      "accentColor": "#BBDEFB"
+    },
+    {
+      "id": "sunglasses",
+      "name": "Sunglasses",
+      "icon": "🕶️",
+      "slot": "face",
+      "shape": "sunglasses",
+      "color": "#212121"
+    },
+    {
+      "id": "flower-crown",
+      "name": "Flower Crown",
+      "icon": "🌸",
+      "slot": "hat",
+      "shape": "flower-crown",
+      "color": "#F48FB1",
+      "accentColor": "#81C784"
+    },
+    {
+      "id": "cape",
+      "name": "Cape",
+      "icon": "🦸",
+      "slot": "back",
+      "shape": "cape",
+      "color": "#7B1FA2"
+    },
+    {
+      "id": "sweater",
+      "name": "Sweater",
+      "icon": "🧥",
+      "slot": "body",
+      "shape": "sweater",
+      "color": "#4CAF50",
+      "accentColor": "#FFF9C4"
+    },
+    {
+      "id": "wizard-hat",
+      "name": "Wizard Hat",
+      "icon": "🧙",
+      "slot": "hat",
+      "shape": "wizard-hat",
+      "color": "#311B92",
+      "accentColor": "#FFD54F"
+    }
+  ]
+}

@@ -64,6 +64,7 @@ pub enum AgentState {
     Crawling,
     Interacting,
     Chatting,
+    NeedsAttention,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -113,6 +114,9 @@ pub struct Ball {
     pub position: Vec2,
     pub velocity: Vec2,
     pub active: bool,
+    /// Number of times an agent has captured/kicked this ball
+    #[serde(default)]
+    pub captures: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -149,6 +153,15 @@ pub struct WorldState {
     /// Current mouse position (for hover slowdown). None if mouse is outside window.
     #[serde(skip)]
     pub mouse_pos: Option<Vec2>,
+    /// Max captures before ball disappears
+    #[serde(default = "default_ball_max_captures")]
+    pub ball_max_captures: u32,
+    /// Whether the capturing agent kicks the ball away
+    #[serde(default = "default_true")]
+    pub ball_kick_on_capture: bool,
+    /// Seconds between attention sound repeats
+    #[serde(default = "default_attention_interval")]
+    pub attention_interval_secs: f64,
 }
 
 /// Saved agent definition for config persistence
@@ -170,7 +183,20 @@ pub struct AppConfig {
     pub agents: Vec<AgentConfig>,
     #[serde(default)]
     pub window: Option<WindowConfig>,
+    /// Max captures before ball disappears (default: 3)
+    #[serde(default = "default_ball_max_captures")]
+    pub ball_max_captures: u32,
+    /// Whether the capturing agent kicks the ball away (default: true)
+    #[serde(default = "default_true")]
+    pub ball_kick_on_capture: bool,
+    /// Seconds between attention sound repeats (default: 5)
+    #[serde(default = "default_attention_interval")]
+    pub attention_interval_secs: f64,
 }
+
+fn default_ball_max_captures() -> u32 { 3 }
+fn default_true() -> bool { true }
+fn default_attention_interval() -> f64 { 5.0 }
 
 /// Saved window position and size
 #[derive(Debug, Clone, Serialize, Deserialize)]

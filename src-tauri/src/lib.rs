@@ -56,6 +56,16 @@ fn set_gear(world: tauri::State<'_, Arc<World>>, agent_id: String, gear_ids: Vec
     world.set_gear(&agent_id, gear_ids);
 }
 
+#[tauri::command]
+fn request_attention(world: tauri::State<'_, Arc<World>>, agent_id: String) {
+    world.request_attention(&agent_id);
+}
+
+#[tauri::command]
+fn dismiss_attention(world: tauri::State<'_, Arc<World>>, agent_id: String) {
+    world.dismiss_attention(&agent_id);
+}
+
 fn config_path() -> std::path::PathBuf {
     let mut path = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
     path.push("agent-terrarium.json");
@@ -113,6 +123,8 @@ pub fn run() {
             remove_agent,
             update_mouse,
             set_gear,
+            request_attention,
+            dismiss_attention,
             save_config,
             load_config,
         ])

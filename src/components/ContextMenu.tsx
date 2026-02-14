@@ -13,9 +13,10 @@ interface ContextMenuProps {
   onAddAgent: (avatar: string, name: string) => void;
   onRemoveAgent: (agentId: string) => void;
   onSetGear: (agentId: string, gearIds: string[]) => void;
+  onRequestAttention: (agentId: string) => void;
 }
 
-type SubMenu = null | "theme" | "add" | "remove" | "gear" | "gear-agent" | "gear-slot";
+type SubMenu = null | "theme" | "add" | "remove" | "gear" | "gear-agent" | "gear-slot" | "attention";
 
 export function ContextMenu({
   x,
@@ -27,6 +28,7 @@ export function ContextMenu({
   onAddAgent,
   onRemoveAgent,
   onSetGear,
+  onRequestAttention,
 }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [subMenu, setSubMenu] = useState<SubMenu>(null);
@@ -123,6 +125,14 @@ export function ContextMenu({
     [selectedAgentId, agents, onSetGear],
   );
 
+  const handleRequestAttention = useCallback(
+    (agentId: string) => {
+      onRequestAttention(agentId);
+      onClose();
+    },
+    [onRequestAttention, onClose],
+  );
+
   const GEAR_SLOTS: { slot: GearSlot; icon: string; label: string }[] = [
     { slot: "hat", icon: "🎩", label: "Hat" },
     { slot: "face", icon: "🕶️", label: "Face" },
@@ -170,6 +180,13 @@ export function ContextMenu({
             onClick={guardedClick(() => setSubMenu("gear"))}
           >
             👒 Gear
+            <span className="context-menu-arrow">▸</span>
+          </button>
+          <button
+            className="context-menu-item"
+            onClick={guardedClick(() => setSubMenu("attention"))}
+          >
+            🔔 Request Attention
             <span className="context-menu-arrow">▸</span>
           </button>
         </>
@@ -337,6 +354,33 @@ export function ContextMenu({
                 </button>
               );
             })}
+        </>
+      )}
+      {subMenu === "attention" && (
+        <>
+          <button
+            className="context-menu-item context-menu-back"
+            onClick={() => setSubMenu(null)}
+          >
+            ◂ Back
+          </button>
+          <div className="context-menu-divider" />
+          {agents.length === 0 ? (
+            <div className="context-menu-item disabled">No agents</div>
+          ) : (
+            agents.map((a) => (
+              <button
+                key={a.id}
+                className="context-menu-item"
+                onClick={() => handleRequestAttention(a.id)}
+              >
+                {registry.getAgent(a.avatar)?.icon ?? "❓"} {a.name}
+                {a.state === "NeedsAttention" && (
+                  <span className="context-menu-check">🔔</span>
+                )}
+              </button>
+            ))
+          )}
         </>
       )}
     </div>

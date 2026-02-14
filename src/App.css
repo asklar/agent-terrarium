@@ -261,3 +261,25 @@ html, body, #root {
   background: rgba(0, 0, 0, 0.08);
   margin: 3px 8px;
 }
+
+.music-toggle {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  z-index: 100;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  transition: background 0.2s;
+}
+
+.music-toggle:hover {
+  background: rgba(255, 255, 255, 0.45);
+}
