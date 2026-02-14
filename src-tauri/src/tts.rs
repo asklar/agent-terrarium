@@ -40,12 +40,16 @@ fn get_sender() -> &'static mpsc::Sender<SpeakRequest> {
                         .replace('<', "&lt;")
                         .replace('>', "&gt;");
 
+                    // SAPI pitch range is -24 to +24 half-tones (4 octaves!)
+                    let pitch = req.pitch.clamp(-24, 24);
+                    let rate = req.rate.clamp(-10, 10);
+
                     let xml = format!(
                         r#"<pitch absmiddle="{}"><rate absspeed="{}">{}</rate></pitch>"#,
-                        req.pitch.clamp(-10, 10),
-                        req.rate.clamp(-10, 10),
-                        escaped
+                        pitch, rate, escaped
                     );
+
+                    log::info!("SAPI speak: pitch={}, rate={}, text={}", pitch, rate, &req.text[..req.text.len().min(40)]);
 
                     let wide: Vec<u16> =
                         xml.encode_utf16().chain(std::iter::once(0)).collect();

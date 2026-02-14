@@ -14,14 +14,17 @@ export function speakText(text: string, avatarId: string) {
   const avatarDef = registry.getAgent(avatarId);
   const basePitch = avatarDef?.voice?.basePitch ?? 500;
 
-  // Map basePitch (200-1000 Hz) → SAPI pitch (+3 to +10)
-  const sapiPitch = Math.round(3 + ((basePitch - 200) / 800) * 7);
-  // Map basePitch → SAPI rate (+2 to +5) — higher pitch = faster
-  const sapiRate = Math.round(2 + ((basePitch - 200) / 800) * 3);
+  // Map basePitch (200-1000 Hz) → SAPI pitch half-tones (+2 to +20)
+  // SAPI supports -24 to +24 half-tones. Higher = squeakier.
+  const sapiPitch = Math.round(2 + ((basePitch - 200) / 800) * 18);
+  // Map basePitch → SAPI rate (+1 to +6) — higher pitch = faster
+  const sapiRate = Math.round(1 + ((basePitch - 200) / 800) * 5);
+
+  console.log(`SAPI TTS: avatar=${avatarId}, basePitch=${basePitch}, sapiPitch=${sapiPitch}, sapiRate=${sapiRate}`);
 
   invoke("speak_sapi", {
     text,
-    pitch: Math.max(-10, Math.min(10, sapiPitch)),
+    pitch: Math.max(-24, Math.min(24, sapiPitch)),
     rate: Math.max(-10, Math.min(10, sapiRate)),
     volume: 70,
   }).catch((e) => console.warn("SAPI speak failed:", e));
