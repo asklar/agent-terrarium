@@ -5,6 +5,7 @@ import { fetchLocation, fetchWeather, getCachedWeather, getLocation } from "../w
 import { computeTargetSky, lerpSkyState } from "../weather/skyCalculator";
 import { DEFAULT_SKY } from "../weather/types";
 import type { SkyState, WeatherOverlay } from "../weather/types";
+import { log } from "../utils/log";
 
 interface AnimatedBackgroundProps {
   theme: string;
@@ -62,14 +63,21 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
       // Snap to current sky state immediately (no slow lerp from default)
       const initialTarget = computeTargetSky(Date.now(), getCachedWeather(), debugTimeRef.current ?? null, debugWeatherRef.current ?? null);
       skyStateRef.current = initialTarget;
+      log.info("Dynamic sky initialized:", initialTarget.weatherOverlay, `brightness=${initialTarget.brightness.toFixed(2)}`);
 
       fetchLocation().then((loc) => {
-        if (loc) fetchWeather(loc).catch(() => {});
+        if (loc) {
+          log.info("Fetching weather for", loc.city ?? `${loc.lat},${loc.lon}`);
+          fetchWeather(loc).catch(() => {});
+        }
       }).catch(() => {});
       // Refresh weather periodically
       const weatherInterval = setInterval(() => {
         const loc = getLocation();
-        if (loc) fetchWeather(loc).catch(() => {});
+        if (loc) {
+          log.info("Refreshing weather data");
+          fetchWeather(loc).catch(() => {});
+        }
       }, 6 * 60 * 60 * 1000);
       // Store cleanup ref
       (canvas as unknown as Record<string, unknown>).__weatherInterval = weatherInterval;
@@ -116,8 +124,15 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
         const target = computeTargetSky(Date.now(), weather, dt2 ?? null, dw ?? null);
         // Debug: fast transition (~0.5s), normal: gradual (~3s)
         const lerpSpeed = (dt2 != null || dw != null) ? 0.25 : 0.02;
+        const prevOverlay = skyStateRef.current.weatherOverlay;
         skyStateRef.current = lerpSkyState(skyStateRef.current, target, lerpSpeed);
         skyColors = skyStateRef.current.skyColors;
+        // Log when overlay changes
+        if (skyStateRef.current.weatherOverlay !== prevOverlay) {
+          log.info("Sky overlay:", prevOverlay, "→", skyStateRef.current.weatherOverlay,
+            `intensity=${skyStateRef.current.weatherIntensity.toFixed(2)}`,
+            `brightness=${skyStateRef.current.brightness.toFixed(2)}`);
+        }
       }
 
       // Sky gradient
