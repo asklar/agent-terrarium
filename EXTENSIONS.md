@@ -76,16 +76,22 @@ Avatars are the characters that live in the terrarium. Each avatar is drawn enti
 
 ### Voice Profile
 
-Controls the Animalese-style greeting sound when an agent first appears or is interacted with:
+Controls both the Animalese-style greeting sound (when an agent first appears or is interacted with) **and** the text-to-speech voice (when agents speak via the awareness system):
 
 | Field       | Type   | Description                           |
 |-------------|--------|---------------------------------------|
-| `basePitch` | number | Base frequency in Hz (200–1000)       |
-| `pitchVar`  | number | Random pitch variation in Hz          |
-| `wave`      | string | `"sine"`, `"triangle"`, `"square"`, `"sawtooth"` |
-| `syllables` | number | Number of syllables per greeting      |
-| `speed`     | number | Speed of each syllable (lower=slower) |
-| `volume`    | number | Volume 0–1                            |
+| `basePitch` | number | Base frequency in Hz (200–1000). Also controls TTS: lower values → deeper/slower speech, higher values → squeakier/faster speech |
+| `pitchVar`  | number | Random pitch variation in Hz (Animalese only) |
+| `wave`      | string | `"sine"`, `"triangle"`, `"square"`, `"sawtooth"` (Animalese only) |
+| `syllables` | number | Number of syllables per greeting (Animalese only) |
+| `speed`     | number | Speed of each syllable, lower=slower (Animalese only) |
+| `volume`    | number | Volume 0–1 (Animalese only)           |
+
+**TTS behavior:** When an agent has TTS enabled and speaks via the awareness system, `basePitch` determines two properties:
+- **SAPI speech rate** — mapped from slow (−3) to fast (+4), controlling cadence
+- **Pitch shift** — mapped from deep (0.85×) to chipmunk (2.0×) via audio playback rate
+
+A different system voice (male/female) is automatically assigned per agent for additional variety.
 
 ### Personality
 
