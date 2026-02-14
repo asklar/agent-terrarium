@@ -314,6 +314,110 @@ pub fn run() {
         }
     });
 
+    // Spawn event dispatcher (processes terrarium events → agent backends)
+    let world_events = world.clone();
+    std::thread::spawn(move || {
+        use std::collections::HashMap;
+        let mut cooldowns: HashMap<String, std::time::Instant> = HashMap::new();
+        let cooldown_duration = Duration::from_secs(30);
+
+        loop {
+            std::thread::sleep(Duration::from_secs(2));
+
+            let events = world_events.drain_events();
+            if events.is_empty() {
+                continue;
+            }
+
+            let agents = world_events.get_agent_awareness();
+            log::debug!("Event dispatcher: {} events, {} agents", events.len(), agents.len());
+
+            for (agent_id, agent_name, awareness_level) in &agents {
+                if *awareness_level == 0 {
+                    continue;
+                }
+
+                // Check cooldown
+                let now = std::time::Instant::now();
+                if let Some(last) = cooldowns.get(agent_id) {
+                    if now.duration_since(*last) < cooldown_duration {
+                        continue;
+                    }
+                }
+
+                // Filter events by awareness level
+                let relevant: Vec<String> = events.iter()
+                    .filter(|e| e.min_awareness_level() <= *awareness_level)
+                    .map(|e| e.to_natural_language(agent_name))
+                    .collect();
+
+                if relevant.is_empty() {
+                    continue;
+                }
+
+                log::info!("Dispatching {} events to {} (awareness={})", relevant.len(), agent_name, awareness_level);
+                cooldowns.insert(agent_id.clone(), now);
+
+                // Get backend config for this agent
+                let state = world_events.state.lock().unwrap();
+                let agent = state.agents.iter().find(|a| a.id == *agent_id);
+                let config = agent.map(|a| a.backend_config.clone());
+                drop(state);
+
+                if let Some(config) = config {
+                    let prompt = format!(
+                        "You just observed the following in the terrarium:\n{}\nReact briefly with an emoji or a very short message (1-2 words max).",
+                        relevant.join("\n")
+                    );
+
+                    let messages = vec![
+                        BackendMessage {
+                            role: MessageRole::System,
+                            content: config.system_prompt.clone().unwrap_or_else(|| {
+                                format!("You are {}, a cute creature living in a digital terrarium. React to events with emojis or very brief expressions.", agent_name)
+                            }),
+                        },
+                        BackendMessage {
+                            role: MessageRole::User,
+                            content: prompt,
+                        },
+                    ];
+
+                    let backend_id = config.backend_id.clone();
+                    let registry = world_events.backend_registry.clone();
+                    let world_ref = world_events.clone();
+                    let aid = agent_id.clone();
+                    let aname = agent_name.clone();
+
+                    // Spawn async response handler
+                    std::thread::spawn(move || {
+                        let rt = tokio::runtime::Builder::new_current_thread()
+                            .enable_all()
+                            .build()
+                            .unwrap();
+                        rt.block_on(async {
+                            if let Some(backend) = registry.get(&backend_id) {
+                                match backend.respond(&config, &messages).await {
+                                    Ok(response) => {
+                                        let text = response.content.trim().to_string();
+                                        if !text.is_empty() {
+                                            log::info!("Event response from {}: {}", aname, text);
+                                            let is_emoji = text.chars().count() <= 3;
+                                            world_ref.push_bubble(&aid, text, is_emoji, 3.0);
+                                        }
+                                    }
+                                    Err(e) => {
+                                        log::warn!("Event dispatch to {} failed: {}", aname, e);
+                                    }
+                                }
+                            }
+                        });
+                    });
+                }
+            }
+        }
+    });
+
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())

@@ -33,6 +33,7 @@ impl World {
                 ball_max_captures: 3,
                 ball_kick_on_capture: true,
                 attention_interval_secs: 5.0,
+                events: Vec::new(),
             }),
             backend_registry,
         }
@@ -204,10 +205,12 @@ impl World {
                             let emoji_b = pick_emoji(&state.agents[j].personality.chat_emojis);
                             let id_a = state.agents[i].id.clone();
                             let id_b = state.agents[j].id.clone();
+                            let name_a = state.agents[i].name.clone();
+                            let name_b = state.agents[j].name.clone();
 
                             new_bubbles.push(ChatBubble {
                                 agent_id: id_a,
-                                content: emoji_a,
+                                content: emoji_a.clone(),
                                 timer: 2.5,
                                 is_emoji: true,
                             });
@@ -216,6 +219,12 @@ impl World {
                                 content: emoji_b,
                                 timer: 2.5,
                                 is_emoji: true,
+                            });
+
+                            state.events.push(TerrariumEvent::AgentInteraction {
+                                agent_a: name_a,
+                                agent_b: name_b,
+                                emoji: emoji_a,
                             });
 
                             state.agents[i].state = AgentState::Interacting;
@@ -259,6 +268,14 @@ impl World {
                 }
             }
             if did_capture {
+                let agent_name = state.agents[agent_idx].name.clone();
+                state.events.push(TerrariumEvent::BallCaught { agent_name: agent_name.clone() });
+                // Check if ball disappeared
+                if let Some(ref ball) = state.ball {
+                    if !ball.active {
+                        state.events.push(TerrariumEvent::BallGone);
+                    }
+                }
                 let emojis = ["⚽", "🎉", "😄", "🏆", "💪", "🙌"];
                 let emoji = emojis[tick as usize % emojis.len()];
                 state.bubbles.push(ChatBubble {
@@ -332,12 +349,14 @@ impl World {
             active: true,
             captures: 0,
         });
+        state.events.push(TerrariumEvent::BallThrown);
     }
 
     pub fn click_agent(&self, agent_id: &str) -> bool {
         log::info!("Agent clicked: {}", agent_id);
         let mut state = self.state.lock().unwrap();
         if let Some(agent) = state.agents.iter_mut().find(|a| a.id == agent_id) {
+            let agent_name = agent.name.clone();
             agent.state = AgentState::Chatting;
             agent.velocity = Vec2::zero();
 
@@ -351,6 +370,7 @@ impl World {
                     active: true,
                 });
             }
+            state.events.push(TerrariumEvent::UserClickedAgent { agent_name });
             true
         } else {
             false
@@ -449,12 +469,17 @@ impl World {
         let ground_y = bounds.y * state.ground_y_ratio;
         let id = format!("{}_{}", avatar, state.tick);
         let agent = create_agent(&id, name, avatar, &bounds, ground_y);
+        state.events.push(TerrariumEvent::AgentArrived { agent_name: name.to_string() });
         state.agents.push(agent);
     }
 
     pub fn remove_agent(&self, agent_id: &str) {
         log::info!("Removing agent: {}", agent_id);
         let mut state = self.state.lock().unwrap();
+        let agent_name = state.agents.iter().find(|a| a.id == agent_id).map(|a| a.name.clone());
+        if let Some(name) = agent_name {
+            state.events.push(TerrariumEvent::AgentLeft { agent_name: name });
+        }
         state.agents.retain(|a| a.id != agent_id);
         state.chat_sessions.retain(|s| s.agent_id != agent_id);
         state.bubbles.retain(|b| b.agent_id != agent_id);
@@ -463,6 +488,31 @@ impl World {
     pub fn list_agents(&self) -> Vec<(String, String, String)> {
         let state = self.state.lock().unwrap();
         state.agents.iter().map(|a| (a.id.clone(), a.name.clone(), a.avatar.clone())).collect()
+    }
+
+    /// Drain all pending events from the buffer
+    pub fn drain_events(&self) -> Vec<TerrariumEvent> {
+        let mut state = self.state.lock().unwrap();
+        std::mem::take(&mut state.events)
+    }
+
+    /// Get agent info needed for event dispatch: (id, name, awareness_level)
+    pub fn get_agent_awareness(&self) -> Vec<(String, String, u8)> {
+        let state = self.state.lock().unwrap();
+        state.agents.iter().map(|a| {
+            (a.id.clone(), a.name.clone(), a.backend_config.awareness_level)
+        }).collect()
+    }
+
+    /// Push a chat bubble onto an agent (used by event dispatcher for reactions)
+    pub fn push_bubble(&self, agent_id: &str, content: String, is_emoji: bool, duration: f64) {
+        let mut state = self.state.lock().unwrap();
+        state.bubbles.push(ChatBubble {
+            agent_id: agent_id.to_string(),
+            content,
+            timer: duration,
+            is_emoji,
+        });
     }
 
     pub fn update_mouse(&self, x: Option<f64>, y: Option<f64>) {

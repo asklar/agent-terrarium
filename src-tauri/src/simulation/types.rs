@@ -132,6 +132,83 @@ pub struct ChatBubble {
     pub is_emoji: bool,
 }
 
+/// Events that occur in the terrarium world
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum TerrariumEvent {
+    /// User threw a ball
+    BallThrown,
+    /// An agent caught/captured the ball
+    BallCaught { agent_name: String },
+    /// Ball disappeared (max captures reached)
+    BallGone,
+    /// Two agents had a social interaction
+    AgentInteraction { agent_a: String, agent_b: String, emoji: String },
+    /// A new agent was added to the terrarium
+    AgentArrived { agent_name: String },
+    /// An agent was removed from the terrarium
+    AgentLeft { agent_name: String },
+    /// User clicked on an agent to chat
+    UserClickedAgent { agent_name: String },
+    /// An agent is nearby (within awareness radius)
+    AgentNearby { agent_name: String, other_name: String, distance: f64 },
+}
+
+impl TerrariumEvent {
+    /// Minimum awareness level required to receive this event
+    pub fn min_awareness_level(&self) -> u8 {
+        match self {
+            TerrariumEvent::BallThrown => 1,
+            TerrariumEvent::BallCaught { .. } => 1,
+            TerrariumEvent::BallGone => 2,
+            TerrariumEvent::AgentInteraction { .. } => 2,
+            TerrariumEvent::AgentArrived { .. } => 1,
+            TerrariumEvent::AgentLeft { .. } => 1,
+            TerrariumEvent::UserClickedAgent { .. } => 1,
+            TerrariumEvent::AgentNearby { .. } => 3,
+        }
+    }
+
+    /// Convert to natural language for the agent prompt
+    pub fn to_natural_language(&self, observer: &str) -> String {
+        match self {
+            TerrariumEvent::BallThrown => "The user threw a ball into the terrarium!".to_string(),
+            TerrariumEvent::BallCaught { agent_name } => {
+                if agent_name == observer {
+                    "You caught the ball!".to_string()
+                } else {
+                    format!("{} caught the ball.", agent_name)
+                }
+            }
+            TerrariumEvent::BallGone => "The ball disappeared.".to_string(),
+            TerrariumEvent::AgentInteraction { agent_a, agent_b, emoji } => {
+                if agent_a == observer {
+                    format!("You bumped into {} and exchanged a {} emoji.", agent_b, emoji)
+                } else if agent_b == observer {
+                    format!("{} bumped into you and exchanged a {} emoji.", agent_a, emoji)
+                } else {
+                    format!("{} and {} bumped into each other ({}).", agent_a, agent_b, emoji)
+                }
+            }
+            TerrariumEvent::AgentArrived { agent_name } => format!("{} just arrived in the terrarium!", agent_name),
+            TerrariumEvent::AgentLeft { agent_name } => format!("{} left the terrarium.", agent_name),
+            TerrariumEvent::UserClickedAgent { agent_name } => {
+                if agent_name == observer {
+                    "The user clicked on you to start a conversation.".to_string()
+                } else {
+                    format!("The user started talking to {}.", agent_name)
+                }
+            }
+            TerrariumEvent::AgentNearby { agent_name, other_name, distance } => {
+                if agent_name == observer {
+                    format!("{} is nearby (about {:.0}px away).", other_name, distance)
+                } else {
+                    format!("{} is near {} (about {:.0}px away).", agent_name, other_name, distance)
+                }
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatMessage {
     pub from_user: bool,
@@ -167,6 +244,9 @@ pub struct WorldState {
     /// Seconds between attention sound repeats
     #[serde(default = "default_attention_interval")]
     pub attention_interval_secs: f64,
+    /// Event buffer — drained by the event dispatcher
+    #[serde(skip)]
+    pub events: Vec<TerrariumEvent>,
 }
 
 /// Saved agent definition for config persistence
