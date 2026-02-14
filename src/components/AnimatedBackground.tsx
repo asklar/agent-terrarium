@@ -111,9 +111,11 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
 
       if (isDynamic) {
         const weather = getCachedWeather();
-        const target = computeTargetSky(Date.now(), weather, debugTimeRef.current ?? null, debugWeatherRef.current ?? null);
+        const dw = debugWeatherRef.current;
+        const dt2 = debugTimeRef.current;
+        const target = computeTargetSky(Date.now(), weather, dt2 ?? null, dw ?? null);
         // Debug: fast transition (~0.5s), normal: gradual (~3s)
-        const lerpSpeed = (debugTimeRef.current != null || debugWeatherRef.current != null) ? 0.25 : 0.02;
+        const lerpSpeed = (dt2 != null || dw != null) ? 0.25 : 0.02;
         skyStateRef.current = lerpSkyState(skyStateRef.current, target, lerpSpeed);
         skyColors = skyStateRef.current.skyColors;
       }
@@ -385,6 +387,16 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
       ctx.beginPath();
       ctx.roundRect(2, 2, w - 4, h - 4, 12);
       ctx.stroke();
+
+      // Debug sky overlay indicator
+      if (isDynamic && (debugTimeRef.current != null || debugWeatherRef.current != null)) {
+        const sky = skyStateRef.current;
+        ctx.save();
+        ctx.font = "10px monospace";
+        ctx.fillStyle = "rgba(255,255,0,0.8)";
+        ctx.fillText(`⚡ ${sky.weatherOverlay} (${sky.weatherIntensity.toFixed(2)}) b=${sky.brightness.toFixed(2)}`, 8, 14);
+        ctx.restore();
+      }
 
       animRef.current = requestAnimationFrame(render);
     };
