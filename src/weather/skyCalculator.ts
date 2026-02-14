@@ -11,6 +11,16 @@ const SKY_PALETTES: Record<DayPeriod, string[]> = {
   dusk:      ["#2d1b4e", "#c0506e", "#e8945a", "#ffc87a"],
 };
 
+// Weather tint: blended over the time-of-day sky colors
+const WEATHER_SKY_TINTS: Partial<Record<WeatherOverlay, { colors: string[]; strength: number }>> = {
+  cloudy: { colors: ["#8a8a9a", "#9a9aaa", "#a8a8b8"], strength: 0.3 },
+  fog:    { colors: ["#9a9aaa", "#a8a8b8", "#b8b8c8"], strength: 0.45 },
+  drizzle:{ colors: ["#707888", "#808898", "#909aa8"], strength: 0.35 },
+  rain:   { colors: ["#505868", "#607080", "#708090"], strength: 0.5 },
+  snow:   { colors: ["#8090a0", "#90a0b0", "#a8b4c0"], strength: 0.35 },
+  storm:  { colors: ["#2a3040", "#3a4555", "#4a5565"], strength: 0.7 },
+};
+
 const GROUND_TINTS: Record<DayPeriod, [string, number]> = {
   night:     ["#0a0e2a", 0.35],
   dawn:      ["#e88d67", 0.12],
@@ -29,19 +39,50 @@ const BRIGHTNESS: Record<DayPeriod, number> = {
   dusk: 0.6,
 };
 
+// Weather reduces brightness too
+const WEATHER_BRIGHTNESS_FACTOR: Partial<Record<WeatherOverlay, number>> = {
+  cloudy: 0.9,
+  fog: 0.85,
+  drizzle: 0.85,
+  rain: 0.75,
+  snow: 0.85,
+  storm: 0.55,
+};
+
 /** Parse an ISO time string (from Open-Meteo) to epoch ms */
 function parseTime(iso: string): number {
   return new Date(iso).getTime();
 }
 
+/**
+ * Compute day period boundaries dynamically from sunrise/sunset.
+ * Dawn and dusk scale proportionally to day/night length rather
+ * than using fixed minute offsets.
+ */
+function computeBoundaries(sunrise: number, sunset: number) {
+  const dayLen = sunset - sunrise;
+  const nightLen = 24 * 60 * 60 * 1000 - dayLen;
+
+  // Dawn: starts 1/8 of night before sunrise, ends 1/12 of day after sunrise
+  const dawnStart = sunrise - nightLen * 0.125;
+  const dawnEnd = sunrise + dayLen * (1 / 12);
+
+  // Noon: centered at solar noon, spans 1/6 of day length
+  const solarNoon = (sunrise + sunset) / 2;
+  const noonHalf = dayLen * (1 / 12);
+  const noonStart = solarNoon - noonHalf;
+  const noonEnd = solarNoon + noonHalf;
+
+  // Dusk: starts 1/12 of day before sunset, ends 1/6 of night after sunset
+  const duskStart = sunset - dayLen * (1 / 12);
+  const duskEnd = sunset + nightLen * (1 / 6);
+
+  return { dawnStart, dawnEnd, noonStart, noonEnd, duskStart, duskEnd };
+}
+
 /** Get the current day period from sun times */
 export function getDayPeriod(now: number, sunrise: number, sunset: number): DayPeriod {
-  const dawnStart = sunrise - 60 * 60 * 1000;     // 1h before sunrise
-  const dawnEnd = sunrise + 30 * 60 * 1000;        // 30m after sunrise
-  const noonStart = (sunrise + sunset) / 2 - 60 * 60 * 1000;
-  const noonEnd = (sunrise + sunset) / 2 + 60 * 60 * 1000;
-  const duskStart = sunset - 60 * 60 * 1000;
-  const duskEnd = sunset + 90 * 60 * 1000;         // 1.5h after sunset
+  const { dawnStart, dawnEnd, noonStart, noonEnd, duskStart, duskEnd } = computeBoundaries(sunrise, sunset);
 
   if (now < dawnStart || now > duskEnd) return "night";
   if (now < dawnEnd) return "dawn";
@@ -53,20 +94,20 @@ export function getDayPeriod(now: number, sunrise: number, sunset: number): DayP
 
 /** Get interpolation factor between two periods (0-1) */
 function getPeriodBlend(now: number, sunrise: number, sunset: number): { period: DayPeriod; nextPeriod: DayPeriod; blend: number } {
-  const dawnStart = sunrise - 60 * 60 * 1000;
-  const dawnEnd = sunrise + 30 * 60 * 1000;
-  const noonStart = (sunrise + sunset) / 2 - 60 * 60 * 1000;
-  const noonEnd = (sunrise + sunset) / 2 + 60 * 60 * 1000;
-  const duskStart = sunset - 60 * 60 * 1000;
-  const duskEnd = sunset + 90 * 60 * 1000;
+  const { dawnStart, dawnEnd, noonStart, noonEnd, duskStart, duskEnd } = computeBoundaries(sunrise, sunset);
+
+  const dayLen = sunset - sunrise;
+  // Transition durations scale with day length
+  const shortTransition = dayLen * (1 / 24);  // ~30min for a 12h day
+  const medTransition = dayLen * (1 / 16);    // ~45min for a 12h day
 
   const transitions: [number, number, DayPeriod, DayPeriod][] = [
     [dawnStart, dawnEnd, "night", "dawn"],
-    [dawnEnd, dawnEnd + 30 * 60 * 1000, "dawn", "morning"],
-    [noonStart - 30 * 60 * 1000, noonStart, "morning", "noon"],
-    [noonEnd, noonEnd + 30 * 60 * 1000, "noon", "afternoon"],
-    [duskStart - 30 * 60 * 1000, duskStart, "afternoon", "dusk"],
-    [duskEnd - 30 * 60 * 1000, duskEnd, "dusk", "night"],
+    [dawnEnd, dawnEnd + shortTransition, "dawn", "morning"],
+    [noonStart - medTransition, noonStart, "morning", "noon"],
+    [noonEnd, noonEnd + medTransition, "noon", "afternoon"],
+    [duskStart - shortTransition, duskStart, "afternoon", "dusk"],
+    [duskEnd - medTransition, duskEnd, "dusk", "night"],
   ];
 
   for (const [start, end, from, to] of transitions) {
@@ -151,12 +192,28 @@ export function computeTargetSky(
 
   const { period, nextPeriod, blend } = getPeriodBlend(effectiveTime, sunrise, sunset);
 
-  // Blend sky colors
-  const skyColors = blendSkyColors(
+  // Blend time-of-day sky colors
+  let skyColors = blendSkyColors(
     SKY_PALETTES[period],
     SKY_PALETTES[nextPeriod],
     blend,
   );
+
+  // Weather
+  const weatherOverlay = debugWeather ?? (weather ? weatherCodeToOverlay(weather.weatherCode) : "none");
+  const weatherIntensity = weatherOverlay === "none" ? 0 :
+    weatherOverlay === "storm" ? 1.0 :
+    weatherOverlay === "rain" ? 0.7 :
+    weatherOverlay === "snow" ? 0.6 :
+    weatherOverlay === "fog" ? 0.5 :
+    weatherOverlay === "drizzle" ? 0.4 :
+    0.3; // cloudy
+
+  // Tint sky colors based on weather
+  const weatherTint = WEATHER_SKY_TINTS[weatherOverlay];
+  if (weatherTint) {
+    skyColors = blendSkyColors(skyColors, weatherTint.colors, weatherTint.strength * weatherIntensity);
+  }
 
   // Sun & moon
   const sunPos = getSunPosition(effectiveTime, sunrise, sunset);
@@ -189,26 +246,23 @@ export function computeTargetSky(
   const groundTint = lerpColor(tintA, tintB, blend);
   const groundTintOpacity = lerp(opA, opB, blend);
 
-  // Brightness
-  const brightness = lerp(BRIGHTNESS[period], BRIGHTNESS[nextPeriod], blend);
+  // Brightness (time-of-day, then reduced by weather)
+  let brightness = lerp(BRIGHTNESS[period], BRIGHTNESS[nextPeriod], blend);
+  const weatherBrightness = WEATHER_BRIGHTNESS_FACTOR[weatherOverlay];
+  if (weatherBrightness !== undefined) {
+    brightness *= weatherBrightness;
+  }
 
-  // Weather
-  const weatherOverlay = debugWeather ?? (weather ? weatherCodeToOverlay(weather.weatherCode) : "none");
-  const weatherIntensity = weatherOverlay === "none" ? 0 :
-    weatherOverlay === "storm" ? 1.0 :
-    weatherOverlay === "rain" ? 0.7 :
-    weatherOverlay === "snow" ? 0.6 :
-    weatherOverlay === "fog" ? 0.5 :
-    weatherOverlay === "drizzle" ? 0.4 :
-    0.3; // cloudy
+  // Weather also reduces sun/star visibility
+  const weatherDimming = 1 - weatherIntensity * 0.6;
 
   return {
     skyColors,
     sunPosition: sunPos,
-    sunOpacity,
+    sunOpacity: sunOpacity * weatherDimming,
     moonPosition: moonPos,
-    moonOpacity,
-    starOpacity,
+    moonOpacity: moonOpacity * weatherDimming,
+    starOpacity: starOpacity * weatherDimming,
     groundTint,
     groundTintOpacity,
     weatherOverlay,
