@@ -24,6 +24,7 @@ interface ContextMenuProps {
   onRemoveAgent: (agentId: string) => void;
   onSetGear: (agentId: string, gearIds: string[]) => void;
   onRequestAttention: (agentId: string) => void;
+  onAbout: () => void;
 }
 
 type SubMenu = null | "theme" | "add" | "remove" | "gear" | "gear-agent" | "gear-slot" | "attention" | "debug" | "debug-time" | "debug-weather";
@@ -45,6 +46,7 @@ export function ContextMenu({
   onRemoveAgent,
   onSetGear,
   onRequestAttention,
+  onAbout,
 }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [subMenu, setSubMenu] = useState<SubMenu>(null);
@@ -218,6 +220,16 @@ export function ContextMenu({
               </button>
             </>
           )}
+          <div className="context-menu-divider" />
+          <button
+            className="context-menu-item"
+            onClick={guardedClick(() => {
+              onAbout();
+              onClose();
+            })}
+          >
+            ℹ️ About
+          </button>
         </>
       )}
 

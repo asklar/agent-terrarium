@@ -494,6 +494,89 @@ html, body, #root {
   cursor: pointer;
 }
 
+/* About Dialog */
+.about-dialog {
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(139, 195, 74, 0.3);
+  width: 300px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  overflow: hidden;
+  text-align: center;
+}
+
+.about-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #8BC34A, #4CAF50);
+}
+
+.about-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.about-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: 0.3px;
+}
+
+.about-body {
+  padding: 16px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.about-desc {
+  font-size: 12.5px;
+  color: #555;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.about-version {
+  font-size: 11px;
+  color: #999;
+  margin: 4px 0 0;
+}
+
+.about-author {
+  font-size: 13px;
+  color: #333;
+  margin: 2px 0 0;
+}
+
+.about-links {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.about-link-btn {
+  border: 1.5px solid #8BC34A;
+  background: rgba(139, 195, 74, 0.08);
+  color: #4CAF50;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.about-link-btn:hover {
+  background: #8BC34A;
+  color: white;
+}
+
 /* Agent Config Dialog */
 .agent-config-overlay {
   position: fixed;

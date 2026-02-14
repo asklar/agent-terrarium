@@ -7,6 +7,7 @@ import { WindowFrame } from "./components/WindowFrame";
 import { ThemeMusic } from "./components/ThemeMusic";
 import { ContextMenu } from "./components/ContextMenu";
 import { AgentConfigDialog } from "./components/AgentConfigDialog";
+import { AboutDialog } from "./components/AboutDialog";
 import { registry } from "./themes";
 import { playAgentSound } from "./audio/agentSounds";
 import { getCurrentWindow, currentMonitor } from "@tauri-apps/api/window";
@@ -77,6 +78,7 @@ function App() {
     y: number;
   } | null>(null);
   const [configAgent, setConfigAgent] = useState<Agent | null>(null);
+  const [showAbout, setShowAbout] = useState(false);
   const [thinkingAgentIds, setThinkingAgentIds] = useState<Set<string>>(new Set());
   const [poppedOutAgents, setPoppedOutAgents] = useState<Set<string>>(new Set());
   const themeRef = useRef(theme);
@@ -458,6 +460,7 @@ function App() {
           onRequestAttention={(agentId) => {
             setTimeout(() => requestAttention(agentId), 5000);
           }}
+          onAbout={() => setShowAbout(true)}
         />
       )}
       {configAgent && (
@@ -472,6 +475,7 @@ function App() {
           onClose={() => setConfigAgent(null)}
         />
       )}
+      {showAbout && <AboutDialog onClose={() => setShowAbout(false)} />}
     </div>
   );
 }
