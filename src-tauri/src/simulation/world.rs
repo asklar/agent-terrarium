@@ -499,6 +499,13 @@ impl World {
         }
     }
 
+    pub fn set_backend_config(&self, agent_id: &str, config: BackendConfig) {
+        let mut state = self.state.lock().unwrap();
+        if let Some(agent) = state.agents.iter_mut().find(|a| a.id == agent_id) {
+            agent.backend_config = config;
+        }
+    }
+
     pub fn get_agent_configs(&self) -> Vec<AgentConfig> {
         let state = self.state.lock().unwrap();
         state.agents.iter().map(|a| AgentConfig {

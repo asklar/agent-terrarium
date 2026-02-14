@@ -57,6 +57,7 @@ function App() {
     setGear,
     requestAttention,
     dismissAttention,
+    setBackendConfig,
     updateMouse,
     saveConfig,
     loadConfig,
@@ -307,6 +308,10 @@ function App() {
           }}
           onRequestAttention={(agentId) => {
             setTimeout(() => requestAttention(agentId), 5000);
+          }}
+          onSetBackend={async (agentId, backendConfig) => {
+            await setBackendConfig(agentId, backendConfig);
+            saveConfig(theme);
           }}
         />
       )}

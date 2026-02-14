@@ -1,7 +1,9 @@
 mod agents;
 mod simulation;
 
-use agents::backend::{BackendMessage, MessageRole};
+use tauri_plugin_store::StoreExt;
+
+use agents::backend::{BackendConfig, BackendMessage, MessageRole};
 use agents::echo::EchoBackend;
 use agents::registry::BackendRegistry;
 use simulation::types::{AppConfig, Vec2};
@@ -108,6 +110,35 @@ fn dismiss_attention(world: tauri::State<'_, Arc<World>>, agent_id: String) {
     world.dismiss_attention(&agent_id);
 }
 
+#[tauri::command]
+async fn set_credential(app: tauri::AppHandle, backend_id: String, key: String) -> Result<(), String> {
+    let store = app.store("credentials.json").map_err(|e: tauri_plugin_store::Error| e.to_string())?;
+    store.set(&backend_id, serde_json::Value::String(key));
+    store.save().map_err(|e: tauri_plugin_store::Error| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+async fn get_credential(app: tauri::AppHandle, backend_id: String) -> Result<Option<String>, String> {
+    let store = app.store("credentials.json").map_err(|e: tauri_plugin_store::Error| e.to_string())?;
+    let value = store.get(&backend_id);
+    Ok(value.and_then(|v: serde_json::Value| v.as_str().map(|s| s.to_string())))
+}
+
+#[tauri::command]
+async fn delete_credential(app: tauri::AppHandle, backend_id: String) -> Result<(), String> {
+    let store = app.store("credentials.json").map_err(|e: tauri_plugin_store::Error| e.to_string())?;
+    store.delete(&backend_id);
+    store.save().map_err(|e: tauri_plugin_store::Error| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+async fn has_credential(app: tauri::AppHandle, backend_id: String) -> Result<bool, String> {
+    let store = app.store("credentials.json").map_err(|e: tauri_plugin_store::Error| e.to_string())?;
+    Ok(store.get(&backend_id).is_some())
+}
+
 fn config_path() -> std::path::PathBuf {
     let mut path = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
     path.push("agent-terrarium.json");
@@ -140,6 +171,11 @@ fn load_user_packages() -> Result<Vec<String>, String> {
         }
     }
     Ok(packages)
+}
+
+#[tauri::command]
+fn set_backend_config(world: tauri::State<'_, Arc<World>>, agent_id: String, backend_config: BackendConfig) {
+    world.set_backend_config(&agent_id, backend_config);
 }
 
 #[tauri::command]
@@ -212,6 +248,7 @@ pub fn run() {
     });
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .manage(world)
         .manage(SplashWait(splash_wait))
@@ -226,12 +263,17 @@ pub fn run() {
             remove_agent,
             update_mouse,
             set_gear,
+            set_backend_config,
             request_attention,
             dismiss_attention,
             save_config,
             load_config,
             load_user_packages,
             get_splash_wait,
+            set_credential,
+            get_credential,
+            delete_credential,
+            has_credential,
         ])
         .on_window_event(|_window, event| {
             if let tauri::WindowEvent::Destroyed = event {

@@ -63,6 +63,10 @@ export function useWorldState() {
     await invoke("request_attention", { agentId });
   }, []);
 
+  const setBackendConfig = useCallback(async (agentId: string, backendConfig: { backend_id: string; model?: string; system_prompt?: string; custom_agent?: string; awareness_level?: number }) => {
+    await invoke("set_backend_config", { agentId, backendConfig });
+  }, []);
+
   const dismissAttention = useCallback(async (agentId: string) => {
     await invoke("dismiss_attention", { agentId });
   }, []);
@@ -105,6 +109,7 @@ export function useWorldState() {
     setGear,
     requestAttention,
     dismissAttention,
+    setBackendConfig,
     updateMouse,
     saveConfig,
     loadConfig,

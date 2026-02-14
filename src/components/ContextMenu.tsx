@@ -3,6 +3,19 @@ import { registry } from "../themes";
 import type { GearSlot } from "../themes/PackageTypes";
 import type { Agent } from "../types/world";
 
+interface BackendOption {
+  id: string;
+  label: string;
+}
+
+const BACKEND_OPTIONS: BackendOption[] = [
+  { id: "echo", label: "Echo (NPC)" },
+  { id: "copilot", label: "GitHub Copilot" },
+  { id: "claude", label: "Claude" },
+  { id: "openclaw", label: "OpenClaw" },
+  { id: "msagent", label: "Microsoft Agent Framework" },
+];
+
 interface ContextMenuProps {
   x: number;
   y: number;
@@ -14,9 +27,10 @@ interface ContextMenuProps {
   onRemoveAgent: (agentId: string) => void;
   onSetGear: (agentId: string, gearIds: string[]) => void;
   onRequestAttention: (agentId: string) => void;
+  onSetBackend: (agentId: string, backendConfig: { backend_id: string; model?: string; system_prompt?: string; custom_agent?: string; awareness_level?: number }) => void;
 }
 
-type SubMenu = null | "theme" | "add" | "remove" | "gear" | "gear-agent" | "gear-slot" | "attention";
+type SubMenu = null | "theme" | "add" | "remove" | "gear" | "gear-agent" | "gear-slot" | "attention" | "backend" | "backend-agent";
 
 export function ContextMenu({
   x,
@@ -29,6 +43,7 @@ export function ContextMenu({
   onRemoveAgent,
   onSetGear,
   onRequestAttention,
+  onSetBackend,
 }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [subMenu, setSubMenu] = useState<SubMenu>(null);
@@ -133,6 +148,43 @@ export function ContextMenu({
     [onRequestAttention, onClose],
   );
 
+  const handleSelectBackendAgent = useCallback((agentId: string) => {
+    setSelectedAgentId(agentId);
+    setSubMenu("backend-agent");
+  }, []);
+
+  const handleSetBackend = useCallback(
+    (backendId: string) => {
+      if (!selectedAgentId) return;
+      const agent = agents.find((a) => a.id === selectedAgentId);
+      const existing = agent?.backend_config;
+      onSetBackend(selectedAgentId, {
+        backend_id: backendId,
+        model: existing?.model,
+        system_prompt: existing?.system_prompt,
+        custom_agent: existing?.custom_agent,
+        awareness_level: existing?.awareness_level ?? 0,
+      });
+    },
+    [selectedAgentId, agents, onSetBackend],
+  );
+
+  const handleSetPrompt = useCallback(() => {
+    if (!selectedAgentId) return;
+    const agent = agents.find((a) => a.id === selectedAgentId);
+    const current = agent?.backend_config?.system_prompt ?? "";
+    const prompt = window.prompt("System prompt for " + (agent?.name ?? "agent") + ":", current);
+    if (prompt === null) return; // cancelled
+    const existing = agent?.backend_config;
+    onSetBackend(selectedAgentId, {
+      backend_id: existing?.backend_id ?? "echo",
+      model: existing?.model,
+      system_prompt: prompt || undefined,
+      custom_agent: existing?.custom_agent,
+      awareness_level: existing?.awareness_level ?? 0,
+    });
+  }, [selectedAgentId, agents, onSetBackend]);
+
   const GEAR_SLOTS: { slot: GearSlot; icon: string; label: string }[] = [
     { slot: "hat", icon: "🎩", label: "Hat" },
     { slot: "face", icon: "🕶️", label: "Face" },
@@ -180,6 +232,13 @@ export function ContextMenu({
             onClick={guardedClick(() => setSubMenu("gear"))}
           >
             👒 Gear
+            <span className="context-menu-arrow">▸</span>
+          </button>
+          <button
+            className="context-menu-item"
+            onClick={guardedClick(() => setSubMenu("backend"))}
+          >
+            🤖 Backend
             <span className="context-menu-arrow">▸</span>
           </button>
           <button
@@ -381,6 +440,69 @@ export function ContextMenu({
               </button>
             ))
           )}
+        </>
+      )}
+      {subMenu === "backend" && (
+        <>
+          <button
+            className="context-menu-item context-menu-back"
+            onClick={() => setSubMenu(null)}
+          >
+            ◂ Back
+          </button>
+          <div className="context-menu-divider" />
+          {agents.length === 0 ? (
+            <div className="context-menu-item disabled">No agents</div>
+          ) : (
+            agents.map((a) => (
+              <button
+                key={a.id}
+                className="context-menu-item"
+                onClick={() => handleSelectBackendAgent(a.id)}
+              >
+                {registry.getAgent(a.avatar)?.icon ?? "❓"} {a.name}
+                <span className="context-menu-check">
+                  {BACKEND_OPTIONS.find((b) => b.id === (a.backend_config?.backend_id ?? "echo"))?.label ?? "Echo (NPC)"}
+                </span>
+                <span className="context-menu-arrow">▸</span>
+              </button>
+            ))
+          )}
+        </>
+      )}
+      {subMenu === "backend-agent" && selectedAgentId && (
+        <>
+          <button
+            className="context-menu-item context-menu-back"
+            onClick={() => setSubMenu("backend")}
+          >
+            ◂ Back
+          </button>
+          <div className="context-menu-divider" />
+          {BACKEND_OPTIONS.map((b) => {
+            const agent = agents.find((a) => a.id === selectedAgentId);
+            const currentBackend = agent?.backend_config?.backend_id ?? "echo";
+            const isActive = currentBackend === b.id;
+            return (
+              <button
+                key={b.id}
+                className={`context-menu-item ${isActive ? "active" : ""}`}
+                onClick={() => handleSetBackend(b.id)}
+              >
+                {b.label}
+                {isActive && (
+                  <span className="context-menu-check">✓</span>
+                )}
+              </button>
+            );
+          })}
+          <div className="context-menu-divider" />
+          <button
+            className="context-menu-item"
+            onClick={handleSetPrompt}
+          >
+            💬 Set Prompt...
+          </button>
         </>
       )}
     </div>
