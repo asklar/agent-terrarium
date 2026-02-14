@@ -128,28 +128,28 @@ export function TerrariumCanvas({
       const t = ctx.currentTime;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = "square";
-      osc.frequency.setValueAtTime(300, t);
-      osc.frequency.exponentialRampToValueAtTime(80, t + 0.15);
-      gain.gain.setValueAtTime(0.15, t);
-      gain.gain.linearRampToValueAtTime(0, t + 0.15);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(220, t);
+      osc.frequency.exponentialRampToValueAtTime(100, t + 0.12);
+      gain.gain.setValueAtTime(0.06, t);
+      gain.gain.linearRampToValueAtTime(0, t + 0.12);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(t);
-      osc.stop(t + 0.15);
-      // Add a noise burst for impact
-      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.04, ctx.sampleRate);
+      osc.stop(t + 0.12);
+      // Soft noise tap
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.03, ctx.sampleRate);
       const data = buf.getChannelData(0);
-      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.3;
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.1;
       const noise = ctx.createBufferSource();
       noise.buffer = buf;
       const ng = ctx.createGain();
-      ng.gain.setValueAtTime(0.12, t);
-      ng.gain.linearRampToValueAtTime(0, t + 0.04);
+      ng.gain.setValueAtTime(0.04, t);
+      ng.gain.linearRampToValueAtTime(0, t + 0.03);
       noise.connect(ng);
       ng.connect(ctx.destination);
       noise.start(t);
-      noise.stop(t + 0.04);
+      noise.stop(t + 0.03);
     } catch {}
   }, []);
 
