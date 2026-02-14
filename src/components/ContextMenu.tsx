@@ -44,7 +44,17 @@ export function ContextMenu({
 }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [subMenu, setSubMenu] = useState<SubMenu>(null);
-  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const readyRef = useRef(false);
+
+  // Ignore clicks for a brief moment after menu appears
+  // to prevent the right-click mouseup from triggering a menu item
+  useEffect(() => {
+    readyRef.current = false;
+    const timer = setTimeout(() => {
+      readyRef.current = true;
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [x, y]);
 
   // Close on outside click
   useEffect(() => {
@@ -69,23 +79,13 @@ export function ContextMenu({
     return () => document.removeEventListener("keydown", handle);
   }, [onClose, subMenu]);
 
-  useEffect(() => {
-    return () => {
-      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
-    };
-  }, []);
-
-  const openSubAfterDelay = useCallback((sub: SubMenu) => {
-    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
-    hoverTimerRef.current = setTimeout(() => setSubMenu(sub), 120);
-  }, []);
-
-  const cancelSubOpen = useCallback(() => {
-    if (hoverTimerRef.current) {
-      clearTimeout(hoverTimerRef.current);
-      hoverTimerRef.current = null;
-    }
-  }, []);
+  const guardedClick = useCallback(
+    <T extends unknown[]>(fn: (...args: T) => void) =>
+      (...args: T) => {
+        if (readyRef.current) fn(...args);
+      },
+    [],
+  );
 
   const handleTheme = useCallback(
     (theme: ThemeName) => {
@@ -125,27 +125,21 @@ export function ContextMenu({
         <>
           <button
             className="context-menu-item"
-            onMouseEnter={() => openSubAfterDelay("theme")}
-            onMouseLeave={cancelSubOpen}
-            onClick={() => setSubMenu("theme")}
+            onClick={guardedClick(() => setSubMenu("theme"))}
           >
             🎨 Theme
             <span className="context-menu-arrow">▸</span>
           </button>
           <button
             className="context-menu-item"
-            onMouseEnter={() => openSubAfterDelay("add")}
-            onMouseLeave={cancelSubOpen}
-            onClick={() => setSubMenu("add")}
+            onClick={guardedClick(() => setSubMenu("add"))}
           >
             ➕ Add Agent
             <span className="context-menu-arrow">▸</span>
           </button>
           <button
             className="context-menu-item"
-            onMouseEnter={() => openSubAfterDelay("remove")}
-            onMouseLeave={cancelSubOpen}
-            onClick={() => setSubMenu("remove")}
+            onClick={guardedClick(() => setSubMenu("remove"))}
           >
             ➖ Remove Agent
             <span className="context-menu-arrow">▸</span>
@@ -158,7 +152,6 @@ export function ContextMenu({
           <button
             className="context-menu-item context-menu-back"
             onClick={() => setSubMenu(null)}
-            onMouseEnter={cancelSubOpen}
           >
             ◂ Back
           </button>
@@ -183,7 +176,6 @@ export function ContextMenu({
           <button
             className="context-menu-item context-menu-back"
             onClick={() => setSubMenu(null)}
-            onMouseEnter={cancelSubOpen}
           >
             ◂ Back
           </button>
@@ -205,7 +197,6 @@ export function ContextMenu({
           <button
             className="context-menu-item context-menu-back"
             onClick={() => setSubMenu(null)}
-            onMouseEnter={cancelSubOpen}
           >
             ◂ Back
           </button>
