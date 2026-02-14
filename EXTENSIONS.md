@@ -78,14 +78,16 @@ Avatars are the characters that live in the terrarium. Each avatar is drawn enti
 
 Controls both the Animalese-style greeting sound (when an agent first appears or is interacted with) **and** the text-to-speech voice (when agents speak via the awareness system):
 
-| Field       | Type   | Description                           |
-|-------------|--------|---------------------------------------|
-| `basePitch` | number | Base frequency in Hz (200–1000). Also controls TTS: lower values → deeper/slower speech, higher values → squeakier/faster speech |
-| `pitchVar`  | number | Random pitch variation in Hz (Animalese only) |
-| `wave`      | string | `"sine"`, `"triangle"`, `"square"`, `"sawtooth"` (Animalese only) |
-| `syllables` | number | Number of syllables per greeting (Animalese only) |
-| `speed`     | number | Speed of each syllable, lower=slower (Animalese only) |
-| `volume`    | number | Volume 0–1 (Animalese only)           |
+| Field          | Type   | Description                           |
+|----------------|--------|---------------------------------------|
+| `basePitch`    | number | Base frequency in Hz (200–1000). Also controls TTS defaults: lower → deeper/slower, higher → squeakier/faster |
+| `pitchVar`     | number | Random pitch variation in Hz (Animalese only) |
+| `wave`         | string | `"sine"`, `"triangle"`, `"square"`, `"sawtooth"` (Animalese only) |
+| `syllables`    | number | Number of syllables per greeting (Animalese only) |
+| `speed`        | number | Speed of each syllable, lower=slower (Animalese only) |
+| `volume`       | number | Volume 0–1 (Animalese only)           |
+| `ttsRate`      | number | *(optional)* SAPI speech rate override (−10 to +10). Auto-derived from `basePitch` if omitted |
+| `ttsPitchShift`| number | *(optional)* Playback rate multiplier override (0.5–3.0). Auto-derived from `basePitch` if omitted |
 
 **TTS behavior:** When an agent has TTS enabled and speaks via the awareness system, `basePitch` determines two properties:
 - **SAPI speech rate** — mapped from slow (−3) to fast (+4), controlling cadence

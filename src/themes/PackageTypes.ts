@@ -141,6 +141,10 @@ export interface VoiceProfile {
   syllables: number;
   speed: number;
   volume: number;
+  /** SAPI speech rate override (-10 to +10). Auto-derived from basePitch if omitted. */
+  ttsRate?: number;
+  /** Playback rate multiplier override (0.5–3.0). Auto-derived from basePitch if omitted. */
+  ttsPitchShift?: number;
 }
 
 export interface AgentPersonalityDefaults {

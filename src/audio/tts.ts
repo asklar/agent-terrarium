@@ -19,15 +19,11 @@ function getAudioCtx(): AudioContext {
 export async function speakText(text: string, avatarId: string) {
   const avatarDef = registry.getAgent(avatarId);
   const basePitch = avatarDef?.voice?.basePitch ?? 500;
-  // Normalized 0-1 position in the pitch spectrum
   const t = Math.max(0, Math.min(1, (basePitch - 200) / 800));
 
-  // SAPI rate: controls speech cadence (-3 slow → +4 fast)
-  // Low basePitch agents speak deliberately, high ones chatter quickly
-  const sapiRate = Math.round(-3 + t * 7);
-
-  // Playback rate: real pitch shifting (0.85 deep → 2.0 chipmunk)
-  const playbackRate = 0.85 + t * 1.15;
+  // Use explicit overrides from voice profile, or auto-derive from basePitch
+  const sapiRate = avatarDef?.voice?.ttsRate ?? Math.round(-3 + t * 7);
+  const playbackRate = avatarDef?.voice?.ttsPitchShift ?? (0.85 + t * 1.15);
 
   // Derive voice index from avatar ID hash
   let hash = 0;
