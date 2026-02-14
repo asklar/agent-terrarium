@@ -750,7 +750,7 @@ function drawCustomDecorator(
     }
     if (el.stroke) {
       ctx.strokeStyle = el.stroke;
-      ctx.lineWidth = (el.strokeWidth ?? 1) / s;
+      ctx.lineWidth = el.strokeWidth ?? 1;
       ctx.stroke(path);
     }
     ctx.restore();
