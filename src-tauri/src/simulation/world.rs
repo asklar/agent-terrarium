@@ -622,7 +622,14 @@ fn create_agent(id: &str, name: &str, avatar: &str, bounds: &Vec2, ground_y: f64
         state_timer: 0.0,
         interaction_cooldown: 0.0,
         gear: Vec::new(),
-        backend_config: BackendConfig::default(),
+        backend_config: if avatar == "copilot" {
+            BackendConfig {
+                backend_id: "copilot".to_string(),
+                ..BackendConfig::default()
+            }
+        } else {
+            BackendConfig::default()
+        },
     }
 }
 

@@ -58,6 +58,9 @@
         "interactionChance": 0.8,
         "ballInterest": 0.5,
         "chatEmojis": ["✨", "💡", "🚀", "💻", "🤝"]
+      },
+      "defaultBackend": {
+        "backend_id": "copilot"
       }
     },
     {
