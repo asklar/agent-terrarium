@@ -314,125 +314,127 @@ pub fn run() {
         }
     });
 
-    // Spawn event dispatcher (processes terrarium events → agent backends)
+    // Spawn event dispatcher with a single tokio runtime (sessions persist across dispatches)
     let world_events = world.clone();
     std::thread::spawn(move || {
-        use std::collections::HashMap;
-        let mut cooldowns: HashMap<String, std::time::Instant> = HashMap::new();
-        let cooldown_duration = Duration::from_secs(15);
+        let rt = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(2)
+            .enable_all()
+            .build()
+            .unwrap();
 
-        loop {
-            std::thread::sleep(Duration::from_secs(2));
+        rt.block_on(async {
+            use std::collections::HashMap;
+            let mut cooldowns: HashMap<String, std::time::Instant> = HashMap::new();
+            let cooldown_duration = Duration::from_secs(15);
 
-            let events = world_events.drain_events();
-            if events.is_empty() {
-                continue;
-            }
+            loop {
+                tokio::time::sleep(Duration::from_secs(2)).await;
 
-            let agents = world_events.get_agent_awareness();
-            log::debug!("Event dispatcher: {} events, {} agents", events.len(), agents.len());
-
-            for (agent_id, agent_name, awareness_level) in &agents {
-                if *awareness_level == 0 {
+                let events = world_events.drain_events();
+                if events.is_empty() {
                     continue;
                 }
 
-                // Check cooldown
-                let now = std::time::Instant::now();
-                if let Some(last) = cooldowns.get(agent_id) {
-                    if now.duration_since(*last) < cooldown_duration {
+                let agents = world_events.get_agent_awareness();
+                log::debug!("Event dispatcher: {} events, {} agents", events.len(), agents.len());
+
+                for (agent_id, agent_name, awareness_level) in &agents {
+                    if *awareness_level == 0 {
                         continue;
                     }
-                }
 
-                // Filter events by awareness level
-                let relevant: Vec<String> = events.iter()
-                    .filter(|e| e.min_awareness_level() <= *awareness_level)
-                    .map(|e| e.to_natural_language(agent_name))
-                    .collect();
-
-                if relevant.is_empty() {
-                    continue;
-                }
-
-                log::info!("Dispatching {} events to {} (awareness={})", relevant.len(), agent_name, awareness_level);
-                cooldowns.insert(agent_id.clone(), now);
-
-                // Get backend config and avatar for this agent
-                let state = world_events.state.lock().unwrap();
-                let agent = state.agents.iter().find(|a| a.id == *agent_id);
-                let config = agent.map(|a| a.backend_config.clone());
-                let avatar = agent.map(|a| a.avatar.clone()).unwrap_or_default();
-                drop(state);
-
-                if let Some(config) = config {
-                    let personality_hint = match avatar.as_str() {
-                        a if a.contains("cat") => "You are playful, curious, and sometimes aloof. You purr, meow, and chase things.",
-                        a if a.contains("dog") => "You are loyal, excited, and love to play. You bark, wag your tail, and fetch.",
-                        a if a.contains("squirrel") => "You are energetic, skittish, and love collecting things. You chitter and scamper.",
-                        a if a.contains("robot") => "You are logical but learning emotions. You beep, whir, and compute feelings.",
-                        a if a.contains("bunny") || a.contains("rabbit") => "You are gentle, hoppy, and love treats. You wiggle your nose and thump.",
-                        a if a.contains("frog") => "You are chill, zen, and love rain. You ribbit and hop contentedly.",
-                        _ => "You are a cute little creature with your own personality.",
-                    };
-
-                    let system_context = config.system_prompt.clone().unwrap_or_else(|| {
-                        format!(
-                            "You are {}, a cute {} living in a digital terrarium. {}",
-                            agent_name, avatar, personality_hint
-                        )
-                    });
-
-                    let events_text = relevant.join("\n- ");
-
-                    let backend_id = config.backend_id.clone();
-                    let registry = world_events.backend_registry.clone();
-                    let world_ref = world_events.clone();
-                    let aid = agent_id.clone();
-                    let aname = agent_name.clone();
-
-                    if backend_id == "copilot" {
-                        // Build context about the terrarium state
-                        let others = world_events.get_other_agent_names(agent_id);
-                        let has_ball = world_events.has_ball();
-                        let mut context_lines = Vec::new();
-                        if !others.is_empty() {
-                            context_lines.push(format!("Other creatures nearby: {}", others.join(", ")));
+                    // Check cooldown
+                    let now = std::time::Instant::now();
+                    if let Some(last) = cooldowns.get(agent_id) {
+                        if now.duration_since(*last) < cooldown_duration {
+                            continue;
                         }
-                        if has_ball {
-                            context_lines.push("A ball is bouncing around!".to_string());
-                        }
-                        let context = if context_lines.is_empty() {
-                            String::new()
-                        } else {
-                            format!("\n\nCurrent situation:\n- {}", context_lines.join("\n- "))
+                    }
+
+                    // Filter events by awareness level
+                    let relevant: Vec<String> = events.iter()
+                        .filter(|e| e.min_awareness_level() <= *awareness_level)
+                        .map(|e| e.to_natural_language(agent_name))
+                        .collect();
+
+                    if relevant.is_empty() {
+                        continue;
+                    }
+
+                    log::info!("Dispatching {} events to {} (awareness={})", relevant.len(), agent_name, awareness_level);
+                    cooldowns.insert(agent_id.clone(), now);
+
+                    // Get backend config and avatar for this agent
+                    let state = world_events.state.lock().unwrap();
+                    let agent = state.agents.iter().find(|a| a.id == *agent_id);
+                    let config = agent.map(|a| a.backend_config.clone());
+                    let avatar = agent.map(|a| a.avatar.clone()).unwrap_or_default();
+                    drop(state);
+
+                    if let Some(config) = config {
+                        let personality_hint = match avatar.as_str() {
+                            a if a.contains("cat") => "You are playful, curious, and sometimes aloof. You purr, meow, and chase things.",
+                            a if a.contains("dog") => "You are loyal, excited, and love to play. You bark, wag your tail, and fetch.",
+                            a if a.contains("squirrel") => "You are energetic, skittish, and love collecting things. You chitter and scamper.",
+                            a if a.contains("robot") => "You are logical but learning emotions. You beep, whir, and compute feelings.",
+                            a if a.contains("bunny") || a.contains("rabbit") => "You are gentle, hoppy, and love treats. You wiggle your nose and thump.",
+                            a if a.contains("frog") => "You are chill, zen, and love rain. You ribbit and hop contentedly.",
+                            _ => "You are a cute little creature with your own personality.",
                         };
 
-                        // Copilot: use tool-based dispatch
-                        let prompt = format!(
-                            "{}{}\n\nSomething just happened in your terrarium!\n- {}\n\n\
-                            React in character using the available tools. You can call zero or more tools:\n\
-                            - 'emote' — show an emoji reaction (quick emotional response)\n\
-                            - 'say' — say something short in a speech bubble (1-5 words)\n\
-                            - 'move_to' — walk toward something (target: 'ball', 'mouse', 'center', or an agent's name)\n\
-                            - 'run_away' — flee from something (from: 'ball', 'mouse', or an agent's name)\n\n\
-                            Do NOT reply with plain text. ONLY use tools to react. \
-                            You can call multiple tools (e.g. emote AND move_to). \
-                            If nothing interesting happened, don't call any tools.",
-                            system_context, context, events_text
-                        );
+                        let system_context = config.system_prompt.clone().unwrap_or_else(|| {
+                            format!(
+                                "You are {}, a cute {} living in a digital terrarium. {}",
+                                agent_name, avatar, personality_hint
+                            )
+                        });
 
-                        let tools = agents::tools::define_tools();
-                        let handlers = agents::tools::create_handlers(
-                            world_ref.clone(), aid.clone(), aname.clone(),
-                        );
+                        let events_text = relevant.join("\n- ");
 
-                        std::thread::spawn(move || {
-                            let rt = tokio::runtime::Builder::new_current_thread()
-                                .enable_all()
-                                .build()
-                                .unwrap();
-                            rt.block_on(async {
+                        let backend_id = config.backend_id.clone();
+                        let registry = world_events.backend_registry.clone();
+                        let world_ref = world_events.clone();
+                        let aid = agent_id.clone();
+                        let aname = agent_name.clone();
+
+                        if backend_id == "copilot" {
+                            // Build context about the terrarium state
+                            let others = world_events.get_other_agent_names(agent_id);
+                            let has_ball = world_events.has_ball();
+                            let mut context_lines = Vec::new();
+                            if !others.is_empty() {
+                                context_lines.push(format!("Other creatures nearby: {}", others.join(", ")));
+                            }
+                            if has_ball {
+                                context_lines.push("A ball is bouncing around!".to_string());
+                            }
+                            let context = if context_lines.is_empty() {
+                                String::new()
+                            } else {
+                                format!("\n\nCurrent situation:\n- {}", context_lines.join("\n- "))
+                            };
+
+                            let prompt = format!(
+                                "{}{}\n\nSomething just happened in your terrarium!\n- {}\n\n\
+                                React in character using the available tools. You can call zero or more tools:\n\
+                                - 'emote' — show an emoji reaction (quick emotional response)\n\
+                                - 'say' — say something short in a speech bubble (1-5 words)\n\
+                                - 'move_to' — walk toward something (target: 'ball', 'mouse', 'center', or an agent's name)\n\
+                                - 'run_away' — flee from something (from: 'ball', 'mouse', or an agent's name)\n\n\
+                                Do NOT reply with plain text. ONLY use tools to react. \
+                                You can call multiple tools (e.g. emote AND move_to). \
+                                If nothing interesting happened, don't call any tools.",
+                                system_context, context, events_text
+                            );
+
+                            let tools = agents::tools::define_tools();
+                            let handlers = agents::tools::create_handlers(
+                                world_ref.clone(), aid.clone(), aname.clone(),
+                            );
+
+                            // Spawn in same runtime so sessions persist
+                            tokio::spawn(async move {
                                 if let Some(backend) = registry.get(&backend_id) {
                                     let copilot = backend.as_any()
                                         .downcast_ref::<CopilotBackend>()
@@ -440,7 +442,7 @@ pub fn run() {
                                     match copilot.dispatch_with_tools(&aid, &config, &prompt, tools, handlers).await {
                                         Ok(text) => {
                                             if !text.trim().is_empty() {
-                                                log::debug!("Event text response from {} (ignored, tools should handle): {}", aname, text.trim());
+                                                log::debug!("Event text from {} (tools handled): {}", aname, text.trim());
                                             }
                                         }
                                         Err(e) => {
@@ -449,29 +451,23 @@ pub fn run() {
                                     }
                                 }
                             });
-                        });
-                    } else {
-                        // Non-Copilot: text-only fallback
-                        let prompt = format!(
-                            "{}\n\nSomething just happened in your terrarium!\n- {}\n\n\
-                            React in character! Respond with ONLY a single emoji OR a short expressive action/sound \
-                            (like *purrs*, *gasps*, *bounces excitedly*). Keep it to 1-4 words max.",
-                            system_context, events_text
-                        );
+                        } else {
+                            // Non-Copilot: text-only fallback
+                            let prompt = format!(
+                                "{}\n\nSomething just happened in your terrarium!\n- {}\n\n\
+                                React in character! Respond with ONLY a single emoji OR a short expressive action/sound \
+                                (like *purrs*, *gasps*, *bounces excitedly*). Keep it to 1-4 words max.",
+                                system_context, events_text
+                            );
 
-                        let messages = vec![
-                            BackendMessage {
-                                role: MessageRole::User,
-                                content: prompt,
-                            },
-                        ];
+                            let messages = vec![
+                                BackendMessage {
+                                    role: MessageRole::User,
+                                    content: prompt,
+                                },
+                            ];
 
-                        std::thread::spawn(move || {
-                            let rt = tokio::runtime::Builder::new_current_thread()
-                                .enable_all()
-                                .build()
-                                .unwrap();
-                            rt.block_on(async {
+                            tokio::spawn(async move {
                                 if let Some(backend) = registry.get(&backend_id) {
                                     let result = tokio::time::timeout(
                                         Duration::from_secs(15),
@@ -500,11 +496,11 @@ pub fn run() {
                                     }
                                 }
                             });
-                        });
+                        }
                     }
                 }
             }
-        }
+        });
     });
 
     tauri::Builder::default()
