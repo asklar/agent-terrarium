@@ -228,25 +228,23 @@ impl World {
 
         // Handle ball capture by agent
         if let Some(agent_idx) = ball_capture_agent {
+            let max_captures = state.ball_max_captures;
+            let kick = state.ball_kick_on_capture;
+            let agent_pos = state.agents[agent_idx].position;
+            let agent_dir = state.agents[agent_idx].direction;
+            let tick = state.tick;
             if let Some(ref mut ball) = state.ball {
                 if ball.active {
                     ball.captures += 1;
-                    let max_captures = state.ball_max_captures;
-                    let kick = state.ball_kick_on_capture;
                     if ball.captures >= max_captures {
-                        // Ball disappears after max captures
                         ball.active = false;
                     } else if kick {
-                        // Kick the ball in a random-ish direction away from the agent
-                        let agent_pos = state.agents[agent_idx].position;
-                        let agent_dir = state.agents[agent_idx].direction;
                         let kick_dir_x = if agent_dir == Direction::Right { 1.0 } else { -1.0 };
-                        // Add some variation using tick counter
-                        let variation = ((state.tick % 7) as f64 - 3.0) * 0.15;
-                        let kick_speed = 200.0 + (state.tick % 5) as f64 * 30.0;
+                        let variation = ((tick % 7) as f64 - 3.0) * 0.15;
+                        let kick_speed = 200.0 + (tick % 5) as f64 * 30.0;
                         ball.velocity = Vec2::new(
                             kick_dir_x * kick_speed * (1.0 + variation),
-                            -150.0 - (state.tick % 4) as f64 * 25.0,
+                            -150.0 - (tick % 4) as f64 * 25.0,
                         );
                         ball.position = agent_pos + Vec2::new(kick_dir_x * 20.0, -10.0);
                     }

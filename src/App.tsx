@@ -247,8 +247,8 @@ function App() {
             await setGear(agentId, gearIds);
             saveConfig(theme);
           }}
-          onRequestAttention={async (agentId) => {
-            await requestAttention(agentId);
+          onRequestAttention={(agentId) => {
+            setTimeout(() => requestAttention(agentId), 5000);
           }}
         />
       )}

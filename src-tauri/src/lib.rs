@@ -79,7 +79,15 @@ fn save_config(theme: String, window_x: Option<i32>, window_y: Option<i32>, wind
         (Some(x), Some(y), Some(w), Some(h)) => Some(simulation::types::WindowConfig { x, y, width: w, height: h }),
         _ => None,
     };
-    let config = AppConfig { theme, agents, window };
+    let state = world.get_state();
+    let config = AppConfig {
+        theme,
+        agents,
+        window,
+        ball_max_captures: state.ball_max_captures,
+        ball_kick_on_capture: state.ball_kick_on_capture,
+        attention_interval_secs: state.attention_interval_secs,
+    };
     let json = serde_json::to_string_pretty(&config).map_err(|e| e.to_string())?;
     std::fs::write(config_path(), json).map_err(|e| e.to_string())?;
     Ok(())
