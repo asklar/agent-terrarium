@@ -18,10 +18,10 @@ export function speakText(text: string, avatarId: string) {
   const avatarDef = registry.getAgent(avatarId);
   const basePitch = avatarDef?.voice?.basePitch ?? 500;
 
-  // Map basePitch (200-1000 Hz) → TTS pitch (0.8-2.0)
-  const ttsPitch = 0.8 + ((basePitch - 200) / 800) * 1.2;
-  utterance.pitch = Math.max(0.5, Math.min(2.0, ttsPitch));
-  utterance.rate = 1.1;
+  // Map basePitch (200-1000 Hz) → TTS pitch (1.5-2.0) — cartoonish/chipmunk range
+  const ttsPitch = 1.5 + ((basePitch - 200) / 800) * 0.5;
+  utterance.pitch = Math.max(1.4, Math.min(2.0, ttsPitch));
+  utterance.rate = 1.4; // faster = more cartoonish
   utterance.volume = 0.7;
 
   window.speechSynthesis.speak(utterance);
