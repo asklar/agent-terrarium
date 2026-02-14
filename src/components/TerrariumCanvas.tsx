@@ -509,17 +509,17 @@ function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent) {
 
   // Attention indicator — pulsing bell above head
   if (agent.state === "NeedsAttention") {
-    const pulse = 0.6 + Math.sin(t / 300) * 0.4;
+    const pulse = 0.7 + Math.sin(t / 300) * 0.3;
     const bounce = Math.sin(t / 200) * 3;
     const bellY = -AGENT_SIZE / 2 - 18 + bob + bounce;
     // Glow ring
-    ctx.fillStyle = `rgba(255, 193, 7, ${pulse * 0.25})`;
+    ctx.fillStyle = `rgba(255, 193, 7, ${pulse * 0.5})`;
     ctx.beginPath();
     ctx.arc(0, bellY, 12, 0, Math.PI * 2);
     ctx.fill();
     // Bell emoji
     if (flip) ctx.scale(-1, 1); // unflip for text
-    ctx.font = "14px serif";
+    ctx.font = "16px serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.globalAlpha = pulse;

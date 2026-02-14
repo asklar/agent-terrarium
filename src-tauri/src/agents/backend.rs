@@ -73,6 +73,11 @@ pub trait AgentBackend: Send + Sync {
     /// Check if this backend is available/configured
     async fn is_available(&self) -> bool;
 
+    /// List available models for this backend (empty by default)
+    async fn list_models(&self) -> Result<Vec<ModelOption>, String> {
+        Ok(vec![])
+    }
+
     /// Set API key for this backend (no-op by default)
     async fn set_api_key(&self, _key: String) {}
 
@@ -80,4 +85,11 @@ pub trait AgentBackend: Send + Sync {
     fn credential_key(&self) -> Option<&str> {
         None
     }
+}
+
+/// A model option returned by list_models
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ModelOption {
+    pub id: String,
+    pub name: String,
 }

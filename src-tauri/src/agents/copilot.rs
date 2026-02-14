@@ -3,7 +3,7 @@ use copilot_sdk::{Client, CustomAgentConfig, SessionConfig, SystemMessageConfig,
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use super::backend::{AgentBackend, BackendConfig, BackendMessage, BackendResponse, MessageRole};
+use super::backend::{AgentBackend, BackendConfig, BackendMessage, BackendResponse, MessageRole, ModelOption};
 
 pub struct CopilotBackend {
     client: Arc<RwLock<Option<Client>>>,
@@ -105,5 +105,22 @@ impl AgentBackend for CopilotBackend {
             Ok(_) => true,
             Err(_) => false,
         }
+    }
+
+    async fn list_models(&self) -> Result<Vec<ModelOption>, String> {
+        self.ensure_client().await?;
+        let client_lock = self.client.read().await;
+        let client = client_lock.as_ref().unwrap();
+        let models = client
+            .list_models()
+            .await
+            .map_err(|e| format!("Failed to list models: {}", e))?;
+        Ok(models
+            .into_iter()
+            .map(|m| ModelOption {
+                id: m.id.clone(),
+                name: m.name,
+            })
+            .collect())
     }
 }

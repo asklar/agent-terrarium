@@ -198,6 +198,13 @@ fn set_backend_config(world: tauri::State<'_, Arc<World>>, agent_id: String, bac
 }
 
 #[tauri::command]
+async fn list_backend_models(world: tauri::State<'_, Arc<World>>, backend_id: String) -> Result<Vec<agents::backend::ModelOption>, String> {
+    let registry = world.get_backend_registry();
+    let backend = registry.get(&backend_id).ok_or_else(|| format!("Unknown backend: {}", backend_id))?;
+    backend.list_models().await
+}
+
+#[tauri::command]
 fn rename_agent(world: tauri::State<'_, Arc<World>>, agent_id: String, name: String) {
     world.rename_agent(&agent_id, &name);
 }
@@ -291,6 +298,7 @@ pub fn run() {
             update_mouse,
             set_gear,
             set_backend_config,
+            list_backend_models,
             rename_agent,
             request_attention,
             dismiss_attention,

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { registry } from "../themes";
 import { setCredential } from "../utils/credentials";
 import type { Agent } from "../types/world";
@@ -9,6 +10,11 @@ interface BackendConfig {
   system_prompt?: string;
   custom_agent?: string;
   awareness_level: number;
+}
+
+interface ModelOption {
+  id: string;
+  name: string;
 }
 
 interface AgentConfigDialogProps {
@@ -40,10 +46,31 @@ export function AgentConfigDialog({ agent, onSave, onClose }: AgentConfigDialogP
   const [customAgent, setCustomAgent] = useState(agent.backend_config?.custom_agent ?? "");
   const [systemPrompt, setSystemPrompt] = useState(agent.backend_config?.system_prompt ?? "");
   const [awarenessLevel, setAwarenessLevel] = useState(agent.backend_config?.awareness_level ?? 0);
+  const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
 
   const needsApiKey = !["echo", "copilot"].includes(backendId);
   const agentIcon = registry.getAgent(agent.avatar)?.icon ?? "❓";
+
+  // Fetch available models when backend changes
+  useEffect(() => {
+    setModelOptions([]);
+    if (backendId === "echo") return;
+    let cancelled = false;
+    setLoadingModels(true);
+    invoke<ModelOption[]>("list_backend_models", { backendId })
+      .then((models) => {
+        if (!cancelled) setModelOptions(models);
+      })
+      .catch(() => {
+        // Backend may not support listing models — that's fine
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingModels(false);
+      });
+    return () => { cancelled = true; };
+  }, [backendId]);
 
   // Close on Escape
   useEffect(() => {
@@ -113,10 +140,18 @@ export function AgentConfigDialog({ agent, onSave, onClose }: AgentConfigDialogP
             Model
             <input
               className="agent-config-input"
+              list="model-options"
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              placeholder="gpt-4o"
+              placeholder={loadingModels ? "Loading models…" : "default"}
             />
+            <datalist id="model-options">
+              {modelOptions.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </datalist>
           </label>
 
           <label className="agent-config-label">
