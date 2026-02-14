@@ -72,6 +72,9 @@ export interface ThemeDefinition {
 
   /** If true, dynamic sky (weather/time-of-day) is disabled for this theme */
   disableDynamicSky?: boolean;
+
+  /** If true, no ground/floor is drawn (e.g. outer space) */
+  hideGround?: boolean;
 }
 
 export interface ThemeMusic {

@@ -329,6 +329,7 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
       }
 
       // Ground
+      if (!t.hideGround) {
       const waveAmp = t.groundWave ?? 4;
       const groundGrad = ctx.createLinearGradient(0, groundY, 0, h);
       groundGrad.addColorStop(0, t.ground);
@@ -344,6 +345,7 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
       ctx.lineTo(0, h);
       ctx.closePath();
       ctx.fill();
+      }
 
       // Living meadow: ground tint + weather particles
       if (isDynamic) {
@@ -641,6 +643,87 @@ function drawSpaceDust(
 }
 
 /** Registry of built-in decorator draw functions, keyed by name */
+function drawDistantStar(
+  ctx: CanvasRenderingContext2D,
+  h: number,
+  time: number,
+) {
+  // Large star/sun partially cropped at the bottom-right corner
+  ctx.save();
+  const cx = ctx.canvas.width + 20;
+  const cy = h * 0.55;
+  const r = 90;
+  const pulse = 1 + Math.sin(time * 0.0008) * 0.04;
+
+  // Outer corona glow
+  for (let i = 3; i >= 0; i--) {
+    const gr = r * pulse + i * 25;
+    const grad = ctx.createRadialGradient(cx, cy, r * 0.3, cx, cy, gr);
+    const alpha = 0.03 - i * 0.005;
+    grad.addColorStop(0, `rgba(255, 200, 100, ${alpha})`);
+    grad.addColorStop(0.6, `rgba(255, 140, 50, ${alpha * 0.5})`);
+    grad.addColorStop(1, "transparent");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, ctx.canvas.width, h);
+  }
+
+  // Star body
+  const bodyGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * pulse);
+  bodyGrad.addColorStop(0, "rgba(255, 250, 220, 0.9)");
+  bodyGrad.addColorStop(0.3, "rgba(255, 220, 130, 0.7)");
+  bodyGrad.addColorStop(0.7, "rgba(255, 160, 60, 0.3)");
+  bodyGrad.addColorStop(1, "transparent");
+  ctx.fillStyle = bodyGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * pulse, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawGalaxy(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  time: number,
+) {
+  // Distant spiral galaxy in the upper-left area
+  ctx.save();
+  const cx = w * 0.12;
+  const cy = h * 0.2;
+  const rot = time * 0.00003;
+
+  ctx.translate(cx, cy);
+  ctx.rotate(rot);
+
+  // Galaxy core glow
+  const coreGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 35);
+  coreGrad.addColorStop(0, "rgba(200, 180, 255, 0.12)");
+  coreGrad.addColorStop(0.5, "rgba(150, 130, 220, 0.06)");
+  coreGrad.addColorStop(1, "transparent");
+  ctx.fillStyle = coreGrad;
+  ctx.fillRect(-40, -40, 80, 80);
+
+  // Spiral arms (dots along spiral path)
+  ctx.globalAlpha = 0.4;
+  for (let arm = 0; arm < 2; arm++) {
+    const armOffset = arm * Math.PI;
+    for (let i = 0; i < 40; i++) {
+      const angle = armOffset + i * 0.25;
+      const dist = 3 + i * 0.85;
+      const x = Math.cos(angle) * dist;
+      const y = Math.sin(angle) * dist * 0.45; // flatten to ellipse
+      const size = 0.4 + (1 - i / 40) * 0.6;
+      const alpha = 0.6 - i / 40 * 0.4;
+      ctx.fillStyle = `rgba(200, 190, 255, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  ctx.restore();
+}
+
 const DECORATORS: Record<string, DecoratorFn> = {
   clouds: (ctx, w, _h, _gy, time) => drawClouds(ctx, w, time),
   moon: (ctx, w) => drawMoon(ctx, w),
@@ -663,6 +746,8 @@ const DECORATORS: Record<string, DecoratorFn> = {
   nebula: (ctx, w, h, _gy, time) => drawNebula(ctx, w, h, time),
   planets: (ctx, w, _h, _gy, time) => drawPlanets(ctx, w, time),
   space_dust: (ctx, w, h, _gy, time) => drawSpaceDust(ctx, w, h, time),
+  distant_star: (ctx, _w, h, _gy, time) => drawDistantStar(ctx, h, time),
+  galaxy: (ctx, w, h, _gy, time) => drawGalaxy(ctx, w, h, time),
 };
 
 function updateParticle(
