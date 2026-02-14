@@ -1,0 +1,132 @@
+import { useState, useCallback, useRef, useEffect } from "react";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { log } from "../utils/log";
+import type { WorldState, ChatSession } from "../types/world";
+
+interface ChatWindowProps {
+  agentId: string;
+}
+
+export function ChatWindow({ agentId }: ChatWindowProps) {
+  const [session, setSession] = useState<ChatSession | null>(null);
+  const [agentName, setAgentName] = useState(agentId);
+  const [agentAvatar, setAgentAvatar] = useState("");
+  const [inputText, setInputText] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Poll world state for this agent's chat session
+  useEffect(() => {
+    let animFrame = 0;
+    const poll = async () => {
+      try {
+        const state = await invoke<WorldState>("get_world_state");
+        const s = state.chat_sessions.find((s) => s.agent_id === agentId);
+        if (s) setSession(s);
+        const agent = state.agents.find((a) => a.id === agentId);
+        if (agent) {
+          setAgentName(agent.name);
+          setAgentAvatar(agent.avatar);
+        }
+      } catch (e) {
+        log.error("ChatWindow poll error:", e);
+      }
+      animFrame = requestAnimationFrame(poll);
+    };
+    animFrame = requestAnimationFrame(poll);
+    return () => cancelAnimationFrame(animFrame);
+  }, [agentId]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [session?.messages]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  // Update window title
+  useEffect(() => {
+    getCurrentWindow().setTitle(`Chat — ${agentName}`).catch(() => {});
+  }, [agentName]);
+
+  const handleSend = useCallback(async () => {
+    if (!inputText.trim() || isLoading) return;
+    const text = inputText.trim();
+    setInputText("");
+    setIsLoading(true);
+    try {
+      log.info("ChatWindow send to", agentId, text.slice(0, 80));
+      await invoke("send_message", { agentId, text });
+    } catch (e) {
+      log.error("ChatWindow send error:", e);
+    } finally {
+      setIsLoading(false);
+      requestAnimationFrame(() => inputRef.current?.focus());
+    }
+  }, [inputText, isLoading, agentId]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    },
+    [handleSend],
+  );
+
+  const handlePopIn = useCallback(async () => {
+    log.info("Pop-in chat for", agentId);
+    // Emit event so main window knows to pop in
+    const { emit } = await import("@tauri-apps/api/event");
+    await emit("chat-pop-in", { agentId });
+    // Close this window
+    await getCurrentWindow().close();
+  }, [agentId]);
+
+  const avatarEmoji = agentAvatar === "cat" ? "🐱" : agentAvatar === "copilot" ? "🤖" : agentAvatar === "squirrel" ? "🐿️" : agentAvatar === "penguin" ? "🐧" : agentAvatar === "ghost" ? "👻" : "🤖";
+
+  return (
+    <div className="chat-window">
+      <div className="chat-window-header">
+        <span className="chat-window-avatar">{avatarEmoji}</span>
+        <span className="chat-window-name">{agentName}</span>
+        <button className="chat-window-popin" onClick={handlePopIn} title="Pop back into terrarium">
+          ⬕
+        </button>
+      </div>
+      <div className="chat-window-messages">
+        {session?.messages.map((msg, i) => (
+          <div key={i} className={`chat-window-msg ${msg.from_user ? "user" : "agent"}`}>
+            {msg.from_user ? msg.text : <Markdown remarkPlugins={[remarkGfm]}>{msg.text}</Markdown>}
+          </div>
+        )) ?? <div className="chat-window-empty">No messages yet. Say hi!</div>}
+        <div ref={messagesEndRef} />
+      </div>
+      <div className="chat-window-input-row">
+        <input
+          ref={inputRef}
+          type="text"
+          className="chat-window-input"
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={`Talk to ${agentName}...`}
+          disabled={isLoading}
+        />
+        <button
+          className="chat-window-send"
+          onClick={handleSend}
+          disabled={!inputText.trim() || isLoading}
+        >
+          ➤
+        </button>
+      </div>
+    </div>
+  );
+}

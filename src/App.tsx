@@ -75,6 +75,7 @@ function App() {
   } | null>(null);
   const [configAgent, setConfigAgent] = useState<Agent | null>(null);
   const [thinkingAgentIds, setThinkingAgentIds] = useState<Set<string>>(new Set());
+  const [poppedOutAgents, setPoppedOutAgents] = useState<Set<string>>(new Set());
   const themeRef = useRef(theme);
   themeRef.current = theme;
   const musicMutedRef = useRef(musicMuted);
@@ -93,6 +94,7 @@ function App() {
         | { x: number; y: number; width: number; height: number }
         | undefined;
       if (w) {
+        log.info("Restoring window bounds:", w);
         const win = getCurrentWindow();
         const monitor = await currentMonitor();
         let { x, y, width, height } = w;
@@ -118,13 +120,15 @@ function App() {
       timer = setTimeout(async () => {
         try {
           const win = getCurrentWindow();
+          const monitor = await currentMonitor();
+          const scale = monitor?.scaleFactor ?? 1;
           const pos = await win.outerPosition();
           const size = await win.outerSize();
           saveConfig(themeRef.current, {
-            x: pos.x,
-            y: pos.y,
-            width: size.width,
-            height: size.height,
+            x: Math.round(pos.x / scale),
+            y: Math.round(pos.y / scale),
+            width: Math.round(size.width / scale),
+            height: Math.round(size.height / scale),
           }, musicMutedRef.current);
         } catch { /* ignore */ }
       }, 500);
@@ -254,6 +258,68 @@ function App() {
     [dismissChat],
   );
 
+  const handlePopOut = useCallback(
+    async (agentId: string) => {
+      log.info("Popping out chat for", agentId);
+      try {
+        const { WebviewWindow } = await import("@tauri-apps/api/webviewWindow");
+        const label = `chat-${agentId.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+        const mainWin = getCurrentWindow();
+        const pos = await mainWin.outerPosition();
+        const size = await mainWin.outerSize();
+        const chatWin = new WebviewWindow(label, {
+          url: `index.html?chat=${encodeURIComponent(agentId)}`,
+          title: `Chat — ${agentId}`,
+          width: 360,
+          height: 500,
+          x: pos.x + size.width + 8,
+          y: pos.y,
+          decorations: true,
+          transparent: false,
+          alwaysOnTop: false,
+          resizable: true,
+        });
+        chatWin.once("tauri://created", () => {
+          log.info("Chat window created for", agentId);
+          setPoppedOutAgents((prev) => new Set(prev).add(agentId));
+          dismissChat(agentId);
+        });
+        chatWin.once("tauri://error", (e) => {
+          log.error("Chat window error for", agentId, e);
+        });
+        chatWin.once("tauri://destroyed", () => {
+          log.info("Chat window closed for", agentId);
+          setPoppedOutAgents((prev) => {
+            const next = new Set(prev);
+            next.delete(agentId);
+            return next;
+          });
+        });
+      } catch (e) {
+        log.error("Failed to pop out chat:", e);
+      }
+    },
+    [dismissChat],
+  );
+
+  // Listen for pop-in events from chat windows
+  useEffect(() => {
+    let unlisten: (() => void) | null = null;
+    import("@tauri-apps/api/event").then(({ listen }) => {
+      listen<{ agentId: string }>("chat-pop-in", (event) => {
+        log.info("Pop-in event for", event.payload.agentId);
+        setPoppedOutAgents((prev) => {
+          const next = new Set(prev);
+          next.delete(event.payload.agentId);
+          return next;
+        });
+        // Re-open inline chat
+        clickAgent(event.payload.agentId);
+      }).then((fn) => { unlisten = fn; });
+    });
+    return () => { unlisten?.(); };
+  }, [clickAgent]);
+
   const handleCanvasClick = useCallback(() => {
     // Light dismiss: clicking canvas (not on an agent) dismisses all chats
     const sessions = worldState?.chat_sessions.filter((s) => s.active) ?? [];
@@ -273,9 +339,9 @@ function App() {
     [],
   );
 
-  // Find active chat sessions
+  // Find active chat sessions (exclude popped-out agents)
   const activeSessions =
-    worldState?.chat_sessions.filter((s) => s.active) ?? [];
+    worldState?.chat_sessions.filter((s) => s.active && !poppedOutAgents.has(s.agent_id)) ?? [];
 
   if (showSplash) {
     return (
@@ -338,6 +404,7 @@ function App() {
               const a = worldState?.agents.find((ag) => ag.id === agentId);
               if (a) setConfigAgent(a);
             }}
+            onPopOut={handlePopOut}
           />
         );
       })}
