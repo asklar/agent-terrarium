@@ -495,6 +495,31 @@ html, body, #root {
   margin-top: 2px;
 }
 
+.agent-config-folder-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.agent-config-folder-input {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.agent-config-browse-btn {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.agent-config-browse-btn:hover {
+  background: #f0f0f0;
+}
+
 .agent-config-api-key-btn {
   align-self: flex-start;
   background: none;

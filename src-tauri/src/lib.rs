@@ -210,6 +210,13 @@ fn rename_agent(world: tauri::State<'_, Arc<World>>, agent_id: String, name: Str
 }
 
 #[tauri::command]
+async fn pick_folder(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+    let path = app.dialog().file().blocking_pick_folder();
+    Ok(path.map(|p| p.to_string()))
+}
+
+#[tauri::command]
 fn save_config(theme: String, window_x: Option<i32>, window_y: Option<i32>, window_width: Option<u32>, window_height: Option<u32>, music_muted: Option<bool>, world: tauri::State<'_, Arc<World>>) -> Result<(), String> {
     let agents = world.get_agent_configs();
     let window = match (window_x, window_y, window_width, window_height) {
@@ -301,6 +308,7 @@ pub fn run() {
             set_backend_config,
             list_backend_models,
             rename_agent,
+            pick_folder,
             request_attention,
             dismiss_attention,
             save_config,

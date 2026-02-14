@@ -47,6 +47,7 @@ export function AgentConfigDialog({ agent, onSave, onClose }: AgentConfigDialogP
   const [customAgent, setCustomAgent] = useState(agent.backend_config?.custom_agent ?? "");
   const [systemPrompt, setSystemPrompt] = useState(agent.backend_config?.system_prompt ?? "");
   const [awarenessLevel, setAwarenessLevel] = useState(agent.backend_config?.awareness_level ?? 0);
+  const [cwd, setCwd] = useState(agent.backend_config?.cwd ?? "");
   const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
   const [loadingModels, setLoadingModels] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -98,8 +99,14 @@ export function AgentConfigDialog({ agent, onSave, onClose }: AgentConfigDialogP
       system_prompt: systemPrompt || undefined,
       custom_agent: customAgent || undefined,
       awareness_level: awarenessLevel,
+      cwd: cwd || undefined,
     });
-  }, [agent.id, name, backendId, model, systemPrompt, customAgent, awarenessLevel, onSave]);
+  }, [agent.id, name, backendId, model, systemPrompt, customAgent, awarenessLevel, cwd, onSave]);
+
+  const handleBrowseFolder = useCallback(async () => {
+    const folder = await invoke<string | null>("pick_folder");
+    if (folder) setCwd(folder);
+  }, []);
 
   const handleSetApiKey = useCallback(() => {
     const label = BACKEND_OPTIONS.find((b) => b.id === backendId)?.label ?? backendId;
@@ -191,6 +198,27 @@ export function AgentConfigDialog({ agent, onSave, onClose }: AgentConfigDialogP
                 </option>
               ))}
             </select>
+          </label>
+
+          <label className="agent-config-label">
+            Working Folder
+            <div className="agent-config-folder-row">
+              <input
+                className="agent-config-input agent-config-folder-input"
+                value={cwd}
+                onChange={(e) => setCwd(e.target.value)}
+                placeholder="No folder selected"
+                readOnly
+              />
+              <button className="agent-config-browse-btn" onClick={handleBrowseFolder} type="button">
+                📂
+              </button>
+              {cwd && (
+                <button className="agent-config-browse-btn" onClick={() => setCwd("")} type="button" title="Clear">
+                  ✕
+                </button>
+              )}
+            </div>
           </label>
 
           {needsApiKey && (
