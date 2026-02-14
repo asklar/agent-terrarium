@@ -165,12 +165,12 @@ export function AgentConfigDialog({ agent, onSave, onClose }: AgentConfigDialogP
           </label>
 
           <label className="agent-config-label">
-            Custom Agent
+            Custom Agent Name
             <input
               className="agent-config-input"
               value={customAgent}
               onChange={(e) => setCustomAgent(e.target.value)}
-              placeholder="my-custom-agent"
+              placeholder="optional — names a sub-agent identity"
             />
           </label>
 
