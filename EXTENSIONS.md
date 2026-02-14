@@ -1,11 +1,13 @@
-# Package Developer Guide
+# Creating Extension Packages for Agent Terrarium
 
-This guide explains how to create custom packages for Agent Terrarium. Packages are declarative JSON files that define **themes**, **avatars**, and/or **gear**—no code changes required.
+Agent Terrarium supports custom extension packages — declarative JSON files that add new **themes**, **avatars**, and/or **gear** to the terrarium. No source code or build tools needed.
 
 ## Quick Start
 
-1. Create a `.json` file in `~/agent-terrarium/packages/` (e.g. `my-pack.json`)
-2. Use the package format below
+1. Create a `.json` file in your user packages folder:
+   - **Windows:** `%USERPROFILE%\agent-terrarium\packages\`
+   - **macOS/Linux:** `~/agent-terrarium/packages/`
+2. Use the package format described below
 3. Restart Agent Terrarium — your content appears automatically
 
 Packages are forward-compatible: unknown layer types, decorator names, or gear shapes are silently skipped, so packages made for newer versions degrade gracefully on older ones.
@@ -390,14 +392,14 @@ Using the `image` field, you can render custom gear from any SVG or PNG file ins
 
 ---
 
-## Package Locations
+## Package Location
 
-| Location | Description |
-|----------|-------------|
-| `public/packages/` | Built-in packages shipped with the app |
-| `~/agent-terrarium/packages/` | User packages — drop `.json` files here |
+Drop your `.json` package files into the user packages folder:
 
-User packages are loaded alongside built-in ones. If IDs conflict, user packages take precedence.
+- **Windows:** `%USERPROFILE%\agent-terrarium\packages\`
+- **macOS/Linux:** `~/agent-terrarium/packages/`
+
+Create the folder if it doesn't exist. You can have multiple package files — each is loaded independently. If your package defines an ID that conflicts with a built-in one, your version takes precedence.
 
 ## Tips
 
