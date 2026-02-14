@@ -1,57 +1,28 @@
 /**
  * Text-to-speech for agent say tool.
- * Uses the Web Speech API with pitch/rate derived from avatar voice profile.
- * Note: pitch may not work on all voices in WebView2/Chromium.
- * We try to select a voice that supports pitch variation.
+ * Uses Windows SAPI via Rust backend for proper pitch control.
+ * WebView2/Chromium ignores SpeechSynthesisUtterance.pitch, so we use
+ * SAPI XML tags (<pitch absmiddle="N">) which actually work.
  */
 
+import { invoke } from "@tauri-apps/api/core";
 import { registry } from "../themes";
 
-let voicesLoaded = false;
-let cachedVoices: SpeechSynthesisVoice[] = [];
-
-function getVoices(): SpeechSynthesisVoice[] {
-  if (!voicesLoaded) {
-    cachedVoices = window.speechSynthesis?.getVoices() ?? [];
-    if (cachedVoices.length > 0) voicesLoaded = true;
-  }
-  return cachedVoices;
-}
-
-// Listen for voices to load asynchronously
-if (typeof window !== "undefined" && window.speechSynthesis) {
-  window.speechSynthesis.onvoiceschanged = () => {
-    cachedVoices = window.speechSynthesis.getVoices();
-    voicesLoaded = true;
-  };
-}
-
-/** Speak text with avatar-appropriate voice settings */
+/** Speak text with avatar-appropriate voice settings via SAPI */
 export function speakText(text: string, avatarId: string) {
-  if (!window.speechSynthesis) return;
-
-  // Cancel any ongoing speech
-  window.speechSynthesis.cancel();
-
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "en-US";
-
-  // Try to pick a non-natural/non-online voice (basic SAPI voices support pitch better)
-  const voices = getVoices();
-  const basicVoice = voices.find(
-    (v) => v.lang.startsWith("en") && !v.name.includes("Natural") && !v.name.includes("Online") && v.localService
-  ) ?? voices.find((v) => v.lang.startsWith("en") && v.localService);
-  if (basicVoice) utterance.voice = basicVoice;
-
-  // Derive pitch from avatar's voice profile (higher basePitch → higher TTS pitch)
+  // Derive pitch from avatar's voice profile (higher basePitch → higher SAPI pitch)
   const avatarDef = registry.getAgent(avatarId);
   const basePitch = avatarDef?.voice?.basePitch ?? 500;
 
-  // Map basePitch (200-1000 Hz) → TTS pitch (1.5-2.0) — cartoonish/chipmunk range
-  const ttsPitch = 1.5 + ((basePitch - 200) / 800) * 0.5;
-  utterance.pitch = Math.max(1.4, Math.min(2.0, ttsPitch));
-  utterance.rate = 1.4;
-  utterance.volume = 0.7;
+  // Map basePitch (200-1000 Hz) → SAPI pitch (+3 to +10)
+  const sapiPitch = Math.round(3 + ((basePitch - 200) / 800) * 7);
+  // Map basePitch → SAPI rate (+2 to +5) — higher pitch = faster
+  const sapiRate = Math.round(2 + ((basePitch - 200) / 800) * 3);
 
-  window.speechSynthesis.speak(utterance);
+  invoke("speak_sapi", {
+    text,
+    pitch: Math.max(-10, Math.min(10, sapiPitch)),
+    rate: Math.max(-10, Math.min(10, sapiRate)),
+    volume: 70,
+  }).catch((e) => console.warn("SAPI speak failed:", e));
 }

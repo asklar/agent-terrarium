@@ -1,5 +1,6 @@
 mod agents;
 mod simulation;
+mod tts;
 
 use tauri::Manager;
 use tauri_plugin_store::StoreExt;
@@ -27,6 +28,11 @@ fn throw_ball(world: tauri::State<'_, Arc<World>>, x: f64, y: f64, vx: f64, vy: 
 #[tauri::command]
 fn push_bubble(world: tauri::State<'_, Arc<World>>, agent_id: String, content: String, is_emoji: bool, duration: f64) {
     world.push_bubble(&agent_id, content, is_emoji, duration);
+}
+
+#[tauri::command]
+fn speak_sapi(text: String, pitch: i32, rate: i32, volume: u16) {
+    tts::speak(text, pitch, rate, volume);
 }
 
 #[tauri::command]
@@ -524,6 +530,7 @@ pub fn run() {
             get_world_state,
             throw_ball,
             push_bubble,
+            speak_sapi,
             click_agent,
             send_message,
             dismiss_chat,
