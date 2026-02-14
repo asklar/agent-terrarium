@@ -4,6 +4,7 @@ mod simulation;
 use tauri_plugin_store::StoreExt;
 
 use agents::backend::{BackendConfig, BackendMessage, MessageRole};
+use agents::copilot::CopilotBackend;
 use agents::echo::EchoBackend;
 use agents::openai_compat;
 use agents::registry::BackendRegistry;
@@ -235,7 +236,7 @@ pub fn run() {
     // Create backend registry with all backends
     let mut registry = BackendRegistry::new();
     registry.register(Arc::new(EchoBackend));
-    registry.register(Arc::new(openai_compat::create_copilot_backend()));
+    registry.register(Arc::new(CopilotBackend::new()));
     registry.register(Arc::new(openai_compat::create_openai_backend()));
     let registry = Arc::new(registry);
 

@@ -169,16 +169,6 @@ impl AgentBackend for OpenAICompatBackend {
     }
 }
 
-pub fn create_copilot_backend() -> OpenAICompatBackend {
-    OpenAICompatBackend::new(
-        "copilot",
-        "GitHub Copilot",
-        "https://api.githubcopilot.com/chat/completions",
-        "gpt-4o",
-        "copilot",
-    )
-}
-
 pub fn create_openai_backend() -> OpenAICompatBackend {
     OpenAICompatBackend::new(
         "openai",

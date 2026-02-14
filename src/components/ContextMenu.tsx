@@ -518,7 +518,8 @@ export function ContextMenu({
           {(() => {
             const agent = agents.find((a) => a.id === selectedAgentId);
             const bid = agent?.backend_config?.backend_id ?? "echo";
-            return bid !== "echo" ? (
+            const needsApiKey = !["echo", "copilot"].includes(bid);
+            return needsApiKey ? (
               <button
                 className="context-menu-item"
                 onClick={handleSetApiKey}
