@@ -73,6 +73,7 @@ function App() {
     y: number;
   } | null>(null);
   const [configAgent, setConfigAgent] = useState<Agent | null>(null);
+  const [thinkingAgentIds, setThinkingAgentIds] = useState<Set<string>>(new Set());
   const themeRef = useRef(theme);
   themeRef.current = theme;
   const musicMutedRef = useRef(musicMuted);
@@ -205,6 +206,22 @@ function App() {
     if (agent) playAgentSound(agent.avatar, "chat");
   }, [worldState?.agents]);
 
+  const sendMessageWithThinking = useCallback(
+    async (agentId: string, text: string): Promise<string> => {
+      setThinkingAgentIds((prev) => new Set(prev).add(agentId));
+      try {
+        return await sendMessage(agentId, text);
+      } finally {
+        setThinkingAgentIds((prev) => {
+          const next = new Set(prev);
+          next.delete(agentId);
+          return next;
+        });
+      }
+    },
+    [sendMessage],
+  );
+
   const playGearSound = useCallback((agentId: string) => {
     const agent = worldState?.agents.find((a) => a.id === agentId);
     if (agent) playAgentSound(agent.avatar, "gear");
@@ -293,6 +310,7 @@ function App() {
         onBallThrow={throwBall}
         onBackgroundClick={handleCanvasClick}
         onMouseUpdate={updateMouse}
+        thinkingAgentIds={thinkingAgentIds}
       />
       {activeSessions.map((session) => {
         const agent = worldState?.agents.find(
@@ -305,7 +323,7 @@ function App() {
             session={session}
             agentPosition={agent.position}
             agentName={agent.name}
-            onSend={sendMessage}
+            onSend={sendMessageWithThinking}
             onDismiss={handleDismiss}
             onReply={playReplyChirp}
             onConfigure={(agentId) => {

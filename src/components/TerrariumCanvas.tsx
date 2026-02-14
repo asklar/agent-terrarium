@@ -9,6 +9,7 @@ interface TerrariumCanvasProps {
   onBallThrow: (x: number, y: number, vx: number, vy: number) => void;
   onBackgroundClick: () => void;
   onMouseUpdate: (x: number | null, y: number | null) => void;
+  thinkingAgentIds?: ReadonlySet<string>;
 }
 
 const AGENT_SIZE = 32;
@@ -43,6 +44,7 @@ export function TerrariumCanvas({
   onBallThrow,
   onBackgroundClick,
   onMouseUpdate,
+  thinkingAgentIds,
 }: TerrariumCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(
@@ -179,7 +181,7 @@ export function TerrariumCanvas({
 
     // Draw agents
     for (const agent of sortedAgents) {
-      drawAgent(ctx, agent);
+      drawAgent(ctx, agent, thinkingAgentIds?.has(agent.id));
     }
 
     // Play attention sounds periodically
@@ -452,7 +454,7 @@ export function TerrariumCanvas({
   );
 }
 
-function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent) {
+function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent, isThinking?: boolean) {
   const { x, y } = agent.position;
   const agentDef = registry.getAgent(agent.avatar);
   const isMoving =
@@ -526,6 +528,33 @@ function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent) {
     ctx.fillText("🔔", 0, bellY);
     ctx.globalAlpha = 1;
     if (flip) ctx.scale(-1, 1); // re-flip
+  }
+
+  // Thinking indicator — pulsing thought bubble while waiting for reply
+  if (isThinking) {
+    const scale = 0.85 + Math.sin(t / 250) * 0.15;
+    const floatY = Math.sin(t / 400) * 2;
+    const thinkY = -AGENT_SIZE / 2 - 22 + bob + floatY;
+    if (flip) ctx.scale(-1, 1);
+    ctx.save();
+    ctx.translate(0, thinkY);
+    ctx.scale(scale, scale);
+    ctx.font = "16px serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("💭", 0, 0);
+    ctx.restore();
+    // Small trailing dots
+    for (let i = 0; i < 2; i++) {
+      const dotScale = 0.3 - i * 0.1;
+      const dotY = thinkY + 12 + i * 6;
+      const dotX = -4 + i * 2;
+      ctx.fillStyle = "rgba(200, 200, 220, 0.6)";
+      ctx.beginPath();
+      ctx.arc(dotX, dotY, 2 * dotScale + 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    if (flip) ctx.scale(-1, 1);
   }
 
   // Draw equipped gear (front slots: hat, face, neck, body)
