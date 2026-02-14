@@ -67,6 +67,10 @@ export function useWorldState() {
     await invoke("set_backend_config", { agentId, backendConfig });
   }, []);
 
+  const renameAgent = useCallback(async (agentId: string, name: string) => {
+    await invoke("rename_agent", { agentId, name });
+  }, []);
+
   const dismissAttention = useCallback(async (agentId: string) => {
     await invoke("dismiss_attention", { agentId });
   }, []);
@@ -110,6 +114,7 @@ export function useWorldState() {
     requestAttention,
     dismissAttention,
     setBackendConfig,
+    renameAgent,
     updateMouse,
     saveConfig,
     loadConfig,

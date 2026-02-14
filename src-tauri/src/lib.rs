@@ -80,6 +80,11 @@ async fn send_message(world: tauri::State<'_, Arc<World>>, app: tauri::AppHandle
     // Append the response to the chat session
     world.complete_response(&agent_id, &response.content);
 
+    // Request attention so the user knows there's a reply
+    if response.needs_attention || backend_config.backend_id != "echo" {
+        world.request_attention(&agent_id);
+    }
+
     Ok(response.content)
 }
 
@@ -192,6 +197,11 @@ fn set_backend_config(world: tauri::State<'_, Arc<World>>, agent_id: String, bac
 }
 
 #[tauri::command]
+fn rename_agent(world: tauri::State<'_, Arc<World>>, agent_id: String, name: String) {
+    world.rename_agent(&agent_id, &name);
+}
+
+#[tauri::command]
 fn save_config(theme: String, window_x: Option<i32>, window_y: Option<i32>, window_width: Option<u32>, window_height: Option<u32>, world: tauri::State<'_, Arc<World>>) -> Result<(), String> {
     let agents = world.get_agent_configs();
     let window = match (window_x, window_y, window_width, window_height) {
@@ -279,6 +289,7 @@ pub fn run() {
             update_mouse,
             set_gear,
             set_backend_config,
+            rename_agent,
             request_attention,
             dismiss_attention,
             save_config,

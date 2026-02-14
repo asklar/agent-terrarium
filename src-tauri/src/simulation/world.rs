@@ -499,6 +499,13 @@ impl World {
         }
     }
 
+    pub fn rename_agent(&self, agent_id: &str, name: &str) {
+        let mut state = self.state.lock().unwrap();
+        if let Some(agent) = state.agents.iter_mut().find(|a| a.id == agent_id) {
+            agent.name = name.to_string();
+        }
+    }
+
     pub fn set_backend_config(&self, agent_id: &str, config: BackendConfig) {
         let mut state = self.state.lock().unwrap();
         if let Some(agent) = state.agents.iter_mut().find(|a| a.id == agent_id) {

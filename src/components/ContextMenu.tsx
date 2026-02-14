@@ -30,6 +30,7 @@ interface ContextMenuProps {
   onSetGear: (agentId: string, gearIds: string[]) => void;
   onRequestAttention: (agentId: string) => void;
   onSetBackend: (agentId: string, backendConfig: { backend_id: string; model?: string; system_prompt?: string; custom_agent?: string; awareness_level?: number }) => void;
+  onConfigureAgent: (agent: Agent) => void;
 }
 
 type SubMenu = null | "theme" | "add" | "remove" | "gear" | "gear-agent" | "gear-slot" | "attention" | "backend" | "backend-agent";
@@ -46,6 +47,7 @@ export function ContextMenu({
   onSetGear,
   onRequestAttention,
   onSetBackend,
+  onConfigureAgent,
 }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [subMenu, setSubMenu] = useState<SubMenu>(null);
@@ -155,6 +157,17 @@ export function ContextMenu({
     setSubMenu("backend-agent");
   }, []);
 
+  const handleConfigureAgent = useCallback(
+    (agentId: string) => {
+      const agent = agents.find((a) => a.id === agentId);
+      if (agent) {
+        onConfigureAgent(agent);
+        onClose();
+      }
+    },
+    [agents, onConfigureAgent, onClose],
+  );
+
   const handleSetBackend = useCallback(
     (backendId: string) => {
       if (!selectedAgentId) return;
@@ -171,21 +184,7 @@ export function ContextMenu({
     [selectedAgentId, agents, onSetBackend],
   );
 
-  const handleSetPrompt = useCallback(() => {
-    if (!selectedAgentId) return;
-    const agent = agents.find((a) => a.id === selectedAgentId);
-    const current = agent?.backend_config?.system_prompt ?? "";
-    const prompt = window.prompt("System prompt for " + (agent?.name ?? "agent") + ":", current);
-    if (prompt === null) return; // cancelled
-    const existing = agent?.backend_config;
-    onSetBackend(selectedAgentId, {
-      backend_id: existing?.backend_id ?? "echo",
-      model: existing?.model,
-      system_prompt: prompt || undefined,
-      custom_agent: existing?.custom_agent,
-      awareness_level: existing?.awareness_level ?? 0,
-    });
-  }, [selectedAgentId, agents, onSetBackend]);
+
 
   const handleSetApiKey = useCallback(() => {
     if (!selectedAgentId) return;
@@ -511,9 +510,9 @@ export function ContextMenu({
           <div className="context-menu-divider" />
           <button
             className="context-menu-item"
-            onClick={handleSetPrompt}
+            onClick={() => handleConfigureAgent(selectedAgentId)}
           >
-            💬 Set Prompt...
+            ⚙️ Configure...
           </button>
           {(() => {
             const agent = agents.find((a) => a.id === selectedAgentId);

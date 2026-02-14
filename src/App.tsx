@@ -6,11 +6,13 @@ import { AnimatedBackground } from "./components/AnimatedBackground";
 import { WindowFrame } from "./components/WindowFrame";
 import { ThemeMusic } from "./components/ThemeMusic";
 import { ContextMenu } from "./components/ContextMenu";
+import { AgentConfigDialog } from "./components/AgentConfigDialog";
 import { registry } from "./themes";
 import { playAgentSound } from "./audio/agentSounds";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
+import type { Agent } from "./types/world";
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -58,6 +60,7 @@ function App() {
     requestAttention,
     dismissAttention,
     setBackendConfig,
+    renameAgent,
     updateMouse,
     saveConfig,
     loadConfig,
@@ -68,6 +71,7 @@ function App() {
     x: number;
     y: number;
   } | null>(null);
+  const [configAgent, setConfigAgent] = useState<Agent | null>(null);
   const themeRef = useRef(theme);
   themeRef.current = theme;
 
@@ -313,6 +317,21 @@ function App() {
             await setBackendConfig(agentId, backendConfig);
             saveConfig(theme);
           }}
+          onConfigureAgent={(agent) => {
+            setConfigAgent(agent);
+          }}
+        />
+      )}
+      {configAgent && (
+        <AgentConfigDialog
+          agent={configAgent}
+          onSave={async (agentId, name, backendConfig) => {
+            await renameAgent(agentId, name);
+            await setBackendConfig(agentId, backendConfig);
+            saveConfig(theme);
+            setConfigAgent(null);
+          }}
+          onClose={() => setConfigAgent(null)}
         />
       )}
     </div>
