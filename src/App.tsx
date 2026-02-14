@@ -9,7 +9,7 @@ import { ContextMenu } from "./components/ContextMenu";
 import { AgentConfigDialog } from "./components/AgentConfigDialog";
 import { registry } from "./themes";
 import { playAgentSound } from "./audio/agentSounds";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { getCurrentWindow, currentMonitor } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import type { Agent } from "./types/world";
@@ -86,8 +86,18 @@ function App() {
         | undefined;
       if (w) {
         const win = getCurrentWindow();
-        await win.setPosition(new (await import("@tauri-apps/api/dpi")).LogicalPosition(w.x, w.y));
-        await win.setSize(new (await import("@tauri-apps/api/dpi")).LogicalSize(w.width, w.height));
+        const monitor = await currentMonitor();
+        let { x, y, width, height } = w;
+        if (monitor) {
+          const mw = monitor.size.width / (monitor.scaleFactor ?? 1);
+          const mh = monitor.size.height / (monitor.scaleFactor ?? 1);
+          width = Math.min(width, mw);
+          height = Math.min(height, mh);
+          x = Math.max(0, Math.min(x, mw - width));
+          y = Math.max(0, Math.min(y, mh - height));
+        }
+        await win.setPosition(new (await import("@tauri-apps/api/dpi")).LogicalPosition(x, y));
+        await win.setSize(new (await import("@tauri-apps/api/dpi")).LogicalSize(width, height));
       }
     });
   }, [loadConfig]);

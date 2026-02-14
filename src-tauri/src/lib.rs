@@ -301,6 +301,25 @@ pub fn run() {
             delete_credential,
             has_credential,
         ])
+        .setup(|app| {
+            let win = app.get_webview_window("main").expect("main window");
+            if let Ok(Some(monitor)) = win.current_monitor() {
+                let scale = monitor.scale_factor();
+                let mw = monitor.size().width as f64 / scale;
+                let mh = monitor.size().height as f64 / scale;
+                if let Ok(size) = win.outer_size() {
+                    let w = size.width as f64 / scale;
+                    let h = size.height as f64 / scale;
+                    if w > mw || h > mh {
+                        let _ = win.set_size(tauri::LogicalSize::new(
+                            w.min(mw),
+                            h.min(mh),
+                        ));
+                    }
+                }
+            }
+            Ok(())
+        })
         .on_window_event(|_window, event| {
             if let tauri::WindowEvent::Destroyed = event {
                 std::process::exit(0);

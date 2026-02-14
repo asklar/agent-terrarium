@@ -14,6 +14,7 @@
     "core:window:allow-outer-position",
     "core:window:allow-outer-size",
     "core:window:allow-request-user-attention",
+    "core:window:allow-current-monitor",
     "core:event:default",
     "store:allow-get",
     "store:allow-set",
