@@ -2,21 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { registry } from "../themes";
 import type { GearSlot } from "../themes/PackageTypes";
 import type { Agent } from "../types/world";
-import { setCredential } from "../utils/credentials";
-
-interface BackendOption {
-  id: string;
-  label: string;
-}
-
-const BACKEND_OPTIONS: BackendOption[] = [
-  { id: "echo", label: "Echo (NPC)" },
-  { id: "copilot", label: "GitHub Copilot" },
-  { id: "openai", label: "OpenAI" },
-  { id: "claude", label: "Claude" },
-  { id: "openclaw", label: "OpenClaw" },
-  { id: "msagent", label: "Microsoft Agent Framework" },
-];
 
 interface ContextMenuProps {
   x: number;
@@ -29,11 +14,9 @@ interface ContextMenuProps {
   onRemoveAgent: (agentId: string) => void;
   onSetGear: (agentId: string, gearIds: string[]) => void;
   onRequestAttention: (agentId: string) => void;
-  onSetBackend: (agentId: string, backendConfig: { backend_id: string; model?: string; system_prompt?: string; custom_agent?: string; awareness_level?: number }) => void;
-  onConfigureAgent: (agent: Agent) => void;
 }
 
-type SubMenu = null | "theme" | "add" | "remove" | "gear" | "gear-agent" | "gear-slot" | "attention" | "backend" | "backend-agent" | "configure";
+type SubMenu = null | "theme" | "add" | "remove" | "gear" | "gear-agent" | "gear-slot" | "attention";
 
 export function ContextMenu({
   x,
@@ -46,8 +29,6 @@ export function ContextMenu({
   onRemoveAgent,
   onSetGear,
   onRequestAttention,
-  onSetBackend,
-  onConfigureAgent,
 }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [subMenu, setSubMenu] = useState<SubMenu>(null);
@@ -152,50 +133,6 @@ export function ContextMenu({
     [onRequestAttention, onClose],
   );
 
-  const handleSelectBackendAgent = useCallback((agentId: string) => {
-    setSelectedAgentId(agentId);
-    setSubMenu("backend-agent");
-  }, []);
-
-  const handleConfigureAgent = useCallback(
-    (agentId: string) => {
-      const agent = agents.find((a) => a.id === agentId);
-      if (agent) {
-        onConfigureAgent(agent);
-        onClose();
-      }
-    },
-    [agents, onConfigureAgent, onClose],
-  );
-
-  const handleSetBackend = useCallback(
-    (backendId: string) => {
-      if (!selectedAgentId) return;
-      const agent = agents.find((a) => a.id === selectedAgentId);
-      const existing = agent?.backend_config;
-      onSetBackend(selectedAgentId, {
-        backend_id: backendId,
-        model: existing?.model,
-        system_prompt: existing?.system_prompt,
-        custom_agent: existing?.custom_agent,
-        awareness_level: existing?.awareness_level ?? 0,
-      });
-    },
-    [selectedAgentId, agents, onSetBackend],
-  );
-
-
-
-  const handleSetApiKey = useCallback(() => {
-    if (!selectedAgentId) return;
-    const agent = agents.find((a) => a.id === selectedAgentId);
-    const backendId = agent?.backend_config?.backend_id ?? "echo";
-    if (backendId === "echo") return;
-    const key = window.prompt(`API key for ${BACKEND_OPTIONS.find((b) => b.id === backendId)?.label ?? backendId}:`);
-    if (key === null || key === "") return;
-    setCredential(backendId, key);
-  }, [selectedAgentId, agents]);
-
   const GEAR_SLOTS: { slot: GearSlot; icon: string; label: string }[] = [
     { slot: "hat", icon: "🎩", label: "Hat" },
     { slot: "face", icon: "🕶️", label: "Face" },
@@ -247,39 +184,11 @@ export function ContextMenu({
           </button>
           <button
             className="context-menu-item"
-            onClick={guardedClick(() => setSubMenu("backend"))}
-          >
-            🤖 Backend
-            <span className="context-menu-arrow">▸</span>
-          </button>
-          <button
-            className="context-menu-item"
             onClick={guardedClick(() => setSubMenu("attention"))}
           >
             🔔 Request Attention
             <span className="context-menu-arrow">▸</span>
           </button>
-          <div className="context-menu-divider" />
-          {agents.length > 0 && (
-            <>
-              {agents.length === 1 ? (
-                <button
-                  className="context-menu-item"
-                  onClick={guardedClick(() => handleConfigureAgent(agents[0].id))}
-                >
-                  ⚙️ Configure {agents[0].name}
-                </button>
-              ) : (
-                <button
-                  className="context-menu-item"
-                  onClick={guardedClick(() => setSubMenu("configure"))}
-                >
-                  ⚙️ Configure Agent
-                  <span className="context-menu-arrow">▸</span>
-                </button>
-              )}
-            </>
-          )}
         </>
       )}
 
@@ -472,102 +381,6 @@ export function ContextMenu({
               </button>
             ))
           )}
-        </>
-      )}
-      {subMenu === "configure" && (
-        <>
-          <button
-            className="context-menu-item context-menu-back"
-            onClick={() => setSubMenu(null)}
-          >
-            ◂ Back
-          </button>
-          <div className="context-menu-divider" />
-          {agents.map((a) => (
-            <button
-              key={a.id}
-              className="context-menu-item"
-              onClick={() => handleConfigureAgent(a.id)}
-            >
-              {registry.getAgent(a.avatar)?.icon ?? "❓"} {a.name}
-            </button>
-          ))}
-        </>
-      )}
-      {subMenu === "backend" && (
-        <>
-          <button
-            className="context-menu-item context-menu-back"
-            onClick={() => setSubMenu(null)}
-          >
-            ◂ Back
-          </button>
-          <div className="context-menu-divider" />
-          {agents.length === 0 ? (
-            <div className="context-menu-item disabled">No agents</div>
-          ) : (
-            agents.map((a) => (
-              <button
-                key={a.id}
-                className="context-menu-item"
-                onClick={() => handleSelectBackendAgent(a.id)}
-              >
-                {registry.getAgent(a.avatar)?.icon ?? "❓"} {a.name}
-                <span className="context-menu-check">
-                  {BACKEND_OPTIONS.find((b) => b.id === (a.backend_config?.backend_id ?? "echo"))?.label ?? "Echo (NPC)"}
-                </span>
-                <span className="context-menu-arrow">▸</span>
-              </button>
-            ))
-          )}
-        </>
-      )}
-      {subMenu === "backend-agent" && selectedAgentId && (
-        <>
-          <button
-            className="context-menu-item context-menu-back"
-            onClick={() => setSubMenu("backend")}
-          >
-            ◂ Back
-          </button>
-          <div className="context-menu-divider" />
-          {BACKEND_OPTIONS.map((b) => {
-            const agent = agents.find((a) => a.id === selectedAgentId);
-            const currentBackend = agent?.backend_config?.backend_id ?? "echo";
-            const isActive = currentBackend === b.id;
-            return (
-              <button
-                key={b.id}
-                className={`context-menu-item ${isActive ? "active" : ""}`}
-                onClick={() => handleSetBackend(b.id)}
-              >
-                {b.label}
-                {isActive && (
-                  <span className="context-menu-check">✓</span>
-                )}
-              </button>
-            );
-          })}
-          <div className="context-menu-divider" />
-          <button
-            className="context-menu-item"
-            onClick={() => handleConfigureAgent(selectedAgentId)}
-          >
-            ⚙️ Configure...
-          </button>
-          {(() => {
-            const agent = agents.find((a) => a.id === selectedAgentId);
-            const bid = agent?.backend_config?.backend_id ?? "echo";
-            const needsApiKey = !["echo", "copilot"].includes(bid);
-            return needsApiKey ? (
-              <button
-                className="context-menu-item"
-                onClick={handleSetApiKey}
-              >
-                🔑 Set API Key...
-              </button>
-            ) : null;
-          })()}
         </>
       )}
     </div>

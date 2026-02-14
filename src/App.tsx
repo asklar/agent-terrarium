@@ -286,6 +286,10 @@ function App() {
             onSend={sendMessage}
             onDismiss={handleDismiss}
             onReply={playReplyChirp}
+            onConfigure={(agentId) => {
+              const a = worldState?.agents.find((ag) => ag.id === agentId);
+              if (a) setConfigAgent(a);
+            }}
           />
         );
       })}
@@ -312,13 +316,6 @@ function App() {
           }}
           onRequestAttention={(agentId) => {
             setTimeout(() => requestAttention(agentId), 5000);
-          }}
-          onSetBackend={async (agentId, backendConfig) => {
-            await setBackendConfig(agentId, backendConfig);
-            saveConfig(theme);
-          }}
-          onConfigureAgent={(agent) => {
-            setConfigAgent(agent);
           }}
         />
       )}
