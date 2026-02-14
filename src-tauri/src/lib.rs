@@ -1,6 +1,7 @@
 mod agents;
 mod simulation;
 
+use tauri::Manager;
 use tauri_plugin_store::StoreExt;
 
 use agents::backend::{BackendConfig, BackendMessage, MessageRole};
@@ -305,7 +306,7 @@ pub fn run() {
         .setup(|app| {
             let win = app.get_webview_window("main").expect("main window");
             if let Ok(Some(monitor)) = win.current_monitor() {
-                let scale = monitor.scale_factor();
+                let scale: f64 = monitor.scale_factor();
                 let mw = monitor.size().width as f64 / scale;
                 let mh = monitor.size().height as f64 / scale;
                 if let Ok(size) = win.outer_size() {
