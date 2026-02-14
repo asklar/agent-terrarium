@@ -381,26 +381,26 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
             ctx.restore();
           }
         } else if (sky.weatherOverlay === "drizzle") {
-          while (wp.length < 40) {
+          while (wp.length < 45) {
             wp.push({
               x: Math.random() * w, y: Math.random() * h,
-              size: 0.8 + Math.random() * 1.2, speed: 5 + Math.random() * 4,
-              opacity: 0.3 + Math.random() * 0.4, drift: -0.4 - Math.random() * 0.4,
+              size: 1 + Math.random() * 1.5, speed: 5 + Math.random() * 4,
+              opacity: 0.5 + Math.random() * 0.4, drift: -0.4 - Math.random() * 0.4,
               phase: Math.random() * Math.PI * 2,
             });
           }
           ctx.save();
           ctx.globalAlpha = sky.weatherIntensity;
-          ctx.strokeStyle = "rgba(170, 200, 255, 0.5)";
-          ctx.lineWidth = 0.8;
           for (const p of wp) {
             p.y += p.speed * dt * 55;
             p.x += p.drift * dt * 25;
             if (p.y > h) { p.y = -5; p.x = Math.random() * w; }
             if (p.x < 0) p.x = w;
+            ctx.strokeStyle = `rgba(220, 230, 255, ${p.opacity})`;
+            ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p.x + p.drift * 2, p.y + p.size * 3.5);
+            ctx.lineTo(p.x + p.drift * 2, p.y + p.size * 5);
             ctx.stroke();
           }
           ctx.restore();
