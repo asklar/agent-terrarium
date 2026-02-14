@@ -483,6 +483,9 @@ function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent) {
     case "copilot":
       drawCopilot(ctx, colors, bob, legPhase, squish, isMoving, t);
       break;
+    case "claude":
+      drawClaude(ctx, colors, bob, legPhase, squish, isMoving, t);
+      break;
     case "squirrel":
       drawSquirrel(ctx, colors, bob, legPhase, squish, isMoving, t);
       break;
@@ -1166,6 +1169,78 @@ function drawCopilot(
 
   drawCheeks(ctx, c.cheek, 0, headY + 1);
   drawMouth(ctx, 0, headY + 5, "smile");
+}
+
+function drawClaude(
+  ctx: CanvasRenderingContext2D,
+  c: (typeof AGENT_COLORS)[string],
+  bob: number,
+  legPhase: number,
+  squish: number,
+  isMoving: boolean,
+  t: number,
+) {
+  const headY = -10 + bob;
+
+  // Legs
+  drawLegs(ctx, c.accent, bob, legPhase, isMoving, 5, 8);
+
+  // Body — warm rounded shape
+  ctx.fillStyle = c.body;
+  ctx.save();
+  ctx.scale(squish, 2 - squish);
+  ctx.beginPath();
+  ctx.ellipse(0, (2 + bob) / (2 - squish), 10, 11, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Subtle warm glow aura
+  const glowAlpha = 0.08 + Math.sin(t / 600) * 0.04;
+  ctx.fillStyle = `rgba(217, 119, 87, ${glowAlpha})`;
+  ctx.beginPath();
+  ctx.ellipse(0, 2 + bob, 16, 16, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Head — round and friendly
+  ctx.fillStyle = c.head;
+  ctx.beginPath();
+  ctx.ellipse(0, headY, 10, 10, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Thinking sparkles (orbiting dots)
+  const sparkleCount = 3;
+  for (let i = 0; i < sparkleCount; i++) {
+    const angle = (t / 800) + (i * Math.PI * 2) / sparkleCount;
+    const radius = 13 + Math.sin(t / 400 + i) * 2;
+    const sx = Math.cos(angle) * radius;
+    const sy = headY - 4 + Math.sin(angle) * 5;
+    const alpha = 0.3 + Math.sin(t / 300 + i * 2) * 0.3;
+    ctx.fillStyle = `rgba(255, 200, 150, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Eyes — warm white with a thoughtful look
+  ctx.fillStyle = c.eyes;
+  ctx.beginPath();
+  ctx.ellipse(-4, headY - 2, 2.5, 2.8, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(4, headY - 2, 2.5, 2.8, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Pupils
+  ctx.fillStyle = c.accent;
+  ctx.beginPath();
+  ctx.arc(-4, headY - 1.5, 1.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(4, headY - 1.5, 1.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  drawCheeks(ctx, c.cheek, 0, headY + 1);
+  drawMouth(ctx, 0, headY + 5, "small");
 }
 
 function drawSquirrel(

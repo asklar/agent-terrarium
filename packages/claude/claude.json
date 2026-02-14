@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "name": "Claude Agent",
+  "agents": [
+    {
+      "id": "claude",
+      "name": "Claude",
+      "icon": "🧡",
+      "shape": "claude",
+      "colors": {
+        "body": "#D97757",
+        "head": "#E8956F",
+        "eyes": "#FFFFFF",
+        "accent": "#B85C3A",
+        "cheek": "#F4A98A"
+      },
+      "voice": {
+        "basePitch": 420,
+        "pitchVar": 90,
+        "wave": "sine",
+        "syllables": 3,
+        "speed": 0.08,
+        "volume": 0.09
+      },
+      "personality": {
+        "speedMin": 20,
+        "speedMax": 70,
+        "movementStyle": "wander",
+        "interactionChance": 0.9,
+        "ballInterest": 0.4,
+        "chatEmojis": ["🧡", "✨", "💭", "📝", "🤔"]
+      },
+      "defaultBackend": {
+        "backend_id": "claude"
+      }
+    }
+  ]
+}
