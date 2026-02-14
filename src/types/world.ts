@@ -44,6 +44,7 @@ export interface Agent {
     system_prompt?: string;
     custom_agent?: string;
     awareness_level: number;
+    cwd?: string;
   };
 }
 

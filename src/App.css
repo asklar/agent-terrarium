@@ -489,6 +489,12 @@ html, body, #root {
   min-height: 48px;
 }
 
+.agent-config-hint {
+  font-size: 10px;
+  color: #999;
+  margin-top: 2px;
+}
+
 .agent-config-api-key-btn {
   align-self: flex-start;
   background: none;

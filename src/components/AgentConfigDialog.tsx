@@ -10,6 +10,7 @@ interface BackendConfig {
   system_prompt?: string;
   custom_agent?: string;
   awareness_level: number;
+  cwd?: string;
 }
 
 interface ModelOption {
@@ -138,20 +139,22 @@ export function AgentConfigDialog({ agent, onSave, onClose }: AgentConfigDialogP
 
           <label className="agent-config-label">
             Model
-            <input
-              className="agent-config-input"
-              list="model-options"
+            <select
+              className="agent-config-select"
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              placeholder={loadingModels ? "Loading models…" : "default"}
-            />
-            <datalist id="model-options">
+            >
+              <option value="">Use default</option>
+              {model && !modelOptions.some((m) => m.id === model) && (
+                <option value={model}>{model}</option>
+              )}
               {modelOptions.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.name}
                 </option>
               ))}
-            </datalist>
+            </select>
+            {loadingModels && <span className="agent-config-hint">Loading models…</span>}
           </label>
 
           <label className="agent-config-label">
