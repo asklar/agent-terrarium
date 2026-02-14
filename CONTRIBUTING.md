@@ -166,13 +166,7 @@ You only need one of WiX or NSIS. The build will produce whichever toolset it fi
 
 ### Release builds
 
-For a clean release build with optimizations:
-
-```bash
-pnpm tauri build --release
-```
-
-The resulting installer can be distributed and installed on any Windows 10/11 machine without needing Rust or Node.js.
+`pnpm tauri build` already compiles in release mode with optimizations. The resulting installer can be distributed and installed on any Windows 10/11 machine without needing Rust or Node.js.
 
 ## Tips
 
