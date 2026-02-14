@@ -1,7 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { CodeBlock } from "./CodeBlock";
 import type { ChatSession } from "../types/world";
+
+const mdComponents = { pre: CodeBlock };
 
 interface ChatOverlayProps {
   session: ChatSession;
@@ -116,7 +119,7 @@ export function ChatOverlay({
             key={i}
             className={`chat-message ${msg.from_user ? "user" : "agent"}`}
           >
-            {msg.from_user ? msg.text : <Markdown remarkPlugins={[remarkGfm]}>{msg.text}</Markdown>}
+            {msg.from_user ? msg.text : <Markdown remarkPlugins={[remarkGfm]} components={mdComponents}>{msg.text}</Markdown>}
           </div>
         ))}
         <div ref={messagesEndRef} />

@@ -4,8 +4,11 @@ import remarkGfm from "remark-gfm";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { AgentConfigDialog } from "./AgentConfigDialog";
+import { CodeBlock } from "./CodeBlock";
 import { log } from "../utils/log";
 import type { WorldState, ChatSession, Agent } from "../types/world";
+
+const mdComponents = { pre: CodeBlock };
 
 interface ChatWindowProps {
   agentId: string;
@@ -117,7 +120,7 @@ export function ChatWindow({ agentId }: ChatWindowProps) {
       <div className="chat-window-messages">
         {session?.messages.map((msg, i) => (
           <div key={i} className={`chat-window-msg ${msg.from_user ? "user" : "agent"}`}>
-            {msg.from_user ? msg.text : <Markdown remarkPlugins={[remarkGfm]}>{msg.text}</Markdown>}
+            {msg.from_user ? msg.text : <Markdown remarkPlugins={[remarkGfm]} components={mdComponents}>{msg.text}</Markdown>}
           </div>
         )) ?? <div className="chat-window-empty">No messages yet. Say hi!</div>}
         <div ref={messagesEndRef} />

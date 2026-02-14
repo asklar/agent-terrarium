@@ -192,6 +192,40 @@ html, body, #root {
   font-size: inherit;
 }
 
+/* Code block copy button */
+.code-block-wrapper {
+  position: relative;
+}
+.code-block-wrapper pre {
+  margin: 0;
+}
+.code-copy-btn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 10px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+  line-height: 1;
+}
+.code-block-wrapper:hover .code-copy-btn {
+  opacity: 1;
+}
+.code-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+.code-copy-btn.copied {
+  opacity: 1;
+  color: #8BC34A;
+}
+
 .chat-message.agent ul, .chat-message.agent ol {
   margin: 2px 0;
   padding-left: 16px;
