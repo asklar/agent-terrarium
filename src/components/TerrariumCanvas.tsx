@@ -64,7 +64,8 @@ export function TerrariumCanvas({
     duration: number;
   } | null>(null);
   const attentionSoundTimers = useRef<Map<string, number>>(new Map());
-  const prevBallRef = useRef<{ vy: number; captures: number; active: boolean } | null>(null);
+  const prevBallRef = useRef<{ vx: number; vy: number; captures: number; active: boolean } | null>(null);
+  const ballSquashRef = useRef(0); // -1 = squashed (wide+short), +1 = stretched (tall+narrow), decays to 0
 
   // Pick a mood-based greeting emoji for an agent
   const pickGreetingEmoji = useCallback((agent: Agent): string => {
@@ -202,24 +203,42 @@ export function TerrariumCanvas({
     // Draw ball
     if (worldState.ball) {
       const ball = worldState.ball;
+
+      // Update squash spring (decay toward 0)
+      ballSquashRef.current *= 0.85;
+      if (Math.abs(ballSquashRef.current) < 0.01) ballSquashRef.current = 0;
+
+      // Velocity-based stretch: falling fast → stretch vertically
+      const speed = Math.sqrt(ball.velocity.x ** 2 + ball.velocity.y ** 2);
+      const velStretch = Math.min(speed / 400, 0.3); // max 30% stretch
+      const velAngle = Math.atan2(ball.velocity.y, ball.velocity.x);
+
+      // Combine spring squash + velocity stretch
+      const squash = ballSquashRef.current;
+      const sx = 1 + squash * 0.35 + velStretch * 0.3; // wider when squashed
+      const sy = 1 - squash * 0.35 - velStretch * 0.3; // shorter when squashed
+
       ctx.save();
+      ctx.translate(ball.position.x, ball.position.y);
+
+      // Rotate to velocity direction for stretch, but only when moving fast
+      if (speed > 50 && Math.abs(squash) < 0.1) {
+        ctx.rotate(velAngle);
+      }
+
+      ctx.scale(sx, sy);
+
       ctx.fillStyle = "#FF5722";
       ctx.shadowColor = "rgba(0,0,0,0.3)";
       ctx.shadowBlur = 4;
       ctx.shadowOffsetY = 2;
       ctx.beginPath();
-      ctx.arc(ball.position.x, ball.position.y, BALL_SIZE, 0, Math.PI * 2);
+      ctx.arc(0, 0, BALL_SIZE, 0, Math.PI * 2);
       ctx.fill();
       // Highlight
       ctx.fillStyle = "rgba(255,255,255,0.4)";
       ctx.beginPath();
-      ctx.arc(
-        ball.position.x - 2,
-        ball.position.y - 2,
-        BALL_SIZE * 0.4,
-        0,
-        Math.PI * 2,
-      );
+      ctx.arc(-2, -2, BALL_SIZE * 0.4, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
@@ -233,6 +252,7 @@ export function TerrariumCanvas({
         if (curBall.captures > prev.captures) {
           playCaptureSound();
           playKickSound();
+          ballSquashRef.current = -0.8; // Kick squash
           // Play agent-specific capture chirp for the capturing agent
           const captureEmojis = ["⚽", "🎉", "😄", "🏆", "💪", "🙌"];
           const captureBubble = worldState.bubbles.find(
@@ -246,9 +266,16 @@ export function TerrariumCanvas({
         // Bounce: velocity.y sign flipped (ground or ceiling bounce)
         if (prev.vy > 5 && curBall.velocity.y < -5) {
           playBounceSound();
+          // Trigger squash animation (negative = flatten)
+          ballSquashRef.current = -Math.min(prev.vy / 200, 1);
+        }
+        // Wall bounce: velocity.x sign flipped
+        if (Math.abs(prev.vy) < 50 && Math.sign(curBall.velocity.x) !== Math.sign(prev.vx ?? curBall.velocity.x) && Math.abs(curBall.velocity.x) > 10) {
+          ballSquashRef.current = -0.5;
         }
       }
       prevBallRef.current = {
+        vx: curBall.velocity.x,
         vy: curBall.velocity.y,
         captures: curBall.captures,
         active: curBall.active,
