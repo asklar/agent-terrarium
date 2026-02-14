@@ -319,7 +319,7 @@ pub fn run() {
     std::thread::spawn(move || {
         use std::collections::HashMap;
         let mut cooldowns: HashMap<String, std::time::Instant> = HashMap::new();
-        let cooldown_duration = Duration::from_secs(30);
+        let cooldown_duration = Duration::from_secs(15);
 
         loop {
             std::thread::sleep(Duration::from_secs(2));
@@ -358,25 +358,41 @@ pub fn run() {
                 log::info!("Dispatching {} events to {} (awareness={})", relevant.len(), agent_name, awareness_level);
                 cooldowns.insert(agent_id.clone(), now);
 
-                // Get backend config for this agent
+                // Get backend config and avatar for this agent
                 let state = world_events.state.lock().unwrap();
                 let agent = state.agents.iter().find(|a| a.id == *agent_id);
                 let config = agent.map(|a| a.backend_config.clone());
+                let avatar = agent.map(|a| a.avatar.clone()).unwrap_or_default();
                 drop(state);
 
                 if let Some(config) = config {
+                    // Build a rich single prompt that includes personality context
+                    let personality_hint = match avatar.as_str() {
+                        a if a.contains("cat") => "You are playful, curious, and sometimes aloof. You purr, meow, and chase things.",
+                        a if a.contains("dog") => "You are loyal, excited, and love to play. You bark, wag your tail, and fetch.",
+                        a if a.contains("squirrel") => "You are energetic, skittish, and love collecting things. You chitter and scamper.",
+                        a if a.contains("robot") => "You are logical but learning emotions. You beep, whir, and compute feelings.",
+                        a if a.contains("bunny") || a.contains("rabbit") => "You are gentle, hoppy, and love treats. You wiggle your nose and thump.",
+                        a if a.contains("frog") => "You are chill, zen, and love rain. You ribbit and hop contentedly.",
+                        _ => "You are a cute little creature with your own personality.",
+                    };
+
+                    let system_context = config.system_prompt.clone().unwrap_or_else(|| {
+                        format!(
+                            "You are {}, a cute {} living in a digital terrarium. {}",
+                            agent_name, avatar, personality_hint
+                        )
+                    });
+
+                    let events_text = relevant.join("\n- ");
                     let prompt = format!(
-                        "You just observed the following in the terrarium:\n{}\nReact briefly with an emoji or a very short message (1-2 words max).",
-                        relevant.join("\n")
+                        "{}\n\nSomething just happened in your terrarium!\n- {}\n\n\
+                        React in character! Respond with ONLY a single emoji OR a short expressive action/sound (like *purrs*, *gasps*, *bounces excitedly*). \
+                        Keep it to 1-4 words max. Be expressive and fun!",
+                        system_context, events_text
                     );
 
                     let messages = vec![
-                        BackendMessage {
-                            role: MessageRole::System,
-                            content: config.system_prompt.clone().unwrap_or_else(|| {
-                                format!("You are {}, a cute creature living in a digital terrarium. React to events with emojis or very brief expressions.", agent_name)
-                            }),
-                        },
                         BackendMessage {
                             role: MessageRole::User,
                             content: prompt,
@@ -389,7 +405,7 @@ pub fn run() {
                     let aid = agent_id.clone();
                     let aname = agent_name.clone();
 
-                    // Spawn async response handler
+                    // Spawn async response handler with timeout
                     std::thread::spawn(move || {
                         let rt = tokio::runtime::Builder::new_current_thread()
                             .enable_all()
@@ -397,17 +413,30 @@ pub fn run() {
                             .unwrap();
                         rt.block_on(async {
                             if let Some(backend) = registry.get(&backend_id) {
-                                match backend.respond(&config, &messages).await {
-                                    Ok(response) => {
-                                        let text = response.content.trim().to_string();
+                                let result = tokio::time::timeout(
+                                    Duration::from_secs(15),
+                                    backend.respond(&config, &messages),
+                                ).await;
+
+                                match result {
+                                    Ok(Ok(response)) => {
+                                        let mut text = response.content.trim().to_string();
+                                        // Truncate long responses to keep bubbles readable
+                                        if text.chars().count() > 30 {
+                                            text = text.chars().take(27).collect::<String>() + "...";
+                                        }
                                         if !text.is_empty() {
                                             log::info!("Event response from {}: {}", aname, text);
                                             let is_emoji = text.chars().count() <= 3;
-                                            world_ref.push_bubble(&aid, text, is_emoji, 3.0);
+                                            let duration = if is_emoji { 3.0 } else { 4.5 };
+                                            world_ref.push_bubble(&aid, text, is_emoji, duration);
                                         }
                                     }
-                                    Err(e) => {
+                                    Ok(Err(e)) => {
                                         log::warn!("Event dispatch to {} failed: {}", aname, e);
+                                    }
+                                    Err(_) => {
+                                        log::warn!("Event dispatch to {} timed out (15s)", aname);
                                     }
                                 }
                             }
