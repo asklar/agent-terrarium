@@ -19,14 +19,22 @@ impl CopilotBackend {
     async fn ensure_client(&self) -> Result<(), String> {
         let mut client_lock = self.client.write().await;
         if client_lock.is_none() {
+            log::info!("Creating Copilot SDK client...");
             let client = Client::builder()
                 .use_stdio(true)
                 .build()
-                .map_err(|e| format!("Failed to create Copilot client: {}", e))?;
+                .map_err(|e| {
+                    log::error!("Failed to create Copilot client: {}", e);
+                    format!("Failed to create Copilot client: {}", e)
+                })?;
             client
                 .start()
                 .await
-                .map_err(|e| format!("Failed to start Copilot client: {}", e))?;
+                .map_err(|e| {
+                    log::error!("Failed to start Copilot client: {}", e);
+                    format!("Failed to start Copilot client: {}", e)
+                })?;
+            log::info!("Copilot SDK client initialized");
             *client_lock = Some(client);
         }
         Ok(())
@@ -48,6 +56,8 @@ impl AgentBackend for CopilotBackend {
         config: &BackendConfig,
         messages: &[BackendMessage],
     ) -> Result<BackendResponse, String> {
+        log::info!("Copilot respond: model={:?}, agent={:?}, {} messages",
+            config.model, config.custom_agent, messages.len());
         self.ensure_client().await?;
         let client_lock = self.client.read().await;
         let client = client_lock.as_ref().unwrap();
@@ -91,7 +101,12 @@ impl AgentBackend for CopilotBackend {
         let response = session
             .send_and_collect(last_user_msg, None)
             .await
-            .map_err(|e| format!("Copilot error: {}", e))?;
+            .map_err(|e| {
+                log::error!("Copilot error: {}", e);
+                format!("Copilot error: {}", e)
+            })?;
+
+        log::debug!("Copilot response: {}", &response[..response.len().min(100)]);
 
         Ok(BackendResponse {
             content: response,

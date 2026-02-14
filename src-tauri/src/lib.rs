@@ -57,7 +57,10 @@ async fn send_message(world: tauri::State<'_, Arc<World>>, app: tauri::AppHandle
     let registry = world.get_backend_registry();
     let backend = registry
         .get(&backend_config.backend_id)
-        .unwrap_or_else(|| registry.get("echo").expect("echo backend must be registered"));
+        .unwrap_or_else(|| {
+            log::warn!("Backend '{}' not found, falling back to echo", backend_config.backend_id);
+            registry.get("echo").expect("echo backend must be registered")
+        });
 
     // Lazily load credential from store if backend needs one and isn't ready
     if !backend.is_available().await {
@@ -73,9 +76,12 @@ async fn send_message(world: tauri::State<'_, Arc<World>>, app: tauri::AppHandle
     let response = backend
         .respond(&backend_config, &messages)
         .await
-        .unwrap_or_else(|e| agents::backend::BackendResponse {
-            content: format!("Error: {}", e),
-            needs_attention: false,
+        .unwrap_or_else(|e| {
+            log::error!("Backend respond error for {}: {}", agent_id, e);
+            agents::backend::BackendResponse {
+                content: format!("Error: {}", e),
+                needs_attention: false,
+            }
         });
 
     // Append the response to the chat session
@@ -174,6 +180,7 @@ fn user_packages_dir() -> std::path::PathBuf {
 #[tauri::command]
 fn load_user_packages() -> Result<Vec<String>, String> {
     let dir = user_packages_dir();
+    log::info!("Loading user packages from {:?}", dir);
     if !dir.exists() {
         // Create the directory so users know where to put packages
         std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
@@ -225,6 +232,7 @@ async fn pick_folder(app: tauri::AppHandle) -> Result<Option<String>, String> {
 
 #[tauri::command]
 fn save_config(theme: String, window_x: Option<i32>, window_y: Option<i32>, window_width: Option<u32>, window_height: Option<u32>, music_muted: Option<bool>, world: tauri::State<'_, Arc<World>>) -> Result<(), String> {
+    log::info!("Saving config: theme={}", theme);
     let agents = world.get_agent_configs();
     let window = match (window_x, window_y, window_width, window_height) {
         (Some(x), Some(y), Some(w), Some(h)) => Some(simulation::types::WindowConfig { x, y, width: w, height: h }),
@@ -264,6 +272,11 @@ fn get_splash_wait(state: tauri::State<'_, SplashWait>) -> bool {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+        .format_timestamp_millis()
+        .init();
+
+    log::info!("Agent Terrarium starting up");
     let splash_wait = std::env::args().any(|a| a == "--splash-wait");
 
     // Create backend registry with all backends
@@ -280,9 +293,14 @@ pub fn run() {
     if path.exists() {
         if let Ok(json) = std::fs::read_to_string(&path) {
             if let Ok(config) = serde_json::from_str::<AppConfig>(&json) {
+                log::info!("Loaded config from {:?}: {} agents", path, config.agents.len());
                 world.load_from_config(&config);
+            } else {
+                log::warn!("Failed to parse config at {:?}", path);
             }
         }
+    } else {
+        log::info!("No config file at {:?}, using defaults", path);
     }
 
     // Spawn simulation tick loop

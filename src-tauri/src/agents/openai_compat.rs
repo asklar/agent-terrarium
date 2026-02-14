@@ -82,6 +82,7 @@ impl AgentBackend for OpenAICompatBackend {
         config: &BackendConfig,
         messages: &[BackendMessage],
     ) -> Result<BackendResponse, String> {
+        log::info!("{} respond: model={:?}, {} messages", self.display_name, config.model, messages.len());
         let api_key = self.api_key.read().await;
         let api_key = api_key.as_ref().ok_or_else(|| {
             format!(
@@ -136,6 +137,7 @@ impl AgentBackend for OpenAICompatBackend {
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
+            log::error!("{} API error {}: {}", self.display_name, status, &body[..body.len().min(200)]);
             return Err(format!("API error {}: {}", status, body));
         }
 

@@ -11,6 +11,7 @@ import { registry } from "./themes";
 import { playAgentSound } from "./audio/agentSounds";
 import { getCurrentWindow, currentMonitor } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
+import { log } from "./utils/log";
 import "./App.css";
 import type { Agent } from "./types/world";
 
@@ -208,9 +209,15 @@ function App() {
 
   const sendMessageWithThinking = useCallback(
     async (agentId: string, text: string): Promise<string> => {
+      log.info("Sending message to", agentId, text.slice(0, 80));
       setThinkingAgentIds((prev) => new Set(prev).add(agentId));
       try {
-        return await sendMessage(agentId, text);
+        const reply = await sendMessage(agentId, text);
+        log.info("Reply from", agentId, reply.slice(0, 80));
+        return reply;
+      } catch (e) {
+        log.error("Send message failed for", agentId, e);
+        throw e;
       } finally {
         setThinkingAgentIds((prev) => {
           const next = new Set(prev);
@@ -229,6 +236,7 @@ function App() {
 
   const handleAgentClick = useCallback(
     async (agentId: string) => {
+      log.debug("Agent clicked:", agentId);
       // If agent needs attention, dismiss it first
       const agent = worldState?.agents.find((a) => a.id === agentId);
       if (agent?.state === "NeedsAttention") {

@@ -15,6 +15,7 @@ impl BackendRegistry {
     }
 
     pub fn register(&mut self, backend: Arc<dyn AgentBackend>) {
+        log::info!("Registered backend: {} ({})", backend.id(), backend.display_name());
         self.backends.insert(backend.id().to_string(), backend);
     }
 

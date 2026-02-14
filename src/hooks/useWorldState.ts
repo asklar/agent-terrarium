@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { log } from "../utils/log";
 import type { WorldState } from "../types/world";
 
 export function useWorldState() {
@@ -11,7 +12,7 @@ export function useWorldState() {
       const state = await invoke<WorldState>("get_world_state");
       setWorldState(state);
     } catch (e) {
-      console.error("Failed to get world state:", e);
+      log.error("Failed to get world state:", e);
     }
     animFrameRef.current = requestAnimationFrame(pollState);
   }, []);
@@ -90,7 +91,7 @@ export function useWorldState() {
         musicMuted: musicMuted ?? null,
       });
     } catch (e) {
-      console.error("Failed to save config:", e);
+      log.error("Failed to save config:", e);
     }
   }, []);
 

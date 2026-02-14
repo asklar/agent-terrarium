@@ -322,6 +322,7 @@ impl World {
     }
 
     pub fn throw_ball(&self, x: f64, y: f64, vx: f64, vy: f64) {
+        log::info!("Ball thrown at ({:.0}, {:.0}) vel ({:.0}, {:.0})", x, y, vx, vy);
         let mut state = self.state.lock().unwrap();
         state.ball = Some(Ball {
             position: Vec2::new(x, y),
@@ -332,6 +333,7 @@ impl World {
     }
 
     pub fn click_agent(&self, agent_id: &str) -> bool {
+        log::info!("Agent clicked: {}", agent_id);
         let mut state = self.state.lock().unwrap();
         if let Some(agent) = state.agents.iter_mut().find(|a| a.id == agent_id) {
             agent.state = AgentState::Chatting;
@@ -354,6 +356,7 @@ impl World {
     }
 
     pub fn dismiss_chat(&self, agent_id: &str) {
+        log::debug!("Chat dismissed: {}", agent_id);
         let mut state = self.state.lock().unwrap();
         if let Some(agent) = state.agents.iter_mut().find(|a| a.id == agent_id) {
             agent.state = AgentState::Idle;
@@ -367,6 +370,7 @@ impl World {
     /// Add user message to session and return the agent's backend config.
     /// The actual response generation happens async in the command handler.
     pub fn add_user_message(&self, agent_id: &str, text: &str) -> Option<BackendConfig> {
+        log::info!("User message to {}: {}", agent_id, &text[..text.len().min(80)]);
         let mut state = self.state.lock().unwrap();
         let backend_config = state
             .agents
@@ -386,6 +390,7 @@ impl World {
 
     /// Append an assistant response to the chat session.
     pub fn complete_response(&self, agent_id: &str, response: &str) {
+        log::info!("Agent {} responded: {}", agent_id, &response[..response.len().min(80)]);
         let mut state = self.state.lock().unwrap();
         if let Some(session) = state.chat_sessions.iter_mut().find(|s| s.agent_id == agent_id) {
             session.messages.push(ChatMessage {
@@ -436,6 +441,7 @@ impl World {
     }
 
     pub fn add_agent(&self, avatar: &str, name: &str) {
+        log::info!("Adding agent: {} ({})", name, avatar);
         let mut state = self.state.lock().unwrap();
         let bounds = state.bounds;
         let ground_y = bounds.y * state.ground_y_ratio;
@@ -445,6 +451,7 @@ impl World {
     }
 
     pub fn remove_agent(&self, agent_id: &str) {
+        log::info!("Removing agent: {}", agent_id);
         let mut state = self.state.lock().unwrap();
         state.agents.retain(|a| a.id != agent_id);
         state.chat_sessions.retain(|s| s.agent_id != agent_id);
@@ -482,6 +489,7 @@ impl World {
     }
 
     pub fn request_attention(&self, agent_id: &str) {
+        log::info!("Attention requested: {}", agent_id);
         let mut state = self.state.lock().unwrap();
         if let Some(agent) = state.agents.iter_mut().find(|a| a.id == agent_id) {
             agent.state = AgentState::NeedsAttention;
@@ -507,6 +515,7 @@ impl World {
     }
 
     pub fn set_backend_config(&self, agent_id: &str, config: BackendConfig) {
+        log::info!("Backend config for {}: backend={}", agent_id, config.backend_id);
         let mut state = self.state.lock().unwrap();
         if let Some(agent) = state.agents.iter_mut().find(|a| a.id == agent_id) {
             agent.backend_config = config;
@@ -526,6 +535,7 @@ impl World {
     }
 
     pub fn load_from_config(&self, config: &AppConfig) {
+        log::info!("Loading config: {} agents, theme={}", config.agents.len(), config.theme);
         let mut state = self.state.lock().unwrap();
         let bounds = state.bounds;
         let ground_y = bounds.y * state.ground_y_ratio;
