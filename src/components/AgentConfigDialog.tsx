@@ -33,9 +33,9 @@ const BACKEND_OPTIONS = [
   { id: "echo", label: "Echo (NPC)" },
   { id: "copilot", label: "GitHub Copilot" },
   { id: "openai", label: "OpenAI" },
-  { id: "claude", label: "Claude" },
-  { id: "openclaw", label: "OpenClaw" },
-  { id: "msagent", label: "MS Agent Framework" },
+  { id: "claude", label: "Claude", disabled: true },
+  { id: "openclaw", label: "OpenClaw", disabled: true },
+  { id: "msagent", label: "MS Agent Framework", disabled: true },
 ];
 
 const AWARENESS_LEVELS = [
@@ -156,8 +156,8 @@ export function AgentConfigDialog({ agent, onSave, onClose }: AgentConfigDialogP
               onChange={(e) => setBackendId(e.target.value)}
             >
               {BACKEND_OPTIONS.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.label}
+                <option key={b.id} value={b.id} disabled={b.disabled}>
+                  {b.label}{b.disabled ? " (coming soon)" : ""}
                 </option>
               ))}
             </select>
