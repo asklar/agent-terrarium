@@ -169,6 +169,10 @@ impl AgentBackend for OpenAICompatBackend {
     fn credential_key(&self) -> Option<&str> {
         Some(&self.credential_key)
     }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 
 pub fn create_openai_backend() -> OpenAICompatBackend {

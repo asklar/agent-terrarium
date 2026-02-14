@@ -366,7 +366,6 @@ pub fn run() {
                 drop(state);
 
                 if let Some(config) = config {
-                    // Build a rich single prompt that includes personality context
                     let personality_hint = match avatar.as_str() {
                         a if a.contains("cat") => "You are playful, curious, and sometimes aloof. You purr, meow, and chase things.",
                         a if a.contains("dog") => "You are loyal, excited, and love to play. You bark, wag your tail, and fetch.",
@@ -385,19 +384,6 @@ pub fn run() {
                     });
 
                     let events_text = relevant.join("\n- ");
-                    let prompt = format!(
-                        "{}\n\nSomething just happened in your terrarium!\n- {}\n\n\
-                        React in character! Respond with ONLY a single emoji OR a short expressive action/sound (like *purrs*, *gasps*, *bounces excitedly*). \
-                        Keep it to 1-4 words max. Be expressive and fun!",
-                        system_context, events_text
-                    );
-
-                    let messages = vec![
-                        BackendMessage {
-                            role: MessageRole::User,
-                            content: prompt,
-                        },
-                    ];
 
                     let backend_id = config.backend_id.clone();
                     let registry = world_events.backend_registry.clone();
@@ -405,43 +391,117 @@ pub fn run() {
                     let aid = agent_id.clone();
                     let aname = agent_name.clone();
 
-                    // Spawn async response handler with timeout
-                    std::thread::spawn(move || {
-                        let rt = tokio::runtime::Builder::new_current_thread()
-                            .enable_all()
-                            .build()
-                            .unwrap();
-                        rt.block_on(async {
-                            if let Some(backend) = registry.get(&backend_id) {
-                                let result = tokio::time::timeout(
-                                    Duration::from_secs(15),
-                                    backend.respond(&config, &messages),
-                                ).await;
+                    if backend_id == "copilot" {
+                        // Build context about the terrarium state
+                        let others = world_events.get_other_agent_names(agent_id);
+                        let has_ball = world_events.has_ball();
+                        let mut context_lines = Vec::new();
+                        if !others.is_empty() {
+                            context_lines.push(format!("Other creatures nearby: {}", others.join(", ")));
+                        }
+                        if has_ball {
+                            context_lines.push("A ball is bouncing around!".to_string());
+                        }
+                        let context = if context_lines.is_empty() {
+                            String::new()
+                        } else {
+                            format!("\n\nCurrent situation:\n- {}", context_lines.join("\n- "))
+                        };
 
-                                match result {
-                                    Ok(Ok(response)) => {
-                                        let mut text = response.content.trim().to_string();
-                                        // Truncate long responses to keep bubbles readable
-                                        if text.chars().count() > 30 {
-                                            text = text.chars().take(27).collect::<String>() + "...";
+                        // Copilot: use tool-based dispatch
+                        let prompt = format!(
+                            "{}{}\n\nSomething just happened in your terrarium!\n- {}\n\n\
+                            React in character using the available tools. You can call zero or more tools:\n\
+                            - 'emote' — show an emoji reaction (quick emotional response)\n\
+                            - 'say' — say something short in a speech bubble (1-5 words)\n\
+                            - 'move_to' — walk toward something (target: 'ball', 'mouse', 'center', or an agent's name)\n\
+                            - 'run_away' — flee from something (from: 'ball', 'mouse', or an agent's name)\n\n\
+                            Do NOT reply with plain text. ONLY use tools to react. \
+                            You can call multiple tools (e.g. emote AND move_to). \
+                            If nothing interesting happened, don't call any tools.",
+                            system_context, context, events_text
+                        );
+
+                        let tools = agents::tools::define_tools();
+                        let handlers = agents::tools::create_handlers(
+                            world_ref.clone(), aid.clone(), aname.clone(),
+                        );
+
+                        std::thread::spawn(move || {
+                            let rt = tokio::runtime::Builder::new_current_thread()
+                                .enable_all()
+                                .build()
+                                .unwrap();
+                            rt.block_on(async {
+                                if let Some(backend) = registry.get(&backend_id) {
+                                    let copilot = backend.as_any()
+                                        .downcast_ref::<CopilotBackend>()
+                                        .expect("copilot backend");
+                                    match copilot.dispatch_with_tools(&config, &prompt, tools, handlers).await {
+                                        Ok(text) => {
+                                            if !text.trim().is_empty() {
+                                                log::debug!("Event text response from {} (ignored, tools should handle): {}", aname, text.trim());
+                                            }
                                         }
-                                        if !text.is_empty() {
-                                            log::info!("Event response from {}: {}", aname, text);
-                                            let is_emoji = text.chars().count() <= 3;
-                                            let duration = if is_emoji { 3.0 } else { 4.5 };
-                                            world_ref.push_bubble(&aid, text, is_emoji, duration);
+                                        Err(e) => {
+                                            log::warn!("Event dispatch to {} failed: {}", aname, e);
                                         }
-                                    }
-                                    Ok(Err(e)) => {
-                                        log::warn!("Event dispatch to {} failed: {}", aname, e);
-                                    }
-                                    Err(_) => {
-                                        log::warn!("Event dispatch to {} timed out (15s)", aname);
                                     }
                                 }
-                            }
+                            });
                         });
-                    });
+                    } else {
+                        // Non-Copilot: text-only fallback
+                        let prompt = format!(
+                            "{}\n\nSomething just happened in your terrarium!\n- {}\n\n\
+                            React in character! Respond with ONLY a single emoji OR a short expressive action/sound \
+                            (like *purrs*, *gasps*, *bounces excitedly*). Keep it to 1-4 words max.",
+                            system_context, events_text
+                        );
+
+                        let messages = vec![
+                            BackendMessage {
+                                role: MessageRole::User,
+                                content: prompt,
+                            },
+                        ];
+
+                        std::thread::spawn(move || {
+                            let rt = tokio::runtime::Builder::new_current_thread()
+                                .enable_all()
+                                .build()
+                                .unwrap();
+                            rt.block_on(async {
+                                if let Some(backend) = registry.get(&backend_id) {
+                                    let result = tokio::time::timeout(
+                                        Duration::from_secs(15),
+                                        backend.respond(&config, &messages),
+                                    ).await;
+
+                                    match result {
+                                        Ok(Ok(response)) => {
+                                            let mut text = response.content.trim().to_string();
+                                            if text.chars().count() > 30 {
+                                                text = text.chars().take(27).collect::<String>() + "...";
+                                            }
+                                            if !text.is_empty() {
+                                                log::info!("Event response from {}: {}", aname, text);
+                                                let is_emoji = text.chars().count() <= 3;
+                                                let duration = if is_emoji { 3.0 } else { 4.5 };
+                                                world_ref.push_bubble(&aid, text, is_emoji, duration);
+                                            }
+                                        }
+                                        Ok(Err(e)) => {
+                                            log::warn!("Event dispatch to {} failed: {}", aname, e);
+                                        }
+                                        Err(_) => {
+                                            log::warn!("Event dispatch to {} timed out (15s)", aname);
+                                        }
+                                    }
+                                }
+                            });
+                        });
+                    }
                 }
             }
         }

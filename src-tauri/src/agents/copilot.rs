@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use copilot_sdk::{Client, CustomAgentConfig, SessionConfig, SystemMessageConfig, SystemMessageMode};
+use copilot_sdk::{Client, CustomAgentConfig, SessionConfig, SessionEventData, SystemMessageConfig, SystemMessageMode, Tool};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -38,6 +38,105 @@ impl CopilotBackend {
             *client_lock = Some(client);
         }
         Ok(())
+    }
+
+    /// Dispatch awareness events using tool-enabled session.
+    /// Tool handlers are pre-registered and execute actions directly.
+    /// Returns any text the model produced after tool calls.
+    pub async fn dispatch_with_tools(
+        &self,
+        config: &BackendConfig,
+        prompt: &str,
+        tools: Vec<Tool>,
+        tool_handlers: Vec<(String, Arc<dyn Fn(&str, &serde_json::Value) -> copilot_sdk::ToolResultObject + Send + Sync>)>,
+    ) -> Result<String, String> {
+        self.ensure_client().await?;
+        let client_lock = self.client.read().await;
+        let client = client_lock.as_ref().unwrap();
+
+        let mut session_config = SessionConfig {
+            model: config.model.clone(),
+            tools: tools.clone(),
+            ..Default::default()
+        };
+
+        if let Some(ref prompt_text) = config.system_prompt {
+            session_config.system_message = Some(SystemMessageConfig {
+                mode: Some(SystemMessageMode::Replace),
+                content: Some(prompt_text.clone()),
+            });
+        }
+
+        if let Some(ref agent_name) = config.custom_agent {
+            session_config.custom_agents = Some(vec![CustomAgentConfig {
+                name: agent_name.clone(),
+                prompt: config.system_prompt.clone().unwrap_or_default(),
+                display_name: None,
+                description: None,
+                tools: None,
+                mcp_servers: None,
+                infer: Some(true),
+            }]);
+        }
+
+        let session = client
+            .create_session(session_config)
+            .await
+            .map_err(|e| format!("Failed to create session: {}", e))?;
+
+        // Register tool handlers
+        for (name, handler) in tool_handlers {
+            session
+                .register_tool_with_handler(Tool::new(&name), Some(handler))
+                .await;
+        }
+
+        // Use event-based approach: send + subscribe for tool logging
+        let idle_notify = Arc::new(tokio::sync::Notify::new());
+        let idle_clone = Arc::clone(&idle_notify);
+        let collected = Arc::new(std::sync::Mutex::new(String::new()));
+        let collected_clone = collected.clone();
+
+        let _unsub = session
+            .on(move |event| match &event.data {
+                SessionEventData::AssistantMessage(msg) => {
+                    collected_clone.lock().unwrap().push_str(&msg.content);
+                }
+                SessionEventData::AssistantMessageDelta(delta) => {
+                    collected_clone.lock().unwrap().push_str(&delta.delta_content);
+                }
+                SessionEventData::ToolExecutionStart(start) => {
+                    log::info!("[tool-call] {} args={}", start.tool_name,
+                        start.arguments.as_ref().map(|v| v.to_string()).unwrap_or_else(|| "{}".to_string()));
+                }
+                SessionEventData::ToolExecutionComplete(complete) => {
+                    if let Some(ref result) = complete.result {
+                        log::info!("[tool-result] {}", result.content);
+                    }
+                }
+                SessionEventData::SessionIdle(_) => {
+                    idle_clone.notify_one();
+                }
+                _ => {}
+            })
+            .await;
+
+        session.send(prompt).await.map_err(|e| format!("Send failed: {}", e))?;
+
+        // Wait for idle with timeout
+        let timeout_result = tokio::time::timeout(
+            std::time::Duration::from_secs(15),
+            idle_notify.notified(),
+        ).await;
+
+        let _ = session.destroy().await;
+
+        if timeout_result.is_err() {
+            return Err("Timed out waiting for response (15s)".to_string());
+        }
+
+        let result = collected.lock().unwrap().clone();
+        Ok(result)
     }
 }
 
@@ -181,5 +280,9 @@ impl AgentBackend for CopilotBackend {
         }
 
         Ok(agents)
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }

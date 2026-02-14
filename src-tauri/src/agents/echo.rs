@@ -42,4 +42,8 @@ impl AgentBackend for EchoBackend {
     async fn is_available(&self) -> bool {
         true
     }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }

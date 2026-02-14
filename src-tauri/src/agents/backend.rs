@@ -94,6 +94,9 @@ pub trait AgentBackend: Send + Sync {
     fn credential_key(&self) -> Option<&str> {
         None
     }
+
+    /// Downcast to concrete type for backend-specific features
+    fn as_any(&self) -> &dyn std::any::Any;
 }
 
 /// A model option returned by list_models

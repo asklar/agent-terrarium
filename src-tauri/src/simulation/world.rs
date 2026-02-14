@@ -571,6 +571,88 @@ impl World {
         }
     }
 
+    /// Move an agent toward a named target. Returns description of what happened.
+    pub fn move_toward(&self, agent_id: &str, target: &str) -> String {
+        let mut state = self.state.lock().unwrap();
+        let ground_y = state.bounds.y * state.ground_y_ratio;
+
+        // Resolve target position
+        let target_pos = match target {
+            "ball" => state.ball.as_ref().map(|b| b.position),
+            "mouse" | "cursor" => state.mouse_pos,
+            "center" => Some(Vec2::new(state.bounds.x / 2.0, ground_y)),
+            name => {
+                // Find agent by name (case-insensitive)
+                state.agents.iter()
+                    .find(|a| a.id != agent_id && a.name.eq_ignore_ascii_case(name))
+                    .map(|a| a.position)
+            }
+        };
+
+        match target_pos {
+            Some(pos) => {
+                if let Some(agent) = state.agents.iter_mut().find(|a| a.id == agent_id) {
+                    agent.target = Some(pos);
+                    agent.state = if target == "ball" {
+                        agent.personality.ball_interest = 1.0;
+                        AgentState::Running
+                    } else {
+                        AgentState::Walking
+                    };
+                }
+                format!("Moving toward {}!", target)
+            }
+            None => format!("Can't find '{}' to move toward.", target),
+        }
+    }
+
+    /// Move an agent away from a named target. Returns description of what happened.
+    pub fn move_away_from(&self, agent_id: &str, target: &str) -> String {
+        let mut state = self.state.lock().unwrap();
+        let ground_y = state.bounds.y * state.ground_y_ratio;
+        let bounds_x = state.bounds.x;
+
+        // Resolve target position
+        let target_pos = match target {
+            "ball" => state.ball.as_ref().map(|b| b.position),
+            "mouse" | "cursor" => state.mouse_pos,
+            name => {
+                state.agents.iter()
+                    .find(|a| a.id != agent_id && a.name.eq_ignore_ascii_case(name))
+                    .map(|a| a.position)
+            }
+        };
+
+        match target_pos {
+            Some(pos) => {
+                if let Some(agent) = state.agents.iter_mut().find(|a| a.id == agent_id) {
+                    // Move in opposite direction from target
+                    let dx = agent.position.x - pos.x;
+                    let flee_x = (agent.position.x + dx.signum() * 150.0).clamp(20.0, bounds_x - 20.0);
+                    agent.target = Some(Vec2::new(flee_x, ground_y));
+                    agent.state = AgentState::Running;
+                }
+                format!("Running away from {}!", target)
+            }
+            None => format!("Can't find '{}' to run from.", target),
+        }
+    }
+
+    /// Get names of other agents (for tool context)
+    pub fn get_other_agent_names(&self, agent_id: &str) -> Vec<String> {
+        let state = self.state.lock().unwrap();
+        state.agents.iter()
+            .filter(|a| a.id != agent_id)
+            .map(|a| a.name.clone())
+            .collect()
+    }
+
+    /// Check if a ball currently exists
+    pub fn has_ball(&self) -> bool {
+        let state = self.state.lock().unwrap();
+        state.ball.as_ref().map(|b| b.active).unwrap_or(false)
+    }
+
     pub fn set_backend_config(&self, agent_id: &str, config: BackendConfig) {
         log::info!("Backend config for {}: backend={}", agent_id, config.backend_id);
         let mut state = self.state.lock().unwrap();
