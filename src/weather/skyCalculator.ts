@@ -229,7 +229,7 @@ export function lerpSkyState(current: SkyState, target: SkyState, speed: number)
     starOpacity: lerp(current.starOpacity, target.starOpacity, t),
     groundTint: lerpColor(current.groundTint, target.groundTint, t),
     groundTintOpacity: lerp(current.groundTintOpacity, target.groundTintOpacity, t),
-    weatherOverlay: t > 0.5 ? target.weatherOverlay : current.weatherOverlay,
+    weatherOverlay: target.weatherOverlay,
     weatherIntensity: lerp(current.weatherIntensity, target.weatherIntensity, t),
     brightness: lerp(current.brightness, target.brightness, t),
   };
