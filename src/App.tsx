@@ -7,17 +7,43 @@ import { WindowFrame } from "./components/WindowFrame";
 import { ThemeMusic } from "./components/ThemeMusic";
 import { ContextMenu } from "./components/ContextMenu";
 import { registry } from "./themes";
+import { playAgentSound } from "./audio/agentSounds";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 
 function App() {
-  const [registryReady, setRegistryReady] = useState(registry.loaded);
+  const [showSplash, setShowSplash] = useState(true);
+  const [splashFading, setSplashFading] = useState(false);
+  const splashWaitRef = useRef(false);
+
+  const dismissSplash = useCallback(() => {
+    setSplashFading(true);
+    setTimeout(() => setShowSplash(false), 500);
+  }, []);
 
   useEffect(() => {
-    if (!registryReady) {
-      registry.ready.then(() => setRegistryReady(true));
-    }
-  }, [registryReady]);
+    const splashStart = Date.now();
+    const init = async () => {
+      // Check CLI flag
+      try {
+        splashWaitRef.current = await invoke<boolean>("get_splash_wait");
+      } catch { /* default false */ }
+
+      if (!registry.loaded) await registry.ready;
+
+      const elapsed = Date.now() - splashStart;
+      const remaining = Math.max(0, 2000 - elapsed);
+
+      if (splashWaitRef.current) {
+        // Wait for click — but still enforce minimum 2s
+        setTimeout(() => { /* min time passed, click handler will dismiss */ }, remaining);
+      } else {
+        setTimeout(dismissSplash, remaining);
+      }
+    };
+    init();
+  }, [dismissSplash]);
 
   const {
     worldState,
@@ -153,6 +179,16 @@ function App() {
     };
   }, []);
 
+  const playReplyChirp = useCallback((agentId: string) => {
+    const agent = worldState?.agents.find((a) => a.id === agentId);
+    if (agent) playAgentSound(agent.avatar, "chat");
+  }, [worldState?.agents]);
+
+  const playGearSound = useCallback((agentId: string) => {
+    const agent = worldState?.agents.find((a) => a.id === agentId);
+    if (agent) playAgentSound(agent.avatar, "gear");
+  }, [worldState?.agents]);
+
   const handleAgentClick = useCallback(
     async (agentId: string) => {
       // If agent needs attention, dismiss it first
@@ -195,8 +231,28 @@ function App() {
   const activeSessions =
     worldState?.chat_sessions.filter((s) => s.active) ?? [];
 
-  if (!registryReady) {
-    return <div className="terrarium-container" style={{ background: "#1a1a2e" }} />;
+  if (showSplash) {
+    return (
+      <div
+        className={`splash-screen ${splashFading ? "splash-fade-out" : ""}`}
+        onClick={() => splashWaitRef.current && dismissSplash()}
+      >
+        <div className="splash-logo">
+          <span className="splash-emoji">🤖</span>
+          <h1 className="splash-title">Agent Terrarium</h1>
+          <span className="splash-emoji">✨</span>
+        </div>
+        <div className="splash-loading">
+          {splashWaitRef.current ? (
+            <div className="splash-hint">Click to continue</div>
+          ) : (
+            <div className="splash-dots">
+              <span>.</span><span>.</span><span>.</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -224,6 +280,7 @@ function App() {
             agentName={agent.name}
             onSend={sendMessage}
             onDismiss={handleDismiss}
+            onReply={playReplyChirp}
           />
         );
       })}
@@ -245,6 +302,7 @@ function App() {
           }}
           onSetGear={async (agentId, gearIds) => {
             await setGear(agentId, gearIds);
+            playGearSound(agentId);
             saveConfig(theme);
           }}
           onRequestAttention={(agentId) => {

@@ -72,6 +72,34 @@ fn config_path() -> std::path::PathBuf {
     path
 }
 
+fn user_packages_dir() -> std::path::PathBuf {
+    let mut path = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
+    path.push("agent-terrarium");
+    path.push("packages");
+    path
+}
+
+#[tauri::command]
+fn load_user_packages() -> Result<Vec<String>, String> {
+    let dir = user_packages_dir();
+    if !dir.exists() {
+        // Create the directory so users know where to put packages
+        std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+        return Ok(vec![]);
+    }
+    let mut packages = Vec::new();
+    let entries = std::fs::read_dir(&dir).map_err(|e| e.to_string())?;
+    for entry in entries {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) == Some("json") {
+            let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+            packages.push(content);
+        }
+    }
+    Ok(packages)
+}
+
 #[tauri::command]
 fn save_config(theme: String, window_x: Option<i32>, window_y: Option<i32>, window_width: Option<u32>, window_height: Option<u32>, world: tauri::State<'_, Arc<World>>) -> Result<(), String> {
     let agents = world.get_agent_configs();
@@ -103,9 +131,28 @@ fn load_config() -> Result<AppConfig, String> {
     serde_json::from_str(&json).map_err(|e| e.to_string())
 }
 
+struct SplashWait(bool);
+
+#[tauri::command]
+fn get_splash_wait(state: tauri::State<'_, SplashWait>) -> bool {
+    state.0
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let splash_wait = std::env::args().any(|a| a == "--splash-wait");
+
     let world = Arc::new(World::new(Vec2::new(800.0, 400.0)));
+
+    // Restore agents/settings from saved config
+    let path = config_path();
+    if path.exists() {
+        if let Ok(json) = std::fs::read_to_string(&path) {
+            if let Ok(config) = serde_json::from_str::<AppConfig>(&json) {
+                world.load_from_config(&config);
+            }
+        }
+    }
 
     // Spawn simulation tick loop
     let world_tick = world.clone();
@@ -120,6 +167,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(world)
+        .manage(SplashWait(splash_wait))
         .invoke_handler(tauri::generate_handler![
             get_world_state,
             throw_ball,
@@ -135,6 +183,8 @@ pub fn run() {
             dismiss_attention,
             save_config,
             load_config,
+            load_user_packages,
+            get_splash_wait,
         ])
         .on_window_event(|_window, event| {
             if let tauri::WindowEvent::Destroyed = event {

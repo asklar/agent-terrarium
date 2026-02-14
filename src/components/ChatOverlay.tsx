@@ -7,6 +7,7 @@ interface ChatOverlayProps {
   agentName: string;
   onSend: (agentId: string, text: string) => Promise<string>;
   onDismiss: (agentId: string) => void;
+  onReply?: (agentId: string) => void;
 }
 
 export function ChatOverlay({
@@ -15,6 +16,7 @@ export function ChatOverlay({
   agentName,
   onSend,
   onDismiss,
+  onReply,
 }: ChatOverlayProps) {
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -36,6 +38,7 @@ export function ChatOverlay({
     setIsLoading(true);
     try {
       await onSend(session.agent_id, text);
+      onReply?.(session.agent_id);
     } finally {
       setIsLoading(false);
       requestAnimationFrame(() => inputRef.current?.focus());

@@ -4,6 +4,7 @@ import type {
   GearDefinition,
   Package,
 } from "./PackageTypes";
+import { invoke } from "@tauri-apps/api/core";
 
 /** URLs of built-in package JSON files (served from public/) */
 const BUILTIN_PACKAGE_URLS = [
@@ -38,6 +39,7 @@ class PackageRegistry {
   }
 
   private async loadBuiltins() {
+    // Load built-in packages from public/
     const results = await Promise.allSettled(
       BUILTIN_PACKAGE_URLS.map((url) =>
         fetch(url).then((r) => r.json() as Promise<Package>)
@@ -50,6 +52,22 @@ class PackageRegistry {
         console.warn("Failed to load built-in package:", result.reason);
       }
     }
+
+    // Load user packages from ~/agent-terrarium/packages/
+    try {
+      const userJsons = await invoke<string[]>("load_user_packages");
+      for (const json of userJsons) {
+        try {
+          const pkg = JSON.parse(json) as Package;
+          this.loadPackage(pkg);
+        } catch (e) {
+          console.warn("Failed to parse user package:", e);
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to load user packages:", e);
+    }
+
     this._loaded = true;
   }
 

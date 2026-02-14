@@ -2,6 +2,7 @@ import { useRef, useEffect, useCallback, useState } from "react";
 import type { WorldState, Agent } from "../types/world";
 import { AGENT_COLORS } from "./AgentSprites";
 import { registry } from "../themes";
+import { playAgentSound, getSharedAudioCtx } from "../audio/agentSounds";
 
 interface TerrariumCanvasProps {
   worldState: WorldState | null;
@@ -49,7 +50,6 @@ export function TerrariumCanvas({
     startTime: number;
     duration: number;
   } | null>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
   const attentionSoundTimers = useRef<Map<string, number>>(new Map());
   const prevBallRef = useRef<{ vy: number; captures: number; active: boolean } | null>(null);
 
@@ -66,65 +66,23 @@ export function TerrariumCanvas({
     return pool[Math.floor(Math.random() * pool.length)];
   }, []);
 
-  // Play an Animalese-style cute voice greeting via Web Audio API
-  const playGreetingSound = useCallback((agent: Agent) => {
-    try {
-      if (!audioCtxRef.current) {
-        audioCtxRef.current = new AudioContext();
-      }
-      const ctx = audioCtxRef.current;
-      if (ctx.state === "suspended") ctx.resume();
+  // Play agent sounds using shared mood-based system
+  const playHoverSound = useCallback((agent: Agent) => {
+    playAgentSound(agent.avatar, "hover");
+  }, []);
 
-      // Voice profile from package registry
-      const agentDef = registry.getAgent(agent.avatar);
-      const v = agentDef?.voice ?? {
-        basePitch: 500,
-        pitchVar: 80,
-        wave: "sine" as OscillatorType,
-        syllables: 3,
-        speed: 0.07,
-        volume: 0.08,
-      };
+  const playAttentionSound = useCallback((agent: Agent) => {
+    playAgentSound(agent.avatar, "attention");
+  }, []);
 
-      let t = ctx.currentTime;
-      for (let i = 0; i < v.syllables; i++) {
-        const freq =
-          v.basePitch + (Math.random() - 0.5) * v.pitchVar * 2;
-
-        const osc = ctx.createOscillator();
-        osc.type = v.wave;
-        osc.frequency.setValueAtTime(freq, t);
-        // Slight pitch slide within each syllable for expressiveness
-        osc.frequency.linearRampToValueAtTime(
-          freq + (Math.random() - 0.5) * 60,
-          t + v.speed * 0.8,
-        );
-
-        const gain = ctx.createGain();
-        // Attack-sustain-release envelope for each syllable
-        gain.gain.setValueAtTime(0, t);
-        gain.gain.linearRampToValueAtTime(v.volume, t + v.speed * 0.15);
-        gain.gain.setValueAtTime(v.volume * 0.8, t + v.speed * 0.6);
-        gain.gain.linearRampToValueAtTime(0.001, t + v.speed * 0.95);
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(t);
-        osc.stop(t + v.speed);
-
-        t += v.speed;
-      }
-    } catch {
-      // Audio not available, silently skip
-    }
+  const playCaptureAgentSound = useCallback((avatar: string) => {
+    playAgentSound(avatar, "capture");
   }, []);
 
   // Play 8-bit kick sound
   const playKickSound = useCallback(() => {
     try {
-      if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
-      const ctx = audioCtxRef.current;
-      if (ctx.state === "suspended") ctx.resume();
+      const ctx = getSharedAudioCtx();
       const t = ctx.currentTime;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -137,7 +95,6 @@ export function TerrariumCanvas({
       gain.connect(ctx.destination);
       osc.start(t);
       osc.stop(t + 0.12);
-      // Soft noise tap
       const buf = ctx.createBuffer(1, ctx.sampleRate * 0.03, ctx.sampleRate);
       const data = buf.getChannelData(0);
       for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.1;
@@ -156,9 +113,7 @@ export function TerrariumCanvas({
   // Play 8-bit bounce sound
   const playBounceSound = useCallback(() => {
     try {
-      if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
-      const ctx = audioCtxRef.current;
-      if (ctx.state === "suspended") ctx.resume();
+      const ctx = getSharedAudioCtx();
       const t = ctx.currentTime;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -171,6 +126,27 @@ export function TerrariumCanvas({
       gain.connect(ctx.destination);
       osc.start(t);
       osc.stop(t + 0.08);
+    } catch {}
+  }, []);
+
+  // Play 8-bit capture celebration sound (ascending arpeggio)
+  const playCaptureSound = useCallback(() => {
+    try {
+      const ctx = getSharedAudioCtx();
+      const t = ctx.currentTime;
+      const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "square";
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.06, t + i * 0.07);
+        gain.gain.linearRampToValueAtTime(0, t + i * 0.07 + 0.1);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t + i * 0.07);
+        osc.stop(t + i * 0.07 + 0.1);
+      });
     } catch {}
   }, []);
 
@@ -203,7 +179,7 @@ export function TerrariumCanvas({
         const lastPlayed = attentionSoundTimers.current.get(agent.id) ?? 0;
         if (now - lastPlayed >= intervalMs) {
           attentionSoundTimers.current.set(agent.id, now);
-          playGreetingSound(agent);
+          playAttentionSound(agent);
         }
       } else {
         attentionSoundTimers.current.delete(agent.id);
@@ -240,9 +216,19 @@ export function TerrariumCanvas({
     const prev = prevBallRef.current;
     if (curBall && curBall.active) {
       if (prev) {
-        // Kick: captures increased
+        // Capture: captures increased
         if (curBall.captures > prev.captures) {
+          playCaptureSound();
           playKickSound();
+          // Play agent-specific capture chirp for the capturing agent
+          const captureEmojis = ["⚽", "🎉", "😄", "🏆", "💪", "🙌"];
+          const captureBubble = worldState.bubbles.find(
+            (b) => b.is_emoji && captureEmojis.includes(b.content),
+          );
+          if (captureBubble) {
+            const capAgent = worldState.agents.find((a) => a.id === captureBubble.agent_id);
+            if (capAgent) playCaptureAgentSound(capAgent.avatar);
+          }
         }
         // Bounce: velocity.y sign flipped (ground or ceiling bounce)
         if (prev.vy > 5 && curBall.velocity.y < -5) {
@@ -399,7 +385,7 @@ export function TerrariumCanvas({
             startTime: Date.now(),
             duration: 1.8,
           };
-          playGreetingSound(agent);
+          playHoverSound(agent);
         }
       }
 
@@ -409,7 +395,7 @@ export function TerrariumCanvas({
         canvas.style.cursor = agent ? "pointer" : "default";
       }
     },
-    [dragStart, getCanvasPos, findAgentAt, pickGreetingEmoji, playGreetingSound, onMouseUpdate],
+    [dragStart, getCanvasPos, findAgentAt, pickGreetingEmoji, playHoverSound, onMouseUpdate],
   );
 
   const handleMouseUp = useCallback(

@@ -17,10 +17,9 @@ pub struct World {
 
 impl World {
     pub fn new(bounds: Vec2) -> Self {
-        let agents = create_default_agents(&bounds);
         World {
             state: Mutex::new(WorldState {
-                agents,
+                agents: Vec::new(),
                 ball: None,
                 bubbles: Vec::new(),
                 chat_sessions: Vec::new(),
@@ -230,12 +229,15 @@ impl World {
         if let Some(agent_idx) = ball_capture_agent {
             let max_captures = state.ball_max_captures;
             let kick = state.ball_kick_on_capture;
+            let agent_id = state.agents[agent_idx].id.clone();
             let agent_pos = state.agents[agent_idx].position;
             let agent_dir = state.agents[agent_idx].direction;
             let tick = state.tick;
+            let mut did_capture = false;
             if let Some(ref mut ball) = state.ball {
                 if ball.active {
                     ball.captures += 1;
+                    did_capture = true;
                     if ball.captures >= max_captures {
                         ball.active = false;
                     } else if kick {
@@ -249,6 +251,16 @@ impl World {
                         ball.position = agent_pos + Vec2::new(kick_dir_x * 20.0, -10.0);
                     }
                 }
+            }
+            if did_capture {
+                let emojis = ["⚽", "🎉", "😄", "🏆", "💪", "🙌"];
+                let emoji = emojis[tick as usize % emojis.len()];
+                state.bubbles.push(ChatBubble {
+                    agent_id,
+                    content: emoji.to_string(),
+                    timer: 2.0,
+                    is_emoji: true,
+                });
             }
         }
 
@@ -407,6 +419,16 @@ impl World {
         if let Some(agent) = state.agents.iter_mut().find(|a| a.id == agent_id) {
             agent.gear = gear_ids;
         }
+        // Gear equip emote
+        let emojis = ["✨", "💅", "🎀", "👒", "😎", "🤩"];
+        let tick = state.tick as usize;
+        let emoji = emojis[tick % emojis.len()];
+        state.bubbles.push(ChatBubble {
+            agent_id: agent_id.to_string(),
+            content: emoji.to_string(),
+            timer: 2.0,
+            is_emoji: true,
+        });
     }
 
     pub fn request_attention(&self, agent_id: &str) {
@@ -542,27 +564,6 @@ fn create_agent(id: &str, name: &str, avatar: &str, bounds: &Vec2, ground_y: f64
         interaction_cooldown: 0.0,
         gear: Vec::new(),
     }
-}
-
-fn create_default_agents(bounds: &Vec2) -> Vec<Agent> {
-    let ground_y = bounds.y * 0.72;
-    let defaults = [
-        ("cat", "Pixel Cat"),
-        ("copilot", "Copilot"),
-        ("squirrel", "Squirrel"),
-        ("penguin", "Penguin"),
-        ("ghost", "Ghost"),
-    ];
-    defaults
-        .iter()
-        .enumerate()
-        .map(|(i, (avatar, name))| {
-            let mut agent = create_agent(avatar, name, avatar, bounds, ground_y);
-            // Spread agents evenly for default layout
-            agent.position.x = bounds.x * (0.2 + 0.15 * i as f64);
-            agent
-        })
-        .collect()
 }
 
 fn pick_new_target(agent: &mut Agent, bounds: &Vec2, ground_y: f64) {
