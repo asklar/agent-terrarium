@@ -103,6 +103,10 @@ jobs:
             Where-Object { $_.FullName -like "*\x64\*" } |
             Sort-Object { [version]($_.Directory.Parent.Name) } -Descending |
             Select-Object -First 1
+          if (-not $makeAppx) {
+            Write-Error "makeappx.exe not found. Ensure the Windows 10 SDK is installed."
+            exit 1
+          }
           Write-Host "Using: $($makeAppx.FullName)"
 
           & $makeAppx.FullName pack /d $stagingDir /p "AgentTerrarium.msix" /nv
