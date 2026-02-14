@@ -4,6 +4,8 @@ import type { GearSlot } from "../themes/PackageTypes";
 import type { Agent } from "../types/world";
 
 import type { WeatherOverlay } from "../weather/types";
+import { getCachedWeather } from "../weather/weatherService";
+import { computeBoundaries } from "../weather/skyCalculator";
 
 interface ContextMenuProps {
   x: number;
@@ -459,20 +461,32 @@ export function ContextMenu({
         </>
       )}
       {subMenu === "debug-time" && (() => {
-        const makeTime = (hour: number) => {
-          const d = new Date();
-          d.setHours(hour, 0, 0, 0);
-          return d.getTime();
+        // Derive period times from weather data (sunrise/sunset)
+        const weather = getCachedWeather();
+        const today = new Date();
+        const defaultSunrise = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 6, 30).getTime();
+        const defaultSunset = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 19, 0).getTime();
+        const sunrise = weather?.sunrise ? new Date(weather.sunrise).getTime() : defaultSunrise;
+        const sunset = weather?.sunset ? new Date(weather.sunset).getTime() : defaultSunset;
+        const { dawnStart, dawnEnd, noonEnd, duskStart, duskEnd } = computeBoundaries(sunrise, sunset);
+
+        const fmtTime = (ms: number) => {
+          const d = new Date(ms);
+          return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
         };
-        const TIME_PRESETS: { label: string; icon: string; hour: number }[] = [
-          { label: "Night (2 AM)", icon: "🌙", hour: 2 },
-          { label: "Dawn (6 AM)", icon: "🌅", hour: 6 },
-          { label: "Morning (9 AM)", icon: "☀️", hour: 9 },
-          { label: "Noon (12 PM)", icon: "🔆", hour: 12 },
-          { label: "Afternoon (3 PM)", icon: "🌤️", hour: 15 },
-          { label: "Dusk (6 PM)", icon: "🌇", hour: 18 },
-          { label: "Evening (9 PM)", icon: "🌆", hour: 21 },
-          { label: "Midnight", icon: "🌑", hour: 0 },
+
+        const midnight = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0).getTime();
+        const solarNoon = (sunrise + sunset) / 2;
+
+        const TIME_PRESETS: { label: string; icon: string; time: number }[] = [
+          { label: `Night (${fmtTime(duskEnd + 60 * 60 * 1000)})`, icon: "🌙", time: duskEnd + 60 * 60 * 1000 },
+          { label: `Dawn (${fmtTime(dawnStart)})`, icon: "🌅", time: dawnStart },
+          { label: `Morning (${fmtTime(dawnEnd)})`, icon: "☀️", time: dawnEnd },
+          { label: `Noon (${fmtTime(solarNoon)})`, icon: "🔆", time: solarNoon },
+          { label: `Afternoon (${fmtTime(noonEnd)})`, icon: "🌤️", time: noonEnd },
+          { label: `Dusk (${fmtTime(duskStart)})`, icon: "🌇", time: duskStart },
+          { label: `Evening (${fmtTime(duskEnd)})`, icon: "🌆", time: duskEnd },
+          { label: `Midnight (${fmtTime(midnight)})`, icon: "🌑", time: midnight },
         ];
         return (
           <>
@@ -493,12 +507,12 @@ export function ContextMenu({
               🔄 Real Time
               {debugTime == null && <span className="context-menu-check">✓</span>}
             </button>
-            {TIME_PRESETS.map((p) => (
+            {TIME_PRESETS.map((p, i) => (
               <button
-                key={p.hour}
-                className={`context-menu-item ${debugTime === makeTime(p.hour) ? "active" : ""}`}
+                key={i}
+                className="context-menu-item"
                 onClick={guardedClick(() => {
-                  onDebugTime(makeTime(p.hour));
+                  onDebugTime(p.time);
                   onClose();
                 })}
               >

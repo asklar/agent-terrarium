@@ -59,7 +59,7 @@ function parseTime(iso: string): number {
  * Dawn and dusk scale proportionally to day/night length rather
  * than using fixed minute offsets.
  */
-function computeBoundaries(sunrise: number, sunset: number) {
+export function computeBoundaries(sunrise: number, sunset: number) {
   const dayLen = sunset - sunrise;
   const nightLen = 24 * 60 * 60 * 1000 - dayLen;
 
