@@ -1,12 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 60">
-  <!-- Lake water body -->
-  <path d="M 0 15 Q 30 5 75 12 Q 120 4 165 10 Q 210 2 255 8 Q 285 12 300 15 L 300 50 Q 250 55 200 48 Q 150 55 100 48 Q 50 55 0 50 Z" fill="#546E7A" opacity="0.5"/>
-  <!-- Water surface shimmer -->
-  <path d="M 20 18 Q 50 14 80 17 Q 110 12 140 16 Q 170 10 200 14 Q 230 11 260 15 L 260 22 Q 230 18 200 21 Q 170 17 140 22 Q 110 18 80 23 Q 50 19 20 24 Z" fill="#78909C" opacity="0.3"/>
-  <!-- Light reflections on water -->
-  <path d="M 60 20 Q 80 17 100 20 L 100 23 Q 80 20 60 23 Z" fill="#B0BEC5" opacity="0.2"/>
-  <path d="M 160 16 Q 190 13 210 16 L 210 19 Q 190 16 160 19 Z" fill="#B0BEC5" opacity="0.2"/>
-  <!-- Distant sailboat silhouette -->
-  <path d="M 140 14 L 140 6 L 145 10 Z" fill="#CFD8DC" opacity="0.4"/>
-  <path d="M 138 14 L 146 14 L 146 15 L 138 15 Z" fill="#90A4AE" opacity="0.4"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 50">
+  <!-- Lake water body - blue tones -->
+  <path d="M 0 8 Q 50 2 100 6 Q 150 0 200 4 Q 250 0 300 5 Q 350 2 400 8 L 400 50 L 0 50 Z" fill="#3D6B8E"/>
+  <!-- Deeper water middle -->
+  <path d="M 30 14 Q 100 8 200 10 Q 300 8 370 14 L 370 45 Q 300 42 200 44 Q 100 42 30 45 Z" fill="#35607F" opacity="0.6"/>
+  <!-- Surface shimmer / light reflection -->
+  <path d="M 50 12 Q 80 9 120 11 Q 160 8 200 10 Q 240 8 280 11 Q 320 9 350 12 L 350 16 Q 320 13 280 15 Q 240 12 200 14 Q 160 12 120 15 Q 80 13 50 16 Z" fill="#5A8DB0" opacity="0.35"/>
+  <!-- Light glints on water -->
+  <path d="M 80 13 Q 100 11 120 13 L 118 15 Q 98 13 82 15 Z" fill="#7EB5D6" opacity="0.25"/>
+  <path d="M 220 11 Q 250 9 270 11 L 268 13 Q 248 11 222 13 Z" fill="#7EB5D6" opacity="0.25"/>
+  <!-- Distant sailboat -->
+  <path d="M 180 8 L 180 0 L 186 5 Z" fill="#C8D8E4" opacity="0.5"/>
+  <path d="M 177 8 L 187 8 L 187 9.5 L 177 9.5 Z" fill="#90A8B8" opacity="0.45"/>
 </svg>

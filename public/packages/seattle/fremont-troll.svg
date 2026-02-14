@@ -1,33 +1,43 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-55 -70 110 75">
-  <!-- Bridge underside (the Aurora Bridge) -->
-  <path d="M -55 -15 L 55 -15 L 55 -10 L -55 -10 Z" fill="#5D6B5E"/>
-  <!-- Bridge support pillars -->
-  <path d="M -40 -10 L -36 -10 L -36 5 L -40 5 Z" fill="#4A564A"/>
-  <path d="M 36 -10 L 40 -10 L 40 5 L 36 5 Z" fill="#4A564A"/>
-  <!-- Troll's large hunched body crouching under bridge -->
-  <path d="M -30 5 Q -38 -8 -28 -25 Q -18 -40 0 -42 Q 18 -40 28 -25 Q 38 -8 30 5 Z" fill="#6D7B6D"/>
-  <!-- Troll's craggy face -->
-  <path d="M -12 -30 Q -8 -38 0 -38 Q 8 -38 12 -30 Q 14 -22 0 -18 Q -14 -22 -12 -30 Z" fill="#7D8B7D"/>
-  <!-- Large single eye (the iconic feature) -->
-  <circle cx="0" cy="-30" r="4" fill="#C8E6C9"/>
-  <circle cx="0" cy="-30" r="2" fill="#81C784"/>
-  <circle cx="0" cy="-30" r="0.8" fill="#1B5E20"/>
-  <!-- Bushy brow ridge -->
-  <path d="M -10 -35 Q -5 -38 0 -36 Q 5 -38 10 -35 L 8 -33 Q 3 -36 0 -34 Q -3 -36 -8 -33 Z" fill="#5A685A"/>
-  <!-- Large nose -->
-  <path d="M -3 -28 Q 0 -22 3 -28 Z" fill="#5F6E5F"/>
-  <!-- Wild scraggly hair / moss -->
-  <path d="M -18 -38 L -24 -55 L -14 -46 L -8 -60 L 0 -45 L 8 -58 L 14 -46 L 22 -55 L 18 -38 Z" fill="#4A5B4A"/>
-  <path d="M -22 -42 L -20 -52 L -10 -44 L -4 -55 L 4 -44 L 10 -54 L 20 -42 Z" fill="#3D4F3D" opacity="0.6"/>
-  <!-- Left arm reaching out, clutching a VW Beetle -->
-  <path d="M -30 -10 L -45 -18 L -50 -15 L -48 -10 L -30 -4 Z" fill="#5F6E5F"/>
-  <!-- VW Beetle in left hand -->
-  <path d="M -52 -16 Q -52 -20 -48 -20 L -42 -20 Q -38 -20 -38 -16 L -38 -14 L -52 -14 Z" fill="#546E7A"/>
-  <circle cx="-49" cy="-13.5" r="1.5" fill="#37474F"/>
-  <circle cx="-41" cy="-13.5" r="1.5" fill="#37474F"/>
-  <!-- Right arm bracing against ground -->
-  <path d="M 30 -10 L 42 -5 L 44 0 L 40 2 L 28 -4 Z" fill="#5F6E5F"/>
-  <!-- Troll's thick fingers/claws -->
-  <path d="M -48 -10 L -52 -8 L -50 -6 L -46 -8 Z" fill="#5F6E5F"/>
-  <path d="M 42 0 L 46 2 L 44 5 L 40 3 Z" fill="#5F6E5F"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120">
+  <!-- Ground / rocky earth the troll emerges from -->
+  <path d="M 0 120 L 0 95 Q 20 90 40 92 Q 60 88 80 90 Q 120 85 160 90 Q 180 92 200 95 L 200 120 Z" fill="#5A6B5A"/>
+  <!-- Bridge concrete underside -->
+  <rect x="0" y="8" width="200" height="10" fill="#7A8A7A" rx="1"/>
+  <rect x="0" y="18" width="200" height="3" fill="#6A7A6A"/>
+  <!-- Bridge railing hint at top -->
+  <rect x="0" y="4" width="200" height="4" fill="#8A9A8A"/>
+  <!-- Troll's massive hunched shoulders and back (fills space under bridge) -->
+  <path d="M 45 95 Q 35 80 38 60 Q 40 40 55 28 Q 70 20 90 22 Q 110 20 125 28 Q 140 38 145 55 Q 148 75 140 95 Z" fill="#6B7B6B"/>
+  <!-- Shadow/depth on body -->
+  <path d="M 55 95 Q 50 80 52 60 Q 55 42 65 32 Q 75 25 90 24 L 90 95 Z" fill="#617161" opacity="0.5"/>
+  <!-- Troll's head (large, craggy, humanoid) -->
+  <path d="M 65 38 Q 60 28 65 18 Q 72 10 90 10 Q 108 10 115 18 Q 120 28 115 38 Q 108 45 90 46 Q 72 45 65 38 Z" fill="#7A8C7A"/>
+  <!-- Brow ridge (heavy, overhanging) -->
+  <path d="M 68 26 Q 78 20 90 21 Q 102 20 112 26 L 110 29 Q 100 24 90 25 Q 80 24 70 29 Z" fill="#5E6E5E"/>
+  <!-- Single gleaming hubcap eye (left side - troll's right) -->
+  <circle cx="82" cy="28" r="5" fill="#D4D4D0"/>
+  <circle cx="82" cy="28" r="3.5" fill="#C0C8B8"/>
+  <circle cx="82" cy="28" r="1.5" fill="#E8E8E0"/>
+  <!-- Empty eye socket (right side) -->
+  <ellipse cx="100" cy="28" rx="4" ry="3.5" fill="#4A5A4A"/>
+  <!-- Long prominent nose -->
+  <path d="M 86 30 Q 88 38 92 42 Q 90 42 86 38 Z" fill="#6E7E6E"/>
+  <!-- Mouth / grimace -->
+  <path d="M 78 40 Q 85 44 95 44 Q 105 42 108 40" fill="none" stroke="#4A5A4A" stroke-width="1.2"/>
+  <!-- Scraggly hair / moss on head -->
+  <path d="M 62 22 Q 58 10 65 6 Q 72 2 78 8 Q 82 0 90 4 Q 98 0 104 8 Q 110 2 118 6 Q 124 12 120 22" fill="none" stroke="#4A5B4A" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M 66 18 Q 62 8 68 5 Q 76 6 80 4 Q 86 2 92 6 Q 98 2 106 6 Q 114 8 116 18" fill="none" stroke="#3D4E3D" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+  <!-- Left arm extended forward, clutching VW Beetle -->
+  <path d="M 45 55 Q 30 50 18 52 Q 10 54 8 58 Q 6 64 12 68 Q 20 70 35 65 Q 45 62 50 65 Z" fill="#6B7B6B"/>
+  <!-- Left hand / fist gripping -->
+  <path d="M 8 55 Q 2 56 0 60 Q 2 66 8 66 L 16 64 Q 12 58 8 55 Z" fill="#5E6E5E"/>
+  <!-- VW Beetle (compact, rounded shape in troll's grip) -->
+  <path d="M 2 52 Q 2 46 8 44 Q 14 42 20 44 Q 26 46 26 50 L 26 53 Q 20 55 14 55 Q 8 55 2 52 Z" fill="#5A7090"/>
+  <path d="M 6 47 Q 10 44 14 44 Q 18 44 22 47 L 20 49 Q 16 47 14 47 Q 10 47 8 49 Z" fill="#6A80A0" opacity="0.6"/>
+  <circle cx="7" cy="54" r="2" fill="#3A4A5A"/>
+  <circle cx="21" cy="54" r="2" fill="#3A4A5A"/>
+  <!-- Right arm braced against ground -->
+  <path d="M 140 60 Q 155 65 168 75 Q 175 82 178 90 Q 172 92 165 88 Q 155 78 145 70 Q 140 68 138 65 Z" fill="#6B7B6B"/>
+  <!-- Right hand pressed on ground -->
+  <path d="M 175 86 Q 182 88 185 94 Q 180 98 172 95 Q 170 90 175 86 Z" fill="#5E6E5E"/>
 </svg>
