@@ -35,7 +35,7 @@ const BACKEND_OPTIONS = [
   { id: "openai", label: "OpenAI" },
   { id: "claude", label: "Claude", disabled: true },
   { id: "openclaw", label: "OpenClaw", disabled: true },
-  { id: "msagent", label: "MS Agent Framework", disabled: true },
+  { id: "msagent", label: "Microsoft Agent Framework", disabled: true },
 ];
 
 const AWARENESS_LEVELS = [
