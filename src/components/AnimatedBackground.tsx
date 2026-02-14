@@ -1,9 +1,16 @@
 import { useRef, useEffect } from "react";
 import { registry } from "../themes";
 import type { ThemeDefinition, ParticleType } from "../themes";
+import { fetchLocation, fetchWeather, getCachedWeather, getLocation } from "../weather/weatherService";
+import { computeTargetSky, lerpSkyState } from "../weather/skyCalculator";
+import { DEFAULT_SKY } from "../weather/types";
+import type { SkyState, WeatherOverlay } from "../weather/types";
 
 interface AnimatedBackgroundProps {
   theme: string;
+  dynamicSky?: boolean;
+  debugTime?: number | null;
+  debugWeather?: WeatherOverlay | null;
 }
 
 interface Particle {
@@ -26,11 +33,13 @@ interface ShootingStar {
   size: number;
 }
 
-export function AnimatedBackground({ theme }: AnimatedBackgroundProps) {
+export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather }: AnimatedBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
   const shootingStarsRef = useRef<ShootingStar[]>([]);
   const animRef = useRef<number>(0);
+  const skyStateRef = useRef<SkyState>({ ...DEFAULT_SKY });
+  const weatherParticlesRef = useRef<Particle[]>([]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -41,6 +50,22 @@ export function AnimatedBackground({ theme }: AnimatedBackgroundProps) {
 
     const t = registry.getTheme(theme);
     if (!t) return;
+
+    const isDynamic = !!dynamicSky;
+
+    // Initialize weather data for dynamic sky
+    if (isDynamic) {
+      fetchLocation().then((loc) => {
+        if (loc) fetchWeather(loc).catch(() => {});
+      }).catch(() => {});
+      // Refresh weather periodically
+      const weatherInterval = setInterval(() => {
+        const loc = getLocation();
+        if (loc) fetchWeather(loc).catch(() => {});
+      }, 6 * 60 * 60 * 1000);
+      // Store cleanup ref
+      (canvas as unknown as Record<string, unknown>).__weatherInterval = weatherInterval;
+    }
 
     // Initialize particles
     const pc = t.particles;
@@ -74,20 +99,127 @@ export function AnimatedBackground({ theme }: AnimatedBackgroundProps) {
       const w = canvas.width;
       const h = canvas.height;
 
+      let skyColors = t.sky;
+
+      if (isDynamic) {
+        const weather = getCachedWeather();
+        const target = computeTargetSky(Date.now(), weather, debugTime ?? null, debugWeather ?? null);
+        // Lerp speed: normal transitions ~0.02/frame, debug ~0.08/frame
+        const lerpSpeed = (debugTime != null || debugWeather != null) ? 0.08 : 0.02;
+        skyStateRef.current = lerpSkyState(skyStateRef.current, target, lerpSpeed);
+        skyColors = skyStateRef.current.skyColors;
+      }
+
       // Sky gradient
       const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.7);
-      t.sky.forEach((color, i) => {
-        skyGrad.addColorStop(i / (t.sky.length - 1), color);
+      skyColors.forEach((color, i) => {
+        skyGrad.addColorStop(i / (skyColors.length - 1), color);
       });
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, w, h);
 
       const groundY = h * 0.72;
 
+      // Living meadow: draw sun, moon, stars before decorators
+      if (isDynamic) {
+        const sky = skyStateRef.current;
+
+        // Stars (behind everything)
+        if (sky.starOpacity > 0.01) {
+          for (let i = 0; i < 40; i++) {
+            const sx = ((i * 137.5) % w);
+            const sy = ((i * 73.1) % (h * 0.6));
+            const twinkle = 0.3 + Math.sin(time * 0.002 + i * 1.7) * 0.4;
+            ctx.fillStyle = `rgba(255, 255, 240, ${twinkle * sky.starOpacity})`;
+            const size = 1 + (i % 3);
+            ctx.fillRect(sx, sy, size, size);
+          }
+          // Shooting stars at night
+          if (sky.starOpacity > 0.5) {
+            updateAndDrawShootingStars(ctx, w, h, dt, shootingStarsRef);
+          }
+        }
+
+        // Moon
+        if (sky.moonPosition !== null && sky.moonOpacity > 0.01) {
+          const arcX = sky.moonPosition * w * 0.8 + w * 0.1;
+          const arcY = h * 0.5 - Math.sin(sky.moonPosition * Math.PI) * h * 0.4;
+          ctx.save();
+          ctx.globalAlpha = sky.moonOpacity;
+          ctx.fillStyle = "#FFF9C4";
+          ctx.shadowColor = "#FFF9C4";
+          ctx.shadowBlur = 20;
+          ctx.beginPath();
+          ctx.arc(arcX, arcY, 18, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "rgba(0,0,0,0.05)";
+          ctx.shadowBlur = 0;
+          ctx.beginPath();
+          ctx.arc(arcX - 4, arcY - 3, 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(arcX + 5, arcY + 4, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // Sun
+        if (sky.sunPosition !== null && sky.sunOpacity > 0.01) {
+          const arcX = sky.sunPosition * w * 0.8 + w * 0.1;
+          const arcY = h * 0.55 - Math.sin(sky.sunPosition * Math.PI) * h * 0.45;
+          ctx.save();
+          ctx.globalAlpha = sky.sunOpacity;
+          // Sun glow
+          ctx.fillStyle = "rgba(255, 200, 50, 0.15)";
+          ctx.beginPath();
+          ctx.arc(arcX, arcY, 30, 0, Math.PI * 2);
+          ctx.fill();
+          // Sun body
+          ctx.fillStyle = "#FFD54F";
+          ctx.shadowColor = "#FFD54F";
+          ctx.shadowBlur = 15;
+          ctx.beginPath();
+          ctx.arc(arcX, arcY, 16, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          // Sun rays
+          ctx.strokeStyle = `rgba(255, 213, 79, ${sky.sunOpacity * 0.4})`;
+          ctx.lineWidth = 1.5;
+          for (let r = 0; r < 8; r++) {
+            const angle = (r / 8) * Math.PI * 2 + time * 0.0003;
+            const inner = 19;
+            const outer = 24 + Math.sin(time * 0.003 + r) * 3;
+            ctx.beginPath();
+            ctx.moveTo(arcX + Math.cos(angle) * inner, arcY + Math.sin(angle) * inner);
+            ctx.lineTo(arcX + Math.cos(angle) * outer, arcY + Math.sin(angle) * outer);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+      }
+
       // Draw decorators (order from theme definition)
-      for (const dec of t.decorators) {
-        const fn = DECORATORS[dec];
-        if (fn) fn(ctx, w, h, groundY, time, dt, t, shootingStarsRef);
+      if (isDynamic) {
+        // For living meadow, skip static clouds/stars/moon decorators (we draw our own)
+        for (const dec of t.decorators) {
+          if (dec === "clouds" || dec === "stars" || dec === "moon" || dec === "shooting_stars") continue;
+          const fn = DECORATORS[dec];
+          if (fn) fn(ctx, w, h, groundY, time, dt, t, shootingStarsRef);
+        }
+        // Draw clouds with dynamic opacity based on weather
+        const sky = skyStateRef.current;
+        const cloudOpacity = sky.weatherOverlay === "cloudy" || sky.weatherOverlay === "rain" || sky.weatherOverlay === "storm" || sky.weatherOverlay === "drizzle" || sky.weatherOverlay === "fog"
+          ? 0.3 + sky.weatherIntensity * 0.5
+          : sky.brightness < 0.5 ? 0.15 : 0.4;
+        ctx.save();
+        ctx.globalAlpha = cloudOpacity;
+        drawClouds(ctx, w, time);
+        ctx.restore();
+      } else {
+        for (const dec of t.decorators) {
+          const fn = DECORATORS[dec];
+          if (fn) fn(ctx, w, h, groundY, time, dt, t, shootingStarsRef);
+        }
       }
 
       // Ground
@@ -106,6 +238,130 @@ export function AnimatedBackground({ theme }: AnimatedBackgroundProps) {
       ctx.lineTo(0, h);
       ctx.closePath();
       ctx.fill();
+
+      // Living meadow: ground tint + weather particles
+      if (isDynamic) {
+        const sky = skyStateRef.current;
+
+        // Ground tint overlay (night darkening, sunset warmth)
+        if (sky.groundTintOpacity > 0.01) {
+          ctx.save();
+          ctx.globalAlpha = sky.groundTintOpacity;
+          ctx.fillStyle = sky.groundTint;
+          ctx.fillRect(0, groundY - 4, w, h - groundY + 4);
+          ctx.restore();
+        }
+
+        // Brightness overlay (dim entire scene at night)
+        if (sky.brightness < 0.95) {
+          ctx.save();
+          ctx.globalAlpha = 1 - sky.brightness;
+          ctx.fillStyle = "#0a0e2a";
+          ctx.fillRect(0, 0, w, h);
+          ctx.restore();
+        }
+
+        // Weather particles
+        const wp = weatherParticlesRef.current;
+        if (sky.weatherOverlay === "rain" || sky.weatherOverlay === "storm") {
+          // Ensure enough rain particles
+          while (wp.length < 60) {
+            wp.push({
+              x: Math.random() * w, y: Math.random() * h,
+              size: 1 + Math.random() * 2, speed: 8 + Math.random() * 6,
+              opacity: 0.3 + Math.random() * 0.4, drift: -0.5 - Math.random(),
+              phase: Math.random() * Math.PI * 2,
+            });
+          }
+          ctx.save();
+          ctx.globalAlpha = sky.weatherIntensity;
+          ctx.strokeStyle = "rgba(170, 200, 255, 0.5)";
+          ctx.lineWidth = 1;
+          for (const p of wp) {
+            p.y += p.speed * dt * 60;
+            p.x += p.drift * dt * 30;
+            if (p.y > h) { p.y = -5; p.x = Math.random() * w; }
+            if (p.x < 0) p.x = w;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p.x + p.drift * 2, p.y + p.size * 4);
+            ctx.stroke();
+          }
+          ctx.restore();
+          // Lightning flash for storms
+          if (sky.weatherOverlay === "storm" && Math.random() < 0.003) {
+            ctx.save();
+            ctx.globalAlpha = 0.3;
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(0, 0, w, h);
+            ctx.restore();
+          }
+        } else if (sky.weatherOverlay === "drizzle") {
+          // Lighter, fewer, slower drops than rain
+          while (wp.length < 25) {
+            wp.push({
+              x: Math.random() * w, y: Math.random() * h,
+              size: 0.5 + Math.random() * 1, speed: 4 + Math.random() * 3,
+              opacity: 0.2 + Math.random() * 0.3, drift: -0.3 - Math.random() * 0.3,
+              phase: Math.random() * Math.PI * 2,
+            });
+          }
+          ctx.save();
+          ctx.globalAlpha = sky.weatherIntensity * 0.7;
+          ctx.strokeStyle = "rgba(180, 210, 255, 0.4)";
+          ctx.lineWidth = 0.5;
+          for (const p of wp) {
+            p.y += p.speed * dt * 50;
+            p.x += p.drift * dt * 20;
+            if (p.y > h) { p.y = -5; p.x = Math.random() * w; }
+            if (p.x < 0) p.x = w;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p.x + p.drift * 1.5, p.y + p.size * 3);
+            ctx.stroke();
+          }
+          ctx.restore();
+        } else if (sky.weatherOverlay === "snow") {
+          while (wp.length < 40) {
+            wp.push({
+              x: Math.random() * w, y: Math.random() * h,
+              size: 2 + Math.random() * 3, speed: 1 + Math.random() * 2,
+              opacity: 0.5 + Math.random() * 0.5, drift: (Math.random() - 0.5) * 0.8,
+              phase: Math.random() * Math.PI * 2,
+            });
+          }
+          ctx.save();
+          ctx.globalAlpha = sky.weatherIntensity;
+          for (const p of wp) {
+            p.y += p.speed * dt * 30;
+            p.x += Math.sin(time * 0.001 + p.phase) * p.drift * dt * 30;
+            if (p.y > h) { p.y = -5; p.x = Math.random() * w; }
+            ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        } else if (sky.weatherOverlay === "fog") {
+          ctx.save();
+          ctx.globalAlpha = sky.weatherIntensity * 0.4;
+          for (let i = 0; i < 5; i++) {
+            const drift = Math.sin(time * 0.0002 + i * 1.5) * 50;
+            const fy = groundY - 20 + i * 12;
+            ctx.fillStyle = "rgba(220, 220, 230, 0.5)";
+            ctx.beginPath();
+            ctx.ellipse(w * 0.3 + drift + i * 50, fy, 150 + i * 30, 15, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(w * 0.7 - drift + i * 30, fy + 8, 120 + i * 25, 12, 0, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        } else {
+          // Clear weather: drain weather particles
+          if (wp.length > 0) wp.length = 0;
+        }
+      }
 
       // Particles
       if (pc) {
@@ -130,8 +386,10 @@ export function AnimatedBackground({ theme }: AnimatedBackgroundProps) {
     return () => {
       cancelAnimationFrame(animRef.current);
       resizeObserver.disconnect();
+      const interval = (canvas as unknown as Record<string, unknown>).__weatherInterval;
+      if (interval) clearInterval(interval as number);
     };
-  }, [theme]);
+  }, [theme, dynamicSky]);
 
   return (
     <canvas

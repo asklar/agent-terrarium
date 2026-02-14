@@ -68,6 +68,7 @@ function App() {
   } = useWorldState();
 
   const [theme, setTheme] = useState("meadow");
+  const [dynamicSky, setDynamicSky] = useState(false);
   const [musicMuted, setMusicMuted] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -80,12 +81,17 @@ function App() {
   themeRef.current = theme;
   const musicMutedRef = useRef(musicMuted);
   musicMutedRef.current = musicMuted;
+  const dynamicSkyRef = useRef(dynamicSky);
+  dynamicSkyRef.current = dynamicSky;
 
   // Load config on mount and restore window position
   useEffect(() => {
     loadConfig().then(async (config) => {
       if (config?.theme) {
         setTheme(config.theme);
+      }
+      if ((config as Record<string, unknown> | null)?.dynamic_sky) {
+        setDynamicSky(true);
       }
       if ((config as Record<string, unknown> | null)?.music_muted) {
         setMusicMuted(true);
@@ -129,7 +135,7 @@ function App() {
             y: Math.round(pos.y / scale),
             width: Math.round(size.width / scale),
             height: Math.round(size.height / scale),
-          }, musicMutedRef.current);
+          }, musicMutedRef.current, dynamicSkyRef.current);
         } catch { /* ignore */ }
       }, 500);
     };
@@ -151,7 +157,7 @@ function App() {
       initialRef.current = false;
       return;
     }
-    saveConfig(theme, undefined, musicMutedRef.current);
+    saveConfig(theme, undefined, musicMutedRef.current, dynamicSkyRef.current);
   }, [theme, saveConfig]);
 
   // Sync canvas size to world bounds
@@ -320,7 +326,7 @@ function App() {
       // Listen for config changes from pop-out windows
       listen("config-changed", () => {
         log.debug("Config changed from pop-out window");
-        saveConfig(themeRef.current, undefined, musicMutedRef.current);
+        saveConfig(themeRef.current, undefined, musicMutedRef.current, dynamicSkyRef.current);
       }).then((fn) => { unlisteners.push(fn); });
     });
     return () => { unlisteners.forEach((fn) => fn()); };
@@ -376,11 +382,11 @@ function App() {
   return (
     <div className="terrarium-container" onContextMenu={handleContextMenu}>
       <WindowFrame />
-      <AnimatedBackground theme={theme} />
+      <AnimatedBackground theme={theme} dynamicSky={dynamicSky} />
       <ThemeMusic theme={theme} muted={musicMuted} onToggleMute={() => {
         setMusicMuted((m) => {
           const next = !m;
-          saveConfig(themeRef.current, undefined, next);
+          saveConfig(themeRef.current, undefined, next, dynamicSkyRef.current);
           return next;
         });
       }} />
@@ -420,20 +426,28 @@ function App() {
           y={contextMenu.y}
           agents={worldState?.agents ?? []}
           currentTheme={theme}
+          dynamicSky={dynamicSky}
           onClose={() => setContextMenu(null)}
           onThemeChange={setTheme}
+          onDynamicSkyToggle={() => {
+            setDynamicSky((v) => {
+              const next = !v;
+              saveConfig(themeRef.current, undefined, musicMutedRef.current, next);
+              return next;
+            });
+          }}
           onAddAgent={async (avatar, name) => {
             await addAgent(avatar, name);
-            saveConfig(theme, undefined, musicMutedRef.current);
+            saveConfig(theme, undefined, musicMutedRef.current, dynamicSkyRef.current);
           }}
           onRemoveAgent={async (agentId) => {
             await removeAgent(agentId);
-            saveConfig(theme, undefined, musicMutedRef.current);
+            saveConfig(theme, undefined, musicMutedRef.current, dynamicSkyRef.current);
           }}
           onSetGear={async (agentId, gearIds) => {
             await setGear(agentId, gearIds);
             playGearSound(agentId);
-            saveConfig(theme, undefined, musicMutedRef.current);
+            saveConfig(theme, undefined, musicMutedRef.current, dynamicSkyRef.current);
           }}
           onRequestAttention={(agentId) => {
             setTimeout(() => requestAttention(agentId), 5000);
@@ -446,7 +460,7 @@ function App() {
           onSave={async (agentId, name, backendConfig) => {
             await renameAgent(agentId, name);
             await setBackendConfig(agentId, backendConfig);
-            saveConfig(theme, undefined, musicMutedRef.current);
+            saveConfig(theme, undefined, musicMutedRef.current, dynamicSkyRef.current);
             setConfigAgent(null);
           }}
           onClose={() => setConfigAgent(null)}

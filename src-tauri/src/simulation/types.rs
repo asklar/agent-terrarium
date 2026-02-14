@@ -203,6 +203,9 @@ pub struct AppConfig {
     /// Whether music is muted (default: false)
     #[serde(default)]
     pub music_muted: bool,
+    /// Whether dynamic sky is enabled (default: false)
+    #[serde(default)]
+    pub dynamic_sky: bool,
 }
 
 fn default_ball_max_captures() -> u32 { 3 }

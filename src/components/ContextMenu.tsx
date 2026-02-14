@@ -8,8 +8,10 @@ interface ContextMenuProps {
   y: number;
   agents: Agent[];
   currentTheme: string;
+  dynamicSky: boolean;
   onClose: () => void;
   onThemeChange: (theme: string) => void;
+  onDynamicSkyToggle: () => void;
   onAddAgent: (avatar: string, name: string) => void;
   onRemoveAgent: (agentId: string) => void;
   onSetGear: (agentId: string, gearIds: string[]) => void;
@@ -23,8 +25,10 @@ export function ContextMenu({
   y,
   agents,
   currentTheme,
+  dynamicSky,
   onClose,
   onThemeChange,
+  onDynamicSkyToggle,
   onAddAgent,
   onRemoveAgent,
   onSetGear,
@@ -213,6 +217,16 @@ export function ContextMenu({
               )}
             </button>
           ))}
+          <div className="context-menu-divider" />
+          <button
+            className="context-menu-item"
+            onClick={guardedClick(() => {
+              onDynamicSkyToggle();
+            })}
+          >
+            🌤️ Dynamic Sky
+            {dynamicSky && <span className="context-menu-check">✓</span>}
+          </button>
         </>
       )}
 

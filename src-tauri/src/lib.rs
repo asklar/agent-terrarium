@@ -231,7 +231,7 @@ async fn pick_folder(app: tauri::AppHandle) -> Result<Option<String>, String> {
 }
 
 #[tauri::command]
-fn save_config(theme: String, window_x: Option<i32>, window_y: Option<i32>, window_width: Option<u32>, window_height: Option<u32>, music_muted: Option<bool>, world: tauri::State<'_, Arc<World>>) -> Result<(), String> {
+fn save_config(theme: String, window_x: Option<i32>, window_y: Option<i32>, window_width: Option<u32>, window_height: Option<u32>, music_muted: Option<bool>, dynamic_sky: Option<bool>, world: tauri::State<'_, Arc<World>>) -> Result<(), String> {
     log::info!("Saving config: theme={}", theme);
     let agents = world.get_agent_configs();
     let window = match (window_x, window_y, window_width, window_height) {
@@ -247,6 +247,7 @@ fn save_config(theme: String, window_x: Option<i32>, window_y: Option<i32>, wind
         ball_kick_on_capture: state.ball_kick_on_capture,
         attention_interval_secs: state.attention_interval_secs,
         music_muted: music_muted.unwrap_or(false),
+        dynamic_sky: dynamic_sky.unwrap_or(false),
     };
     let json = serde_json::to_string_pretty(&config).map_err(|e| e.to_string())?;
     std::fs::write(config_path(), json).map_err(|e| e.to_string())?;
