@@ -373,6 +373,12 @@ pub fn run() {
                     drop(state);
 
                     if let Some(config) = config {
+                        // Use awareness_model for events, defaulting to a fast model
+                        let mut event_config = config.clone();
+                        let default_fast_model = "claude-haiku-4.5".to_string();
+                        event_config.model = config.awareness_model.clone()
+                            .or_else(|| Some(default_fast_model));
+
                         let personality_hint = match avatar.as_str() {
                             a if a.contains("cat") => "You are playful, curious, and sometimes aloof. You purr, meow, and chase things.",
                             a if a.contains("dog") => "You are loyal, excited, and love to play. You bark, wag your tail, and fetch.",
@@ -439,7 +445,7 @@ pub fn run() {
                                     let copilot = backend.as_any()
                                         .downcast_ref::<CopilotBackend>()
                                         .expect("copilot backend");
-                                    match copilot.dispatch_with_tools(&aid, &config, &prompt, tools, handlers).await {
+                                    match copilot.dispatch_with_tools(&aid, &event_config, &prompt, tools, handlers).await {
                                         Ok(text) => {
                                             if !text.trim().is_empty() {
                                                 log::debug!("Event text from {} (tools handled): {}", aname, text.trim());
@@ -471,7 +477,7 @@ pub fn run() {
                                 if let Some(backend) = registry.get(&backend_id) {
                                     let result = tokio::time::timeout(
                                         Duration::from_secs(15),
-                                        backend.respond(&config, &messages),
+                                        backend.respond(&event_config, &messages),
                                     ).await;
 
                                     match result {

@@ -6,9 +6,12 @@ use serde::{Deserialize, Serialize};
 pub struct BackendConfig {
     /// Backend provider ID (e.g., "echo", "copilot", "claude")
     pub backend_id: String,
-    /// Optional model override (e.g., "gpt-4", "claude-3-opus")
+    /// Optional model override for chat (e.g., "gpt-4", "claude-3-opus")
     #[serde(default)]
     pub model: Option<String>,
+    /// Optional model for awareness events (defaults to fast/cheap model)
+    #[serde(default)]
+    pub awareness_model: Option<String>,
     /// System prompt / personality instructions
     #[serde(default)]
     pub system_prompt: Option<String>,
@@ -28,6 +31,7 @@ impl Default for BackendConfig {
         Self {
             backend_id: "echo".to_string(),
             model: None,
+            awareness_model: None,
             system_prompt: None,
             custom_agent: None,
             awareness_level: 0,

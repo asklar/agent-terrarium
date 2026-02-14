@@ -7,6 +7,7 @@ import type { Agent } from "../types/world";
 interface BackendConfig {
   backend_id: string;
   model?: string;
+  awareness_model?: string;
   system_prompt?: string;
   custom_agent?: string;
   awareness_level: number;
@@ -52,6 +53,7 @@ export function AgentConfigDialog({ agent, onSave, onClose }: AgentConfigDialogP
   const [customAgent, setCustomAgent] = useState(agent.backend_config?.custom_agent ?? "");
   const [systemPrompt, setSystemPrompt] = useState(agent.backend_config?.system_prompt ?? "");
   const [awarenessLevel, setAwarenessLevel] = useState(agent.backend_config?.awareness_level ?? 0);
+  const [awarenessModel, setAwarenessModel] = useState(agent.backend_config?.awareness_model ?? "");
   const [cwd, setCwd] = useState(agent.backend_config?.cwd ?? "");
   const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
   const [agentOptions, setAgentOptions] = useState<AgentOption[]>([]);
@@ -115,12 +117,13 @@ export function AgentConfigDialog({ agent, onSave, onClose }: AgentConfigDialogP
     onSave(agent.id, name, {
       backend_id: backendId,
       model: model || undefined,
+      awareness_model: awarenessModel || undefined,
       system_prompt: systemPrompt || undefined,
       custom_agent: customAgent || undefined,
       awareness_level: awarenessLevel,
       cwd: cwd || undefined,
     });
-  }, [agent.id, name, backendId, model, systemPrompt, customAgent, awarenessLevel, cwd, onSave]);
+  }, [agent.id, name, backendId, model, awarenessModel, systemPrompt, customAgent, awarenessLevel, cwd, onSave]);
 
   const handleBrowseFolder = useCallback(async () => {
     const folder = await invoke<string | null>("pick_folder");
@@ -227,6 +230,24 @@ export function AgentConfigDialog({ agent, onSave, onClose }: AgentConfigDialogP
               ))}
             </select>
           </label>
+
+          {awarenessLevel > 0 && backendId !== "echo" && (
+            <label className="agent-config-label">
+              Awareness Model
+              <select
+                className="agent-config-select"
+                value={awarenessModel}
+                onChange={(e) => setAwarenessModel(e.target.value)}
+              >
+                <option value="">Default (fast)</option>
+                {modelOptions.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
           <label className="agent-config-label">
             Working Folder

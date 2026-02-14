@@ -41,6 +41,7 @@ export interface Agent {
   backend_config?: {
     backend_id: string;
     model?: string;
+    awareness_model?: string;
     system_prompt?: string;
     custom_agent?: string;
     awareness_level: number;
