@@ -11,6 +11,7 @@ const BUILTIN_PACKAGE_URLS = [
   "/packages/themes.json",
   "/packages/agents.json",
   "/packages/gear.json",
+  "/packages/seattle/seattle.json",
 ];
 
 /**

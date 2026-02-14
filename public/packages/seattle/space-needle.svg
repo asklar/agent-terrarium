@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-45 -50 90 120">
+  <!-- Antenna -->
+  <path d="M -1 -45 L 1 -45 L 1 -10 L -1 -10 Z" fill="#B0BEC5"/>
+  <!-- Saucer top -->
+  <path d="M -28 -10 Q 0 -18 28 -10 L 22 -4 L -22 -4 Z" fill="#CFD8DC"/>
+  <!-- Saucer rim -->
+  <path d="M -30 -4 L 30 -4 L 24 3 L -24 3 Z" fill="#90A4AE"/>
+  <!-- Stem -->
+  <path d="M -3 3 L 3 3 L 4 55 L -4 55 Z" fill="#B0BEC5"/>
+  <!-- Base / tripod -->
+  <path d="M -4 48 L -18 65 L -14 65 L 0 52 L 14 65 L 18 65 L 4 48 Z" fill="#90A4AE"/>
+</svg>
