@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 60">
+  <!-- Lake water body -->
+  <path d="M 0 15 Q 30 5 75 12 Q 120 4 165 10 Q 210 2 255 8 Q 285 12 300 15 L 300 50 Q 250 55 200 48 Q 150 55 100 48 Q 50 55 0 50 Z" fill="#546E7A" opacity="0.5"/>
+  <!-- Water surface shimmer -->
+  <path d="M 20 18 Q 50 14 80 17 Q 110 12 140 16 Q 170 10 200 14 Q 230 11 260 15 L 260 22 Q 230 18 200 21 Q 170 17 140 22 Q 110 18 80 23 Q 50 19 20 24 Z" fill="#78909C" opacity="0.3"/>
+  <!-- Light reflections on water -->
+  <path d="M 60 20 Q 80 17 100 20 L 100 23 Q 80 20 60 23 Z" fill="#B0BEC5" opacity="0.2"/>
+  <path d="M 160 16 Q 190 13 210 16 L 210 19 Q 190 16 160 19 Z" fill="#B0BEC5" opacity="0.2"/>
+  <!-- Distant sailboat silhouette -->
+  <path d="M 140 14 L 140 6 L 145 10 Z" fill="#CFD8DC" opacity="0.4"/>
+  <path d="M 138 14 L 146 14 L 146 15 L 138 15 Z" fill="#90A4AE" opacity="0.4"/>
+</svg>

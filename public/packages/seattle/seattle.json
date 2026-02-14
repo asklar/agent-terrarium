@@ -13,7 +13,7 @@
       "groundWave": 2,
       "grass": { "color": "#6B8C5A", "accent": "#5A7A4A" },
       "particles": { "type": "leaf", "color": "#90A4AE", "count": 10 },
-      "decorators": ["clouds", "mt_rainier", "space_needle", "fremont_troll", "mist", "grass"],
+      "decorators": ["clouds", "mt_rainier", "lake_union", "space_needle", "fremont_troll", "mist", "grass"],
       "customDecorators": [
         {
           "name": "mt_rainier",
@@ -25,20 +25,28 @@
           "fileOpacity": 0.7
         },
         {
+          "name": "lake_union",
+          "file": "seattle/lake-union.svg",
+          "fileX": 0.5,
+          "fileY": 0.88,
+          "fileWidth": 500,
+          "fileHeight": 60
+        },
+        {
           "name": "space_needle",
           "file": "seattle/space-needle.svg",
-          "fileX": 0.3,
-          "fileY": 0.52,
-          "fileWidth": 70,
-          "fileHeight": 200
+          "fileX": 0.25,
+          "fileY": 0.68,
+          "fileWidth": 55,
+          "fileHeight": 260
         },
         {
           "name": "fremont_troll",
           "file": "seattle/fremont-troll.svg",
-          "fileX": 0.85,
-          "fileY": 0.92,
-          "fileWidth": 55,
-          "fileHeight": 50
+          "fileX": 0.82,
+          "fileY": 0.9,
+          "fileWidth": 110,
+          "fileHeight": 75
         }
       ],
       "music": {

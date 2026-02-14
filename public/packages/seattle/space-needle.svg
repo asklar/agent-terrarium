@@ -15,15 +15,15 @@
   <!-- Lower saucer underside (curved belly) -->
   <path d="M -33 -24 Q -28 -18 0 -16 Q 28 -18 33 -24 Z" fill="#B0BEC5"/>
   <!-- Slim core / stem (tapers slightly toward bottom) -->
-  <path d="M -4 -16 L 4 -16 L 3 72 L -3 72 Z" fill="#B0BEC5"/>
+  <path d="M -3.5 -16 L 3.5 -16 L 2.5 78 L -2.5 78 Z" fill="#B0BEC5"/>
   <!-- Stem structural rings -->
-  <path d="M -5 5 L 5 5 L 5 7 L -5 7 Z" fill="#90A4AE"/>
-  <path d="M -4.5 30 L 4.5 30 L 4.5 32 L -4.5 32 Z" fill="#90A4AE"/>
-  <path d="M -4 55 L 4 55 L 4 57 L -4 57 Z" fill="#90A4AE"/>
+  <path d="M -4.5 10 L 4.5 10 L 4.5 12 L -4.5 12 Z" fill="#90A4AE"/>
+  <path d="M -4 35 L 4 35 L 4 37 L -4 37 Z" fill="#90A4AE"/>
+  <path d="M -3.5 60 L 3.5 60 L 3.5 62 L -3.5 62 Z" fill="#90A4AE"/>
   <!-- Tripod legs (three angled legs flaring out, the iconic base) -->
-  <path d="M -3 50 L -28 92 L -24 92 L -1 56 Z" fill="#90A4AE"/>
-  <path d="M 3 50 L 28 92 L 24 92 L 1 56 Z" fill="#90A4AE"/>
-  <path d="M -2 55 L 2 55 L 2 92 L -2 92 Z" fill="#90A4AE"/>
+  <path d="M -2.5 58 L -26 96 L -22 96 L -0.5 64 Z" fill="#90A4AE"/>
+  <path d="M 2.5 58 L 26 96 L 22 96 L 0.5 64 Z" fill="#90A4AE"/>
+  <path d="M -1.5 65 L 1.5 65 L 1.5 96 L -1.5 96 Z" fill="#90A4AE"/>
   <!-- Base platform -->
-  <path d="M -32 92 L 32 92 L 30 96 L -30 96 Z" fill="#78909C"/>
+  <path d="M -30 96 L 30 96 L 28 100 L -28 100 Z" fill="#78909C"/>
 </svg>
