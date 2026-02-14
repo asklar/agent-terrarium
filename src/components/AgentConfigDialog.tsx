@@ -11,6 +11,7 @@ interface BackendConfig {
   system_prompt?: string;
   custom_agent?: string;
   awareness_level: number;
+  tts_enabled?: boolean;
   cwd?: string;
 }
 
@@ -54,6 +55,7 @@ export function AgentConfigDialog({ agent, onSave, onClose }: AgentConfigDialogP
   const [systemPrompt, setSystemPrompt] = useState(agent.backend_config?.system_prompt ?? "");
   const [awarenessLevel, setAwarenessLevel] = useState(agent.backend_config?.awareness_level ?? 0);
   const [awarenessModel, setAwarenessModel] = useState(agent.backend_config?.awareness_model ?? "");
+  const [ttsEnabled, setTtsEnabled] = useState(agent.backend_config?.tts_enabled ?? false);
   const [cwd, setCwd] = useState(agent.backend_config?.cwd ?? "");
   const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
   const [agentOptions, setAgentOptions] = useState<AgentOption[]>([]);
@@ -121,9 +123,10 @@ export function AgentConfigDialog({ agent, onSave, onClose }: AgentConfigDialogP
       system_prompt: systemPrompt || undefined,
       custom_agent: customAgent || undefined,
       awareness_level: awarenessLevel,
+      tts_enabled: ttsEnabled,
       cwd: cwd || undefined,
     });
-  }, [agent.id, name, backendId, model, awarenessModel, systemPrompt, customAgent, awarenessLevel, cwd, onSave]);
+  }, [agent.id, name, backendId, model, awarenessModel, systemPrompt, customAgent, awarenessLevel, ttsEnabled, cwd, onSave]);
 
   const handleBrowseFolder = useCallback(async () => {
     const folder = await invoke<string | null>("pick_folder");
@@ -269,6 +272,17 @@ export function AgentConfigDialog({ agent, onSave, onClose }: AgentConfigDialogP
               )}
             </div>
           </label>
+
+          {awarenessLevel > 0 && (
+            <label className="agent-config-label agent-config-checkbox-label">
+              <input
+                type="checkbox"
+                checked={ttsEnabled}
+                onChange={(e) => setTtsEnabled(e.target.checked)}
+              />
+              🔊 Speak say actions (TTS)
+            </label>
+          )}
 
           {needsApiKey && (
             <button className="agent-config-api-key-btn" onClick={handleSetApiKey}>

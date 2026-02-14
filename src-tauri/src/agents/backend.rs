@@ -21,6 +21,9 @@ pub struct BackendConfig {
     /// Awareness level: 0=chat only, 1=major events, 2=social, 3=full
     #[serde(default)]
     pub awareness_level: u8,
+    /// Enable text-to-speech for say tool responses
+    #[serde(default)]
+    pub tts_enabled: bool,
     /// Working directory for the agent
     #[serde(default)]
     pub cwd: Option<String>,
@@ -35,6 +38,7 @@ impl Default for BackendConfig {
             system_prompt: None,
             custom_agent: None,
             awareness_level: 0,
+            tts_enabled: false,
             cwd: None,
         }
     }

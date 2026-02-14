@@ -4,6 +4,8 @@ import type { Agent } from "../types/world";
 import type { WeatherOverlay } from "../weather/types";
 import { getCachedWeather } from "../weather/weatherService";
 import { computeBoundaries } from "../weather/skyCalculator";
+import { speakText } from "../audio/tts";
+import { invoke } from "@tauri-apps/api/core";
 
 interface DebugPanelProps {
   agents: Agent[];
@@ -140,6 +142,30 @@ export function DebugPanel({
                 key={a.id}
                 className={`debug-chip ${a.state === "NeedsAttention" ? "active" : ""}`}
                 onClick={() => onRequestAttention(a.id)}
+              >
+                {registry.getAgent(a.avatar)?.icon ?? "❓"} {a.name}
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div className="debug-section">
+        <div className="debug-section-title">🔊 Test Say (TTS)</div>
+        <div className="debug-chips">
+          {agents.length === 0 ? (
+            <span className="debug-no-agents">No agents</span>
+          ) : (
+            agents.map((a) => (
+              <button
+                key={a.id}
+                className="debug-chip"
+                onClick={() => {
+                  const phrases = ["Hello there!", "Nice day!", "Let's play!", "I'm happy!", "Wow cool!"];
+                  const text = phrases[Math.floor(Math.random() * phrases.length)];
+                  speakText(text, a.avatar);
+                  invoke("push_bubble", { agentId: a.id, content: text, isEmoji: false, duration: 10.0 }).catch(() => {});
+                }}
               >
                 {registry.getAgent(a.avatar)?.icon ?? "❓"} {a.name}
               </button>

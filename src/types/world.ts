@@ -45,6 +45,7 @@ export interface Agent {
     system_prompt?: string;
     custom_agent?: string;
     awareness_level: number;
+    tts_enabled?: boolean;
     cwd?: string;
   };
 }

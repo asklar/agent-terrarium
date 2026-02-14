@@ -2,6 +2,7 @@ import { useRef, useEffect, useCallback, useState } from "react";
 import type { WorldState, Agent } from "../types/world";
 import { registry } from "../themes";
 import { playAgentSound, getSharedAudioCtx } from "../audio/agentSounds";
+import { speakText } from "../audio/tts";
 
 interface TerrariumCanvasProps {
   worldState: WorldState | null;
@@ -65,7 +66,8 @@ export function TerrariumCanvas({
   } | null>(null);
   const attentionSoundTimers = useRef<Map<string, number>>(new Map());
   const prevBallRef = useRef<{ vx: number; vy: number; captures: number; active: boolean } | null>(null);
-  const ballSquashRef = useRef(0); // -1 = squashed (wide+short), +1 = stretched (tall+narrow), decays to 0
+  const ballSquashRef = useRef(0);
+  const spokenBubblesRef = useRef(new Set<string>());// -1 = squashed (wide+short), +1 = stretched (tall+narrow), decays to 0
 
   // Pick a mood-based greeting emoji for an agent
   const pickGreetingEmoji = useCallback((agent: Agent): string => {
@@ -295,6 +297,20 @@ export function TerrariumCanvas({
           bubble.content,
           bubble.is_event ? "thought" : "chat",
         );
+
+        // TTS: speak non-emoji event bubbles if agent has TTS enabled
+        if (bubble.is_event && !bubble.is_emoji && agent.backend_config?.tts_enabled) {
+          const key = `${agent.id}:${bubble.content}`;
+          if (!spokenBubblesRef.current.has(key)) {
+            spokenBubblesRef.current.add(key);
+            speakText(bubble.content, agent.avatar);
+            // Clean up old keys to prevent memory leak
+            if (spokenBubblesRef.current.size > 50) {
+              const entries = [...spokenBubblesRef.current];
+              entries.slice(0, 25).forEach((k) => spokenBubblesRef.current.delete(k));
+            }
+          }
+        }
       }
     }
 

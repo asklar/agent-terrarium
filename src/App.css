@@ -759,6 +759,13 @@ html, body, #root {
   color: #555;
 }
 
+.agent-config-checkbox-label {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
 .agent-config-select,
 .agent-config-input,
 .agent-config-textarea {

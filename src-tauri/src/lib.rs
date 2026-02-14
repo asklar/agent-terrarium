@@ -25,6 +25,11 @@ fn throw_ball(world: tauri::State<'_, Arc<World>>, x: f64, y: f64, vx: f64, vy: 
 }
 
 #[tauri::command]
+fn push_bubble(world: tauri::State<'_, Arc<World>>, agent_id: String, content: String, is_emoji: bool, duration: f64) {
+    world.push_bubble(&agent_id, content, is_emoji, duration);
+}
+
+#[tauri::command]
 fn click_agent(world: tauri::State<'_, Arc<World>>, agent_id: String) -> bool {
     world.click_agent(&agent_id)
 }
@@ -518,6 +523,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_world_state,
             throw_ball,
+            push_bubble,
             click_agent,
             send_message,
             dismiss_chat,
