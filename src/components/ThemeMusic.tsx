@@ -1,20 +1,21 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { registry } from "../themes";
 import type { ThemeMusic as ThemeMusicConfig } from "../themes";
 
 interface ThemeMusicProps {
   theme: string;
+  muted: boolean;
+  onToggleMute: () => void;
 }
 
 /**
  * Procedural lofi 8-bit music player driven by theme config.
  * Uses Web Audio API to generate chiptune-style ambient music.
  */
-export function ThemeMusic({ theme }: ThemeMusicProps) {
+export function ThemeMusic({ theme, muted, onToggleMute }: ThemeMusicProps) {
   const ctxRef = useRef<AudioContext | null>(null);
   const gainRef = useRef<GainNode | null>(null);
   const schedulerRef = useRef<number>(0);
-  const [muted, setMuted] = useState(false);
   const mutedRef = useRef(muted);
   mutedRef.current = muted;
 
@@ -203,7 +204,7 @@ export function ThemeMusic({ theme }: ThemeMusicProps) {
   return (
     <button
       className="music-toggle"
-      onClick={() => setMuted((m) => !m)}
+      onClick={onToggleMute}
       title={muted ? "Unmute music" : "Mute music"}
     >
       {muted ? "🔇" : "🎵"}

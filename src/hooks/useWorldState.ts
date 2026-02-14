@@ -79,7 +79,7 @@ export function useWorldState() {
     await invoke("update_mouse", { x, y });
   }, []);
 
-  const saveConfig = useCallback(async (theme: string, windowBounds?: { x: number; y: number; width: number; height: number }) => {
+  const saveConfig = useCallback(async (theme: string, windowBounds?: { x: number; y: number; width: number; height: number }, musicMuted?: boolean) => {
     try {
       await invoke("save_config", {
         theme,
@@ -87,6 +87,7 @@ export function useWorldState() {
         windowY: windowBounds?.y ?? null,
         windowWidth: windowBounds?.width ?? null,
         windowHeight: windowBounds?.height ?? null,
+        musicMuted: musicMuted ?? null,
       });
     } catch (e) {
       console.error("Failed to save config:", e);

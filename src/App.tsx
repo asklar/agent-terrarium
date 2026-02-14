@@ -67,6 +67,7 @@ function App() {
   } = useWorldState();
 
   const [theme, setTheme] = useState("meadow");
+  const [musicMuted, setMusicMuted] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -74,12 +75,17 @@ function App() {
   const [configAgent, setConfigAgent] = useState<Agent | null>(null);
   const themeRef = useRef(theme);
   themeRef.current = theme;
+  const musicMutedRef = useRef(musicMuted);
+  musicMutedRef.current = musicMuted;
 
   // Load config on mount and restore window position
   useEffect(() => {
     loadConfig().then(async (config) => {
       if (config?.theme) {
         setTheme(config.theme);
+      }
+      if ((config as Record<string, unknown> | null)?.music_muted) {
+        setMusicMuted(true);
       }
       const w = (config as Record<string, unknown> | null)?.window as
         | { x: number; y: number; width: number; height: number }
@@ -117,7 +123,7 @@ function App() {
             y: pos.y,
             width: size.width,
             height: size.height,
-          });
+          }, musicMutedRef.current);
         } catch { /* ignore */ }
       }, 500);
     };
@@ -139,7 +145,7 @@ function App() {
       initialRef.current = false;
       return;
     }
-    saveConfig(theme);
+    saveConfig(theme, undefined, musicMutedRef.current);
   }, [theme, saveConfig]);
 
   // Sync canvas size to world bounds
@@ -274,7 +280,13 @@ function App() {
     <div className="terrarium-container" onContextMenu={handleContextMenu}>
       <WindowFrame />
       <AnimatedBackground theme={theme} />
-      <ThemeMusic theme={theme} />
+      <ThemeMusic theme={theme} muted={musicMuted} onToggleMute={() => {
+        setMusicMuted((m) => {
+          const next = !m;
+          saveConfig(themeRef.current, undefined, next);
+          return next;
+        });
+      }} />
       <TerrariumCanvas
         worldState={worldState}
         onAgentClick={handleAgentClick}
@@ -313,16 +325,16 @@ function App() {
           onThemeChange={setTheme}
           onAddAgent={async (avatar, name) => {
             await addAgent(avatar, name);
-            saveConfig(theme);
+            saveConfig(theme, undefined, musicMutedRef.current);
           }}
           onRemoveAgent={async (agentId) => {
             await removeAgent(agentId);
-            saveConfig(theme);
+            saveConfig(theme, undefined, musicMutedRef.current);
           }}
           onSetGear={async (agentId, gearIds) => {
             await setGear(agentId, gearIds);
             playGearSound(agentId);
-            saveConfig(theme);
+            saveConfig(theme, undefined, musicMutedRef.current);
           }}
           onRequestAttention={(agentId) => {
             setTimeout(() => requestAttention(agentId), 5000);
@@ -335,7 +347,7 @@ function App() {
           onSave={async (agentId, name, backendConfig) => {
             await renameAgent(agentId, name);
             await setBackendConfig(agentId, backendConfig);
-            saveConfig(theme);
+            saveConfig(theme, undefined, musicMutedRef.current);
             setConfigAgent(null);
           }}
           onClose={() => setConfigAgent(null)}

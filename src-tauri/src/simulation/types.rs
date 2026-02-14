@@ -200,6 +200,9 @@ pub struct AppConfig {
     /// Seconds between attention sound repeats (default: 5)
     #[serde(default = "default_attention_interval")]
     pub attention_interval_secs: f64,
+    /// Whether music is muted (default: false)
+    #[serde(default)]
+    pub music_muted: bool,
 }
 
 fn default_ball_max_captures() -> u32 { 3 }
