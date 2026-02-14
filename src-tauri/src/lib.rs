@@ -365,9 +365,11 @@ pub fn run() {
             }
             Ok(())
         })
-        .on_window_event(|_window, event| {
+        .on_window_event(|window, event| {
             if let tauri::WindowEvent::Destroyed = event {
-                std::process::exit(0);
+                if window.label() == "main" {
+                    std::process::exit(0);
+                }
             }
         })
         .run(tauri::generate_context!())
