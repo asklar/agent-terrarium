@@ -5,36 +5,36 @@
     {
       "id": "chicken_jockey",
       "name": "Chicken Jockey",
-      "icon": "👹",
+      "icon": "🐔",
       "shape": "chicken_jockey",
       "voice": {
-        "basePitch": 500,
-        "pitchVar": 300,
+        "basePitch": 800,
+        "pitchVar": 250,
         "wave": "square",
-        "syllables": 3,
-        "speed": 0.04,
-        "volume": 0.14
+        "syllables": 4,
+        "speed": 0.05,
+        "volume": 0.12
       },
       "personality": {
-        "speedMin": 80,
-        "speedMax": 220,
+        "speedMin": 60,
+        "speedMax": 200,
         "movementStyle": "bounce",
         "interactionChance": 0.8,
         "ballInterest": 0.95,
-        "chatEmojis": ["⚔️", "🗡️", "😤", "💥", "👹"]
+        "chatEmojis": ["🐔", "⚔️", "🗡️", "😤", "💥"]
       },
       "drawSpec": {
-        "waddleAmount": 2,
+        "waddleAmount": 3,
         "layers": [
-          { "type": "legs", "color": "#2E7D32", "spread": 5, "length": 7, "footStyle": "round" },
-          { "type": "body", "color": "#4CAF50", "rx": 9, "ry": 10 },
-          { "type": "patch", "position": "belly", "color": "#66BB6A", "rx": 6, "ry": 6 },
-          { "type": "head", "color": "#4CAF50", "rx": 10, "ry": 9 },
-          { "type": "ears", "style": "pointy", "color": "#388E3C", "size": 6, "innerColor": "#4CAF50" },
-          { "type": "eyes", "style": "angry", "color": "#D32F2F", "size": 3 },
-          { "type": "mouth", "style": "fangs" },
-          { "type": "accessory", "accessoryKind": "sword", "color": "#9E9E9E" },
-          { "type": "accessory", "accessoryKind": "hat", "color": "#5D4037", "hatStyle": "helmet" }
+          { "type": "legs", "color": "#FF8F00", "spread": 6, "length": 6, "footStyle": "flat", "footRx": 4 },
+          { "type": "body", "color": "#F5F5F5", "rx": 11, "ry": 10 },
+          { "type": "patch", "position": "belly", "color": "#EEEEEE", "rx": 7, "ry": 6 },
+          { "type": "wings", "wingStyle": "flap", "color": "#E0E0E0", "speed": 150 },
+          { "type": "head", "color": "#F5F5F5", "rx": 9, "ry": 8 },
+          { "type": "beak", "color": "#FF8F00" },
+          { "type": "ears", "style": "comb", "color": "#E53935", "size": 8, "innerColor": "#EF5350" },
+          { "type": "eyes", "style": "standard", "color": "#333", "size": 2 },
+          { "type": "accessory", "accessoryKind": "rider", "riderColor": "#4CAF50", "helmetColor": "#795548", "swordColor": "#9E9E9E" }
         ]
       }
     },

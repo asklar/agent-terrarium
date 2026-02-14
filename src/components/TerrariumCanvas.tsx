@@ -1418,32 +1418,42 @@ function drawLayer(
         ctx.roundRect(4, 2 + bob, 5, 3, 2);
         ctx.fill();
       } else if (layer.accessoryKind === "rider") {
-        // Tiny rider sitting on top — like a chicken jockey
-        const ry = headY - 14 + bob * 0.5;
+        // Zombie rider sitting on top — like a chicken jockey
+        const ry = headY - 20 + bob * 0.5;
         // Body
         ctx.fillStyle = layer.riderColor ?? "#4CAF50";
         ctx.beginPath();
-        ctx.roundRect(-4, ry - 4, 8, 8, 2);
+        ctx.roundRect(-6, ry - 6, 12, 12, 3);
         ctx.fill();
         // Head/helmet
         ctx.fillStyle = layer.helmetColor ?? "#795548";
         ctx.beginPath();
-        ctx.arc(0, ry - 7, 4, 0, Math.PI * 2);
+        ctx.arc(0, ry - 11, 6, 0, Math.PI * 2);
+        ctx.fill();
+        // Face (green under helmet)
+        ctx.fillStyle = layer.riderColor ?? "#4CAF50";
+        ctx.beginPath();
+        ctx.arc(0, ry - 9, 4, 0, Math.PI * 2);
         ctx.fill();
         // Eyes
         ctx.fillStyle = "#FFF";
         ctx.beginPath();
-        ctx.arc(-1.5, ry - 7, 1, 0, Math.PI * 2);
-        ctx.arc(1.5, ry - 7, 1, 0, Math.PI * 2);
+        ctx.arc(-2, ry - 10, 1.5, 0, Math.PI * 2);
+        ctx.arc(2, ry - 10, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#111";
+        ctx.beginPath();
+        ctx.arc(-2, ry - 10, 0.8, 0, Math.PI * 2);
+        ctx.arc(2, ry - 10, 0.8, 0, Math.PI * 2);
         ctx.fill();
         // Sword
         ctx.fillStyle = layer.swordColor ?? "#9E9E9E";
         ctx.beginPath();
-        ctx.roundRect(5, ry - 10, 2, 14, 1);
+        ctx.roundRect(7, ry - 16, 3, 20, 1);
         ctx.fill();
         ctx.fillStyle = "#795548";
         ctx.beginPath();
-        ctx.roundRect(3, ry - 1, 6, 2, 1);
+        ctx.roundRect(5, ry - 2, 8, 3, 1);
         ctx.fill();
       }
       break;
