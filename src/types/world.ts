@@ -44,6 +44,7 @@ export interface Ball {
   position: Vec2;
   velocity: Vec2;
   active: boolean;
+  captures: number;
 }
 
 export interface ChatBubble {

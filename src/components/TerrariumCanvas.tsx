@@ -51,6 +51,7 @@ export function TerrariumCanvas({
   } | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const attentionSoundTimers = useRef<Map<string, number>>(new Map());
+  const prevBallRef = useRef<{ vy: number; captures: number; active: boolean } | null>(null);
 
   // Pick a mood-based greeting emoji for an agent
   const pickGreetingEmoji = useCallback((agent: Agent): string => {
@@ -118,6 +119,61 @@ export function TerrariumCanvas({
     }
   }, []);
 
+  // Play 8-bit kick sound
+  const playKickSound = useCallback(() => {
+    try {
+      if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
+      const ctx = audioCtxRef.current;
+      if (ctx.state === "suspended") ctx.resume();
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "square";
+      osc.frequency.setValueAtTime(300, t);
+      osc.frequency.exponentialRampToValueAtTime(80, t + 0.15);
+      gain.gain.setValueAtTime(0.15, t);
+      gain.gain.linearRampToValueAtTime(0, t + 0.15);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.15);
+      // Add a noise burst for impact
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.04, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.3;
+      const noise = ctx.createBufferSource();
+      noise.buffer = buf;
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(0.12, t);
+      ng.gain.linearRampToValueAtTime(0, t + 0.04);
+      noise.connect(ng);
+      ng.connect(ctx.destination);
+      noise.start(t);
+      noise.stop(t + 0.04);
+    } catch {}
+  }, []);
+
+  // Play 8-bit bounce sound
+  const playBounceSound = useCallback(() => {
+    try {
+      if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
+      const ctx = audioCtxRef.current;
+      if (ctx.state === "suspended") ctx.resume();
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(200, t);
+      osc.frequency.exponentialRampToValueAtTime(500, t + 0.06);
+      gain.gain.setValueAtTime(0.08, t);
+      gain.gain.linearRampToValueAtTime(0, t + 0.08);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.08);
+    } catch {}
+  }, []);
+
   // Render loop
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -177,6 +233,29 @@ export function TerrariumCanvas({
       );
       ctx.fill();
       ctx.restore();
+    }
+
+    // Detect ball kick and bounce events for sound effects
+    const curBall = worldState.ball;
+    const prev = prevBallRef.current;
+    if (curBall && curBall.active) {
+      if (prev) {
+        // Kick: captures increased
+        if (curBall.captures > prev.captures) {
+          playKickSound();
+        }
+        // Bounce: velocity.y sign flipped (ground or ceiling bounce)
+        if (prev.vy > 5 && curBall.velocity.y < -5) {
+          playBounceSound();
+        }
+      }
+      prevBallRef.current = {
+        vy: curBall.velocity.y,
+        captures: curBall.captures,
+        active: curBall.active,
+      };
+    } else {
+      prevBallRef.current = null;
     }
 
     // Draw chat bubbles (emoji interactions)
