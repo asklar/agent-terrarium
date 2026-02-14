@@ -151,11 +151,13 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
         }
 
         // Moon
-        if (sky.moonPosition !== null && sky.moonOpacity > 0.01) {
-          const arcX = sky.moonPosition * w * 0.8 + w * 0.1;
-          const arcY = h * 0.5 - Math.sin(sky.moonPosition * Math.PI) * h * 0.4;
+        const isNightTheme = theme === "night";
+        if (isNightTheme) {
+          // Night theme: always show moon at a gentle arc, never show sun
+          const arcX = w * 0.8;
+          const arcY = 50;
           ctx.save();
-          ctx.globalAlpha = sky.moonOpacity;
+          ctx.globalAlpha = 1;
           ctx.fillStyle = "#FFF9C4";
           ctx.shadowColor = "#FFF9C4";
           ctx.shadowBlur = 20;
@@ -171,10 +173,33 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
           ctx.arc(arcX + 5, arcY + 4, 2.5, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
+        } else {
+          // Dynamic: moon position from sky calculator
+          if (sky.moonPosition !== null && sky.moonOpacity > 0.01) {
+            const arcX = sky.moonPosition * w * 0.8 + w * 0.1;
+            const arcY = h * 0.5 - Math.sin(sky.moonPosition * Math.PI) * h * 0.4;
+            ctx.save();
+            ctx.globalAlpha = sky.moonOpacity;
+            ctx.fillStyle = "#FFF9C4";
+            ctx.shadowColor = "#FFF9C4";
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.arc(arcX, arcY, 18, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "rgba(0,0,0,0.05)";
+            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            ctx.arc(arcX - 4, arcY - 3, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(arcX + 5, arcY + 4, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
         }
 
-        // Sun
-        if (sky.sunPosition !== null && sky.sunOpacity > 0.01) {
+        // Sun (not on night theme)
+        if (!isNightTheme && sky.sunPosition !== null && sky.sunOpacity > 0.01) {
           const arcX = sky.sunPosition * w * 0.8 + w * 0.1;
           const arcY = h * 0.55 - Math.sin(sky.sunPosition * Math.PI) * h * 0.45;
           ctx.save();
