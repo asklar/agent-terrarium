@@ -304,7 +304,7 @@ function App() {
 
   // Listen for pop-in events from chat windows
   useEffect(() => {
-    let unlisten: (() => void) | null = null;
+    const unlisteners: (() => void)[] = [];
     import("@tauri-apps/api/event").then(({ listen }) => {
       listen<{ agentId: string }>("chat-pop-in", (event) => {
         log.info("Pop-in event for", event.payload.agentId);
@@ -315,10 +315,16 @@ function App() {
         });
         // Re-open inline chat
         clickAgent(event.payload.agentId);
-      }).then((fn) => { unlisten = fn; });
+      }).then((fn) => { unlisteners.push(fn); });
+
+      // Listen for config changes from pop-out windows
+      listen("config-changed", () => {
+        log.debug("Config changed from pop-out window");
+        saveConfig(themeRef.current, undefined, musicMutedRef.current);
+      }).then((fn) => { unlisteners.push(fn); });
     });
-    return () => { unlisten?.(); };
-  }, [clickAgent]);
+    return () => { unlisteners.forEach((fn) => fn()); };
+  }, [clickAgent, saveConfig]);
 
   const handleCanvasClick = useCallback(() => {
     // Light dismiss: clicking canvas (not on an agent) dismisses all chats

@@ -3,8 +3,9 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { AgentConfigDialog } from "./AgentConfigDialog";
 import { log } from "../utils/log";
-import type { WorldState, ChatSession } from "../types/world";
+import type { WorldState, ChatSession, Agent } from "../types/world";
 
 interface ChatWindowProps {
   agentId: string;
@@ -14,10 +15,13 @@ export function ChatWindow({ agentId }: ChatWindowProps) {
   const [session, setSession] = useState<ChatSession | null>(null);
   const [agentName, setAgentName] = useState(agentId);
   const [agentAvatar, setAgentAvatar] = useState("");
+  const [configAgent, setConfigAgent] = useState<Agent | null>(null);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const agentRef = useRef<Agent | null>(null);
 
   // Poll world state for this agent's chat session
   useEffect(() => {
@@ -31,6 +35,7 @@ export function ChatWindow({ agentId }: ChatWindowProps) {
         if (agent) {
           setAgentName(agent.name);
           setAgentAvatar(agent.avatar);
+          agentRef.current = agent;
         }
       } catch (e) {
         log.error("ChatWindow poll error:", e);
@@ -96,6 +101,9 @@ export function ChatWindow({ agentId }: ChatWindowProps) {
       <div className="chat-window-header">
         <span className="chat-window-avatar">{avatarEmoji}</span>
         <span className="chat-window-name">{agentName}</span>
+        <button className="chat-window-popin" onClick={() => { if (agentRef.current) setConfigAgent(agentRef.current); }} title="Configure agent">
+          ⚙️
+        </button>
         <button className="chat-window-popin" onClick={handlePopIn} title="Pop back into terrarium">
           ⬕
         </button>
@@ -127,6 +135,20 @@ export function ChatWindow({ agentId }: ChatWindowProps) {
           ➤
         </button>
       </div>
+      {configAgent && (
+        <AgentConfigDialog
+          agent={configAgent}
+          onSave={async (agentId, name, backendConfig) => {
+            await invoke("rename_agent", { agentId, name });
+            await invoke("set_backend_config", { agentId, backendConfig });
+            // Notify main window to persist config
+            const { emit } = await import("@tauri-apps/api/event");
+            await emit("config-changed");
+            setConfigAgent(null);
+          }}
+          onClose={() => setConfigAgent(null)}
+        />
+      )}
     </div>
   );
 }
