@@ -15,6 +15,18 @@ interface TerrariumCanvasProps {
 const AGENT_SIZE = 32;
 const BALL_SIZE = 10;
 
+/** Fallback drawSpec for avatars without one */
+const DEFAULT_DRAW_SPEC: import("../themes/PackageTypes").DrawSpec = {
+  layers: [
+    { type: "legs" },
+    { type: "body" },
+    { type: "head" },
+    { type: "eyes" },
+    { type: "cheeks" },
+    { type: "mouth", style: "smile" },
+  ],
+};
+
 // Image cache for gear/agent images (SVG, PNG)
 const imageCache = new Map<string, HTMLImageElement>();
 function getOrLoadImage(url: string): HTMLImageElement | null {
@@ -466,39 +478,23 @@ function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent) {
 
   // Animation parameters
   const walkCycle = t / (isFast ? 80 : 120);
-  const bob = isMoving ? Math.sin(walkCycle) * 2.5 : Math.sin(t / 600) * 0.8;
+  const isFloat = agentDef?.drawSpec?.movement === "float";
+  const bob = isFloat
+    ? Math.sin(t / 500) * 4
+    : isMoving ? Math.sin(walkCycle) * 2.5 : Math.sin(t / 600) * 0.8;
   const legPhase = isMoving ? walkCycle : 0;
-  const squish = isMoving
-    ? 1 + Math.sin(walkCycle * 2) * 0.04
-    : 1 + Math.sin(t / 500) * 0.015; // idle breathing
+  const squish = isFloat
+    ? 1
+    : isMoving
+      ? 1 + Math.sin(walkCycle * 2) * 0.04
+      : 1 + Math.sin(t / 500) * 0.015; // idle breathing
 
   // Draw back-slot gear (cape etc.) BEHIND the agent body
   drawGearBySlots(ctx, agent.gear ?? [], bob, ["back"]);
 
-  // Dispatch to per-agent draw
-  switch (agent.avatar) {
-    case "cat":
-      drawCat(ctx, colors, bob, legPhase, squish, isMoving, t);
-      break;
-    case "copilot":
-      drawCopilot(ctx, colors, bob, legPhase, squish, isMoving, t);
-      break;
-    case "claude":
-      drawClaude(ctx, colors, bob, legPhase, squish, isMoving, t);
-      break;
-    case "squirrel":
-      drawSquirrel(ctx, colors, bob, legPhase, squish, isMoving, t);
-      break;
-    case "penguin":
-      drawPenguin(ctx, colors, bob, legPhase, squish, isMoving, t);
-      break;
-    case "ghost":
-      drawGhost(ctx, colors, bob, t);
-      break;
-    default:
-      drawGenericAgent(ctx, colors, bob, legPhase, squish, isMoving, t);
-      break;
-  }
+  // Dispatch to data-driven renderer
+  const spec = agentDef?.drawSpec ?? DEFAULT_DRAW_SPEC;
+  drawFromSpec(ctx, colors, bob, legPhase, squish, isMoving, t, spec);
 
   // State indicator particles
   if (agent.state === "Interacting") {
@@ -1016,517 +1012,447 @@ function drawMouth(
   }
 }
 
-function drawCat(
+// ─── Data-Driven Renderer ───────────────────────────────────────────
+
+import type { DrawSpec, DrawLayer, ColorRef } from "../themes/PackageTypes";
+
+type Palette = (typeof AGENT_COLORS)[string];
+
+function resolveColor(ref: ColorRef | undefined, palette: Palette, fallback: string): string {
+  if (!ref) return fallback;
+  if (ref in palette) return palette[ref as keyof Palette];
+  return ref;
+}
+
+function drawFromSpec(
   ctx: CanvasRenderingContext2D,
-  c: (typeof AGENT_COLORS)[string],
+  c: Palette,
   bob: number,
   legPhase: number,
   squish: number,
   isMoving: boolean,
   t: number,
+  spec: DrawSpec,
 ) {
   const headY = -10 + bob;
+  const waddleAmt = spec.waddleAmount ?? 0;
+  const waddle = waddleAmt && isMoving ? Math.sin(t / 150) * waddleAmt : 0;
 
-  // Tail — large fluffy S-curve
-  ctx.fillStyle = c.accent;
-  ctx.beginPath();
-  const tailWag = Math.sin(t / 200) * 6;
-  ctx.moveTo(10, 4 + bob);
-  ctx.bezierCurveTo(18, -2 + bob + tailWag, 20, -14 + bob - tailWag, 14, -18 + bob + tailWag);
-  ctx.bezierCurveTo(12, -14 + bob - tailWag, 14, -2 + bob + tailWag, 10, 4 + bob);
-  ctx.fill();
+  if (waddle) {
+    ctx.save();
+    ctx.rotate((waddle * Math.PI) / 180);
+  }
 
-  // Legs
-  drawLegs(ctx, c.accent, bob, legPhase, isMoving, 5, 8);
+  for (const layer of spec.layers) {
+    drawLayer(ctx, c, bob, headY, legPhase, squish, isMoving, t, layer);
+  }
 
-  // Body — pudgy oval
-  ctx.fillStyle = c.body;
-  ctx.save();
-  ctx.scale(squish, 2 - squish);
-  ctx.beginPath();
-  ctx.ellipse(0, (2 + bob) / (2 - squish), 10, 10, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
+  if (waddle) {
+    ctx.restore();
+  }
+}
 
-  // Head
-  ctx.fillStyle = c.head;
-  ctx.beginPath();
-  ctx.ellipse(0, headY, 11, 10, 0, 0, Math.PI * 2);
-  ctx.fill();
+function drawLayer(
+  ctx: CanvasRenderingContext2D,
+  c: Palette,
+  bob: number,
+  headY: number,
+  legPhase: number,
+  squish: number,
+  isMoving: boolean,
+  t: number,
+  layer: DrawLayer,
+) {
+  switch (layer.type) {
+    case "legs": {
+      const spread = layer.spread ?? 5;
+      const len = layer.length ?? 8;
+      const color = resolveColor(layer.color, c, c.accent);
+      if (layer.footStyle === "flat") {
+        // Penguin-style flat feet
+        const lOff = isMoving ? Math.sin(legPhase) * 3 : 0;
+        const rOff = isMoving ? Math.sin(legPhase + Math.PI) * 3 : 0;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.ellipse(-spread, AGENT_SIZE / 2 - 4 + bob + lOff, layer.footRx ?? 5, 2.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(spread, AGENT_SIZE / 2 - 4 + bob + rOff, layer.footRx ?? 5, 2.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        drawLegs(ctx, color, bob, legPhase, isMoving, spread, len);
+      }
+      break;
+    }
 
-  // Inner ears
-  ctx.fillStyle = c.head;
-  ctx.beginPath();
-  ctx.moveTo(-10, headY - 5);
-  ctx.lineTo(-7, headY - 16);
-  ctx.lineTo(-2, headY - 6);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(2, headY - 6);
-  ctx.lineTo(7, headY - 16);
-  ctx.lineTo(10, headY - 5);
-  ctx.fill();
-  // Ear pink insides
-  ctx.fillStyle = "#FFAB91";
-  ctx.beginPath();
-  ctx.moveTo(-8, headY - 6);
-  ctx.lineTo(-6.5, headY - 13);
-  ctx.lineTo(-3, headY - 7);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(3, headY - 7);
-  ctx.lineTo(6.5, headY - 13);
-  ctx.lineTo(8, headY - 6);
-  ctx.fill();
-
-  // Whiskers
-  ctx.strokeStyle = "rgba(0,0,0,0.2)";
-  ctx.lineWidth = 0.7;
-  for (const dir of [-1, 1]) {
-    for (let i = -1; i <= 1; i++) {
+    case "body": {
+      const rx = layer.rx ?? 10;
+      const ry = layer.ry ?? 10;
+      ctx.fillStyle = resolveColor(layer.color, c, c.body);
+      ctx.save();
+      ctx.scale(squish, 2 - squish);
       ctx.beginPath();
-      ctx.moveTo(dir * 6, headY + 2 + i * 2);
-      ctx.lineTo(dir * 16, headY + i * 3);
-      ctx.stroke();
+      ctx.ellipse(0, (2 + bob) / (2 - squish), rx, ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      break;
+    }
+
+    case "head": {
+      const rx = layer.rx ?? 10;
+      const ry = layer.ry ?? 10;
+      ctx.fillStyle = resolveColor(layer.color, c, c.head);
+      ctx.beginPath();
+      ctx.ellipse(0, headY, rx, ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+
+    case "ears": {
+      if (layer.style === "pointed") {
+        const sz = layer.size ?? 11;
+        const innerColor = layer.innerColor ?? "#FFAB91";
+        // Outer ears
+        ctx.fillStyle = c.head;
+        ctx.beginPath();
+        ctx.moveTo(-sz + 1, headY - 5);
+        ctx.lineTo(-sz + 4, headY - 16);
+        ctx.lineTo(-2, headY - 6);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(2, headY - 6);
+        ctx.lineTo(sz - 4, headY - 16);
+        ctx.lineTo(sz - 1, headY - 5);
+        ctx.fill();
+        // Inner ears
+        ctx.fillStyle = innerColor;
+        ctx.beginPath();
+        ctx.moveTo(-sz + 3, headY - 6);
+        ctx.lineTo(-sz + 4.5, headY - 13);
+        ctx.lineTo(-3, headY - 7);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(3, headY - 7);
+        ctx.lineTo(sz - 4.5, headY - 13);
+        ctx.lineTo(sz - 3, headY - 6);
+        ctx.fill();
+      } else {
+        // Round ears
+        const sz = layer.size ?? 4;
+        const innerColor = layer.innerColor ?? "#FFAB91";
+        ctx.fillStyle = c.body;
+        ctx.beginPath();
+        ctx.arc(-7, headY - 8, sz, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(7, headY - 8, sz, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = innerColor;
+        ctx.beginPath();
+        ctx.arc(-7, headY - 8, sz / 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(7, headY - 8, sz / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+    }
+
+    case "eyes": {
+      if (layer.style === "custom") {
+        const sz = layer.size ?? 2.5;
+        const spacing = layer.spacing ?? 4;
+        const pupilColor = resolveColor(layer.pupilColor, c, c.accent);
+        // Eye whites
+        ctx.fillStyle = c.eyes;
+        ctx.beginPath();
+        ctx.ellipse(-spacing, headY - 2, sz, sz + 0.3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(spacing, headY - 2, sz, sz + 0.3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Pupils
+        ctx.fillStyle = pupilColor;
+        ctx.beginPath();
+        ctx.arc(-spacing, headY - 1.5, sz * 0.48, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(spacing, headY - 1.5, sz * 0.48, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        drawEyes(ctx, c.eyes, 0, headY - 2, layer.size ?? 2.5, t);
+      }
+      break;
+    }
+
+    case "cheeks":
+      drawCheeks(ctx, c.cheek, 0, headY + 1);
+      break;
+
+    case "mouth": {
+      const style = (isMoving && layer.movingStyle) ? layer.movingStyle : (layer.style ?? "smile");
+      drawMouth(ctx, 0, headY + 5, style);
+      break;
+    }
+
+    case "tail": {
+      const swaySpeed = layer.swaySpeed ?? 200;
+      const swayAmt = layer.swayAmount ?? 6;
+      const color = resolveColor(layer.color, c, c.accent);
+      const sway = Math.sin(t / swaySpeed) * swayAmt;
+
+      if (layer.tailStyle === "fluffy") {
+        // Squirrel-style fluffy tail
+        ctx.fillStyle = resolveColor(layer.color, c, c.body);
+        ctx.beginPath();
+        ctx.moveTo(8, 6 + bob);
+        ctx.bezierCurveTo(16, 0 + bob + sway, 22, -10 + bob - sway, 18, -20 + bob);
+        ctx.bezierCurveTo(14, -22 + bob + sway, 10, -16 + bob, 12, -8 + bob - sway);
+        ctx.bezierCurveTo(10, -2 + bob + sway, 10, 4 + bob, 8, 6 + bob);
+        ctx.fill();
+        if (layer.highlight) {
+          ctx.fillStyle = c.head;
+          ctx.beginPath();
+          ctx.bezierCurveTo(14, -2 + bob + sway, 18, -12 + bob - sway, 16, -18 + bob);
+          ctx.bezierCurveTo(14, -16 + bob, 12, -8 + bob, 10, -2 + bob);
+          ctx.fill();
+        }
+      } else {
+        // Cat-style thin tail
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(10, 4 + bob);
+        ctx.bezierCurveTo(18, -2 + bob + sway, 20, -14 + bob - sway, 14, -18 + bob + sway);
+        ctx.bezierCurveTo(12, -14 + bob - sway, 14, -2 + bob + sway, 10, 4 + bob);
+        ctx.fill();
+      }
+      break;
+    }
+
+    case "wings": {
+      const speed = layer.speed ?? (layer.wingStyle === "flap" ? 200 : 250);
+      if (layer.wingStyle === "flutter") {
+        // Copilot-style cape flutter
+        const flutter = Math.sin(t / speed) * 3;
+        ctx.fillStyle = layer.color ?? `rgba(${parseInt(c.body.slice(1, 3), 16)}, ${parseInt(c.body.slice(3, 5), 16)}, ${parseInt(c.body.slice(5, 7), 16)}, 0.35)`;
+        ctx.beginPath();
+        ctx.moveTo(-9, -2 + bob);
+        ctx.bezierCurveTo(-16, 4 + bob + flutter, -14, 14 + bob - flutter, -8, 12 + bob);
+        ctx.lineTo(-7, 4 + bob);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(9, -2 + bob);
+        ctx.bezierCurveTo(16, 4 + bob - flutter, 14, 14 + bob + flutter, 8, 12 + bob);
+        ctx.lineTo(7, 4 + bob);
+        ctx.fill();
+      } else {
+        // Penguin-style flap
+        const flapAngle = isMoving ? Math.sin(t / speed) * 0.3 : 0.1;
+        ctx.fillStyle = resolveColor(layer.color, c, c.body);
+        ctx.save();
+        ctx.translate(-11, -2 + bob);
+        ctx.rotate(-flapAngle - 0.3);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 4, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        ctx.save();
+        ctx.translate(11, -2 + bob);
+        ctx.rotate(flapAngle + 0.3);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 4, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      break;
+    }
+
+    case "glow": {
+      const pulseSpeed = layer.pulseSpeed ?? 600;
+      const baseAlpha = layer.baseAlpha ?? 0.08;
+      const alphaVar = layer.alphaVar ?? 0.04;
+      const radius = layer.radius ?? 16;
+      const alpha = baseAlpha + Math.sin(t / pulseSpeed) * alphaVar;
+      // Parse the base color and apply dynamic alpha
+      ctx.fillStyle = layer.color.replace(/[\d.]+\)$/, `${alpha})`);
+      ctx.beginPath();
+      ctx.ellipse(0, 2 + bob, radius, radius, 0, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+
+    case "sparkles": {
+      if (layer.sparkleStyle === "star") {
+        // Single pulsing star on top of head (copilot-style)
+        const speed = layer.speed ?? 400;
+        const sparkleAlpha = 0.3 + Math.sin(t / speed) * 0.5;
+        const sparkleSize = 2 + Math.sin(t / (speed * 0.75)) * 1;
+        const color = resolveColor(layer.color, c, c.accent);
+        ctx.fillStyle = color.startsWith("rgba") ? color : `rgba(${parseInt(color.slice(1, 3), 16)}, ${parseInt(color.slice(3, 5), 16)}, ${parseInt(color.slice(5, 7), 16)}, ${sparkleAlpha})`;
+        drawStar(ctx, 0, headY - 14, sparkleSize, 4);
+      } else if (layer.sparkleStyle === "orbit") {
+        // Orbiting dots (claude-style)
+        const count = layer.count ?? 3;
+        const speed = layer.speed ?? 800;
+        const color = resolveColor(layer.color, c, c.cheek);
+        for (let i = 0; i < count; i++) {
+          const angle = (t / speed) + (i * Math.PI * 2) / count;
+          const radius = 13 + Math.sin(t / (speed / 2) + i) * 2;
+          const sx = Math.cos(angle) * radius;
+          const sy = headY - 4 + Math.sin(angle) * 5;
+          const alpha = 0.3 + Math.sin(t / (speed * 0.375) + i * 2) * 0.3;
+          ctx.fillStyle = color.startsWith("rgba") ? color : `rgba(${parseInt(color.slice(1, 3), 16)}, ${parseInt(color.slice(3, 5), 16)}, ${parseInt(color.slice(5, 7), 16)}, ${alpha})`;
+          ctx.beginPath();
+          ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else {
+        // Floating sparkles (ghost-style)
+        const count = layer.count ?? 2;
+        const speed = layer.speed ?? 600;
+        const color = resolveColor(layer.color, c, c.cheek);
+        for (let i = 0; i < count; i++) {
+          const sx = Math.sin(t / speed + i * 3) * 16;
+          const sy = -14 + Math.cos(t / (speed * 1.33) + i * 2) * 6 + bob;
+          const sa = 0.2 + Math.sin(t / (speed * 0.67) + i * 5) * 0.3;
+          ctx.fillStyle = color.startsWith("rgba") ? color : `rgba(${parseInt(color.slice(1, 3), 16)}, ${parseInt(color.slice(3, 5), 16)}, ${parseInt(color.slice(5, 7), 16)}, ${sa})`;
+          drawStar(ctx, sx, sy, 2, 4);
+        }
+      }
+      break;
+    }
+
+    case "patch": {
+      const color = layer.color ?? "#ECEFF1";
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      if (layer.position === "belly") {
+        ctx.ellipse(0, 4 + bob, layer.rx ?? 5, layer.ry ?? 5, 0, 0, Math.PI * 2);
+      } else {
+        // Face patch
+        ctx.ellipse(0, headY + 1, layer.rx ?? 7, layer.ry ?? 6, 0, 0, Math.PI * 2);
+      }
+      ctx.fill();
+      break;
+    }
+
+    case "visor": {
+      const bandColor = resolveColor(layer.bandColor, c, c.accent);
+      ctx.fillStyle = bandColor;
+      ctx.beginPath();
+      ctx.roundRect(-10, headY - 4, 20, 6, 3);
+      ctx.fill();
+      // Glow gradient
+      const colors = layer.glowColors ?? ["#58A6FF", "#79C0FF", "#58A6FF"];
+      const visorGrad = ctx.createLinearGradient(-8, headY - 3, 8, headY + 1);
+      visorGrad.addColorStop(0, colors[0]);
+      visorGrad.addColorStop(0.5, colors[1]);
+      visorGrad.addColorStop(1, colors[2]);
+      ctx.fillStyle = visorGrad;
+      ctx.beginPath();
+      ctx.roundRect(-8, headY - 3, 16, 4, 2);
+      ctx.fill();
+      // Scan line
+      if (layer.scan !== false) {
+        const scanX = ((t / 15) % 24) - 12;
+        ctx.fillStyle = "rgba(255,255,255,0.4)";
+        ctx.beginPath();
+        ctx.roundRect(Math.max(-8, scanX), headY - 2.5, 4, 3, 1);
+        ctx.fill();
+      }
+      break;
+    }
+
+    case "whiskers": {
+      const count = layer.count ?? 3;
+      const length = layer.length ?? 10;
+      ctx.strokeStyle = "rgba(0,0,0,0.2)";
+      ctx.lineWidth = 0.7;
+      for (const dir of [-1, 1]) {
+        for (let i = 0; i < count; i++) {
+          const offset = i - (count - 1) / 2;
+          ctx.beginPath();
+          ctx.moveTo(dir * 6, headY + 2 + offset * 2);
+          ctx.lineTo(dir * (6 + length), headY + offset * 3);
+          ctx.stroke();
+        }
+      }
+      break;
+    }
+
+    case "beak": {
+      ctx.fillStyle = resolveColor(layer.color, c, c.accent);
+      ctx.beginPath();
+      ctx.moveTo(-2, headY + 2);
+      ctx.lineTo(0, headY + 6);
+      ctx.lineTo(2, headY + 2);
+      ctx.fill();
+      break;
+    }
+
+    case "nose": {
+      ctx.fillStyle = layer.color ?? "#5D4037";
+      ctx.beginPath();
+      ctx.ellipse(0, headY + 1, layer.rx ?? 2, layer.ry ?? 1.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+
+    case "accessory": {
+      if (layer.accessoryKind === "scarf") {
+        ctx.fillStyle = layer.color ?? "#E53935";
+        ctx.beginPath();
+        ctx.roundRect(-8, headY + 6, 16, 4, 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.roundRect(5, headY + 8, 4, 8, 2);
+        ctx.fill();
+      } else if (layer.accessoryKind === "idle-prop") {
+        if (layer.idleOnly !== false && isMoving) break;
+        // Acorn (squirrel idle prop)
+        ctx.fillStyle = layer.color ?? "#795548";
+        ctx.beginPath();
+        ctx.ellipse(6, 6 + bob, 3, 4, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#4E342E";
+        ctx.beginPath();
+        ctx.roundRect(4, 2 + bob, 5, 3, 2);
+        ctx.fill();
+      }
+      break;
+    }
+
+    case "ghostBody": {
+      const waves = layer.waves ?? 5;
+      const waveHeight = layer.waveHeight ?? 6;
+      const yBase = bob; // float bob already applied
+
+      ctx.fillStyle = c.body;
+      ctx.beginPath();
+      ctx.moveTo(-12, 6 + yBase);
+      ctx.lineTo(-12, -4 + yBase);
+      ctx.quadraticCurveTo(-12, -16 + yBase, 0, -16 + yBase);
+      ctx.quadraticCurveTo(12, -16 + yBase, 12, -4 + yBase);
+      ctx.lineTo(12, 6 + yBase);
+      for (let i = 0; i < waves; i++) {
+        const wx = 12 - (i * 24) / waves;
+        const wy = 6 + yBase + (i % 2 === 0 ? waveHeight : 0) + Math.sin(t / 300 + i) * 2;
+        const nx = 12 - ((i + 1) * 24) / waves;
+        ctx.quadraticCurveTo(wx - 24 / waves / 2, wy, nx, 6 + yBase + ((i + 1) % 2 === 0 ? waveHeight : 0));
+      }
+      ctx.closePath();
+      ctx.fill();
+
+      // Inner shimmer
+      if (layer.shimmer !== false) {
+        ctx.fillStyle = "rgba(255,255,255,0.15)";
+        ctx.beginPath();
+        ctx.ellipse(-3, -2 + yBase, 6, 8, -0.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
     }
   }
-
-  drawEyes(ctx, c.eyes, 0, headY - 2, 2.5, t);
-  drawCheeks(ctx, c.cheek, 0, headY + 1);
-  drawMouth(ctx, 0, headY + 5, "w");
-}
-
-function drawCopilot(
-  ctx: CanvasRenderingContext2D,
-  c: (typeof AGENT_COLORS)[string],
-  bob: number,
-  legPhase: number,
-  squish: number,
-  isMoving: boolean,
-  t: number,
-) {
-  const headY = -10 + bob;
-
-  // Legs
-  drawLegs(ctx, c.accent, bob, legPhase, isMoving, 5, 8);
-
-  // Body
-  ctx.fillStyle = c.body;
-  ctx.save();
-  ctx.scale(squish, 2 - squish);
-  ctx.beginPath();
-  ctx.ellipse(0, (2 + bob) / (2 - squish), 10, 10, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-
-  // Cape/wings (animated flutter)
-  const flutter = Math.sin(t / 250) * 3;
-  ctx.fillStyle = "rgba(31, 111, 235, 0.35)";
-  ctx.beginPath();
-  ctx.moveTo(-9, -2 + bob);
-  ctx.bezierCurveTo(-16, 4 + bob + flutter, -14, 14 + bob - flutter, -8, 12 + bob);
-  ctx.lineTo(-7, 4 + bob);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(9, -2 + bob);
-  ctx.bezierCurveTo(16, 4 + bob - flutter, 14, 14 + bob + flutter, 8, 12 + bob);
-  ctx.lineTo(7, 4 + bob);
-  ctx.fill();
-
-  // Head — slightly more angular
-  ctx.fillStyle = c.head;
-  ctx.beginPath();
-  ctx.ellipse(0, headY, 10, 10, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Visor band
-  ctx.fillStyle = c.accent;
-  ctx.beginPath();
-  ctx.roundRect(-10, headY - 4, 20, 6, 3);
-  ctx.fill();
-  // Visor glow gradient
-  const visorGrad = ctx.createLinearGradient(-8, headY - 3, 8, headY + 1);
-  visorGrad.addColorStop(0, "#58A6FF");
-  visorGrad.addColorStop(0.5, "#79C0FF");
-  visorGrad.addColorStop(1, "#58A6FF");
-  ctx.fillStyle = visorGrad;
-  ctx.beginPath();
-  ctx.roundRect(-8, headY - 3, 16, 4, 2);
-  ctx.fill();
-
-  // Visor scan line animation
-  const scanX = ((t / 15) % 24) - 12;
-  ctx.fillStyle = "rgba(255,255,255,0.4)";
-  ctx.beginPath();
-  ctx.roundRect(Math.max(-8, scanX), headY - 2.5, 4, 3, 1);
-  ctx.fill();
-
-  // Top sparkle
-  const sparkleAlpha = 0.3 + Math.sin(t / 400) * 0.5;
-  const sparkleSize = 2 + Math.sin(t / 300) * 1;
-  ctx.fillStyle = `rgba(88, 166, 255, ${sparkleAlpha})`;
-  drawStar(ctx, 0, headY - 14, sparkleSize, 4);
-
-  drawCheeks(ctx, c.cheek, 0, headY + 1);
-  drawMouth(ctx, 0, headY + 5, "smile");
-}
-
-function drawClaude(
-  ctx: CanvasRenderingContext2D,
-  c: (typeof AGENT_COLORS)[string],
-  bob: number,
-  legPhase: number,
-  squish: number,
-  isMoving: boolean,
-  t: number,
-) {
-  const headY = -10 + bob;
-
-  // Legs
-  drawLegs(ctx, c.accent, bob, legPhase, isMoving, 5, 8);
-
-  // Body — warm rounded shape
-  ctx.fillStyle = c.body;
-  ctx.save();
-  ctx.scale(squish, 2 - squish);
-  ctx.beginPath();
-  ctx.ellipse(0, (2 + bob) / (2 - squish), 10, 11, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-
-  // Subtle warm glow aura
-  const glowAlpha = 0.08 + Math.sin(t / 600) * 0.04;
-  ctx.fillStyle = `rgba(217, 119, 87, ${glowAlpha})`;
-  ctx.beginPath();
-  ctx.ellipse(0, 2 + bob, 16, 16, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Head — round and friendly
-  ctx.fillStyle = c.head;
-  ctx.beginPath();
-  ctx.ellipse(0, headY, 10, 10, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Thinking sparkles (orbiting dots)
-  const sparkleCount = 3;
-  for (let i = 0; i < sparkleCount; i++) {
-    const angle = (t / 800) + (i * Math.PI * 2) / sparkleCount;
-    const radius = 13 + Math.sin(t / 400 + i) * 2;
-    const sx = Math.cos(angle) * radius;
-    const sy = headY - 4 + Math.sin(angle) * 5;
-    const alpha = 0.3 + Math.sin(t / 300 + i * 2) * 0.3;
-    ctx.fillStyle = `rgba(255, 200, 150, ${alpha})`;
-    ctx.beginPath();
-    ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // Eyes — warm white with a thoughtful look
-  ctx.fillStyle = c.eyes;
-  ctx.beginPath();
-  ctx.ellipse(-4, headY - 2, 2.5, 2.8, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(4, headY - 2, 2.5, 2.8, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Pupils
-  ctx.fillStyle = c.accent;
-  ctx.beginPath();
-  ctx.arc(-4, headY - 1.5, 1.2, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(4, headY - 1.5, 1.2, 0, Math.PI * 2);
-  ctx.fill();
-
-  drawCheeks(ctx, c.cheek, 0, headY + 1);
-  drawMouth(ctx, 0, headY + 5, "small");
-}
-
-function drawSquirrel(
-  ctx: CanvasRenderingContext2D,
-  c: (typeof AGENT_COLORS)[string],
-  bob: number,
-  legPhase: number,
-  squish: number,
-  isMoving: boolean,
-  t: number,
-) {
-  const headY = -10 + bob;
-
-  // Big fluffy tail
-  ctx.fillStyle = c.body;
-  const tailSway = Math.sin(t / 300) * 5;
-  ctx.beginPath();
-  ctx.moveTo(8, 6 + bob);
-  ctx.bezierCurveTo(16, 0 + bob + tailSway, 22, -10 + bob - tailSway, 18, -20 + bob);
-  ctx.bezierCurveTo(14, -22 + bob + tailSway, 10, -16 + bob, 12, -8 + bob - tailSway);
-  ctx.bezierCurveTo(10, -2 + bob + tailSway, 10, 4 + bob, 8, 6 + bob);
-  ctx.fill();
-  // Tail highlight
-  ctx.fillStyle = c.head;
-  ctx.beginPath();
-  ctx.bezierCurveTo(14, -2 + bob + tailSway, 18, -12 + bob - tailSway, 16, -18 + bob);
-  ctx.bezierCurveTo(14, -16 + bob, 12, -8 + bob, 10, -2 + bob);
-  ctx.fill();
-
-  // Legs
-  drawLegs(ctx, c.accent, bob, legPhase, isMoving, 4, 7);
-
-  // Body — rounder
-  ctx.fillStyle = c.body;
-  ctx.save();
-  ctx.scale(squish, 2 - squish);
-  ctx.beginPath();
-  ctx.ellipse(0, (2 + bob) / (2 - squish), 9, 9, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-  // Belly
-  ctx.fillStyle = c.head;
-  ctx.beginPath();
-  ctx.ellipse(0, 4 + bob, 5, 5, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Head
-  ctx.fillStyle = c.head;
-  ctx.beginPath();
-  ctx.ellipse(0, headY, 9, 9, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Ears — round
-  ctx.fillStyle = c.body;
-  ctx.beginPath();
-  ctx.arc(-7, headY - 8, 4, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(7, headY - 8, 4, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#FFAB91";
-  ctx.beginPath();
-  ctx.arc(-7, headY - 8, 2, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(7, headY - 8, 2, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Nose
-  ctx.fillStyle = "#5D4037";
-  ctx.beginPath();
-  ctx.ellipse(0, headY + 1, 2, 1.5, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Acorn held (when idle)
-  if (!isMoving) {
-    ctx.fillStyle = "#795548";
-    ctx.beginPath();
-    ctx.ellipse(6, 6 + bob, 3, 4, 0.2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#4E342E";
-    ctx.beginPath();
-    ctx.roundRect(4, 2 + bob, 5, 3, 2);
-    ctx.fill();
-  }
-
-  drawEyes(ctx, c.eyes, 0, headY - 2, 2, t);
-  drawCheeks(ctx, c.cheek, 0, headY + 1);
-  drawMouth(ctx, 0, headY + 4, isMoving ? "o" : "small");
-}
-
-function drawPenguin(
-  ctx: CanvasRenderingContext2D,
-  c: (typeof AGENT_COLORS)[string],
-  bob: number,
-  legPhase: number,
-  _squish: number,
-  isMoving: boolean,
-  t: number,
-) {
-  const headY = -10 + bob;
-  const waddle = isMoving ? Math.sin(t / 150) * 4 : 0;
-
-  // Legs — orange feet
-  const lOff = isMoving ? Math.sin(legPhase) * 3 : 0;
-  const rOff = isMoving ? Math.sin(legPhase + Math.PI) * 3 : 0;
-  ctx.fillStyle = c.accent;
-  ctx.beginPath();
-  ctx.ellipse(-5, AGENT_SIZE / 2 - 4 + bob + lOff, 5, 2.5, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(5, AGENT_SIZE / 2 - 4 + bob + rOff, 5, 2.5, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Body — oval with waddle rotation
-  ctx.save();
-  ctx.rotate((waddle * Math.PI) / 180);
-  ctx.fillStyle = c.body;
-  ctx.beginPath();
-  ctx.ellipse(0, 2 + bob, 11, 13, 0, 0, Math.PI * 2);
-  ctx.fill();
-  // White belly
-  ctx.fillStyle = "#ECEFF1";
-  ctx.beginPath();
-  ctx.ellipse(0, 4 + bob, 7, 9, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Wings/flippers
-  const flapAngle = isMoving ? Math.sin(t / 200) * 0.3 : 0.1;
-  ctx.fillStyle = c.body;
-  ctx.save();
-  ctx.translate(-11, -2 + bob);
-  ctx.rotate(-flapAngle - 0.3);
-  ctx.beginPath();
-  ctx.ellipse(0, 0, 4, 10, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-  ctx.save();
-  ctx.translate(11, -2 + bob);
-  ctx.rotate(flapAngle + 0.3);
-  ctx.beginPath();
-  ctx.ellipse(0, 0, 4, 10, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-  ctx.restore(); // un-waddle
-
-  // Head
-  ctx.fillStyle = c.head;
-  ctx.beginPath();
-  ctx.ellipse(0, headY, 10, 9, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // White face patch
-  ctx.fillStyle = "#ECEFF1";
-  ctx.beginPath();
-  ctx.ellipse(0, headY + 1, 7, 6, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Beak
-  ctx.fillStyle = c.accent;
-  ctx.beginPath();
-  ctx.moveTo(-2, headY + 2);
-  ctx.lineTo(0, headY + 6);
-  ctx.lineTo(2, headY + 2);
-  ctx.fill();
-
-  // Scarf
-  ctx.fillStyle = "#E53935";
-  ctx.beginPath();
-  ctx.roundRect(-8, headY + 6, 16, 4, 2);
-  ctx.fill();
-  // Scarf tail
-  ctx.beginPath();
-  ctx.roundRect(5, headY + 8, 4, 8, 2);
-  ctx.fill();
-
-  drawEyes(ctx, c.eyes, 0, headY - 1, 2, t);
-  drawCheeks(ctx, c.cheek, 0, headY + 1);
-}
-
-function drawGhost(
-  ctx: CanvasRenderingContext2D,
-  c: (typeof AGENT_COLORS)[string],
-  bob: number,
-  t: number,
-) {
-  const headY = -6 + bob;
-  const floatBob = Math.sin(t / 500) * 4;
-  const yBase = floatBob;
-
-  // Ghostly glow
-  ctx.fillStyle = "rgba(200, 200, 255, 0.08)";
-  ctx.beginPath();
-  ctx.arc(0, yBase - 4, 22, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Body — rounded top, wavy bottom
-  ctx.fillStyle = c.body;
-  ctx.beginPath();
-  ctx.moveTo(-12, 6 + yBase);
-  ctx.lineTo(-12, -4 + yBase);
-  ctx.quadraticCurveTo(-12, -16 + yBase, 0, -16 + yBase);
-  ctx.quadraticCurveTo(12, -16 + yBase, 12, -4 + yBase);
-  ctx.lineTo(12, 6 + yBase);
-  // Wavy bottom
-  for (let i = 0; i < 5; i++) {
-    const wx = 12 - (i * 24) / 5;
-    const wy = 6 + yBase + (i % 2 === 0 ? 6 : 0) + Math.sin(t / 300 + i) * 2;
-    const nx = 12 - ((i + 1) * 24) / 5;
-    ctx.quadraticCurveTo(wx - 2.4, wy, nx, 6 + yBase + ((i + 1) % 2 === 0 ? 6 : 0));
-  }
-  ctx.closePath();
-  ctx.fill();
-
-  // Inner shimmer
-  ctx.fillStyle = "rgba(255,255,255,0.15)";
-  ctx.beginPath();
-  ctx.ellipse(-3, -2 + yBase, 6, 8, -0.2, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Eyes — larger, more expressive
-  const eyeY = headY - 2 + floatBob;
-  ctx.fillStyle = c.eyes;
-  ctx.beginPath();
-  ctx.ellipse(-4, eyeY, 3, 3.5, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(4, eyeY, 3, 3.5, 0, 0, Math.PI * 2);
-  ctx.fill();
-  // Pupils
-  ctx.fillStyle = "#4A148C";
-  ctx.beginPath();
-  ctx.arc(-3.5, eyeY + 0.5, 1.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(4.5, eyeY + 0.5, 1.5, 0, Math.PI * 2);
-  ctx.fill();
-  // Eye shine
-  ctx.fillStyle = "rgba(255,255,255,0.7)";
-  ctx.beginPath();
-  ctx.arc(-2.5, eyeY - 1, 0.8, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(5.5, eyeY - 1, 0.8, 0, Math.PI * 2);
-  ctx.fill();
-
-  drawMouth(ctx, 0, headY + 4 + floatBob, "o");
-
-  // Floating sparkles
-  for (let i = 0; i < 2; i++) {
-    const sx = Math.sin(t / 600 + i * 3) * 16;
-    const sy = -14 + Math.cos(t / 800 + i * 2) * 6 + yBase;
-    const sa = 0.2 + Math.sin(t / 400 + i * 5) * 0.3;
-    ctx.fillStyle = `rgba(206, 147, 216, ${sa})`;
-    drawStar(ctx, sx, sy, 2, 4);
-  }
-}
-
-function drawGenericAgent(
-  ctx: CanvasRenderingContext2D,
-  c: (typeof AGENT_COLORS)[string],
-  bob: number,
-  legPhase: number,
-  squish: number,
-  isMoving: boolean,
-  t: number,
-) {
-  const headY = -10 + bob;
-  drawLegs(ctx, c.accent, bob, legPhase, isMoving, 5, 8);
-
-  ctx.fillStyle = c.body;
-  ctx.save();
-  ctx.scale(squish, 2 - squish);
-  ctx.beginPath();
-  ctx.ellipse(0, (2 + bob) / (2 - squish), 10, 10, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-
-  ctx.fillStyle = c.head;
-  ctx.beginPath();
-  ctx.ellipse(0, headY, 10, 10, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  drawEyes(ctx, c.eyes, 0, headY - 2, 2.5, t);
-  drawCheeks(ctx, c.cheek, 0, headY + 1);
-  drawMouth(ctx, 0, headY + 5, "smile");
 }
 
 function drawStar(

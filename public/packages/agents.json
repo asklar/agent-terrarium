@@ -29,6 +29,19 @@
         "interactionChance": 0.7,
         "ballInterest": 0.9,
         "chatEmojis": ["😺", "😻", "🐱", "✨", "💕"]
+      },
+      "drawSpec": {
+        "layers": [
+          { "type": "tail", "tailStyle": "thin", "swaySpeed": 200, "swayAmount": 6, "color": "accent" },
+          { "type": "legs", "spread": 5, "length": 8, "color": "accent" },
+          { "type": "body", "rx": 10, "ry": 10 },
+          { "type": "head", "rx": 11, "ry": 10 },
+          { "type": "ears", "style": "pointed", "size": 11, "innerColor": "#FFAB91" },
+          { "type": "whiskers" },
+          { "type": "eyes", "style": "standard", "size": 2.5 },
+          { "type": "cheeks" },
+          { "type": "mouth", "style": "w" }
+        ]
       }
     },
     {
@@ -61,6 +74,18 @@
       },
       "defaultBackend": {
         "backend_id": "copilot"
+      },
+      "drawSpec": {
+        "layers": [
+          { "type": "legs", "spread": 5, "length": 8, "color": "accent" },
+          { "type": "body", "rx": 10, "ry": 10 },
+          { "type": "wings", "wingStyle": "flutter", "color": "rgba(31, 111, 235, 0.35)", "speed": 250 },
+          { "type": "head", "rx": 10, "ry": 10 },
+          { "type": "visor" },
+          { "type": "sparkles", "sparkleStyle": "star", "color": "#58A6FF", "speed": 400 },
+          { "type": "cheeks" },
+          { "type": "mouth", "style": "smile" }
+        ]
       }
     },
     {
@@ -90,6 +115,21 @@
         "interactionChance": 0.6,
         "ballInterest": 0.8,
         "chatEmojis": ["🐿️", "🌰", "🍂", "😆", "💨"]
+      },
+      "drawSpec": {
+        "layers": [
+          { "type": "tail", "tailStyle": "fluffy", "swaySpeed": 300, "swayAmount": 5, "color": "body", "highlight": true },
+          { "type": "legs", "spread": 4, "length": 7, "color": "accent" },
+          { "type": "body", "rx": 9, "ry": 9 },
+          { "type": "patch", "position": "belly", "color": "#A1887F", "rx": 5, "ry": 5 },
+          { "type": "head", "rx": 9, "ry": 9, "color": "head" },
+          { "type": "ears", "style": "round", "size": 4, "innerColor": "#FFAB91" },
+          { "type": "nose" },
+          { "type": "accessory", "accessoryKind": "idle-prop", "idleOnly": true },
+          { "type": "eyes", "style": "standard", "size": 2 },
+          { "type": "cheeks" },
+          { "type": "mouth", "style": "small", "movingStyle": "o" }
+        ]
       }
     },
     {
@@ -119,6 +159,21 @@
         "interactionChance": 0.5,
         "ballInterest": 0.4,
         "chatEmojis": ["🐧", "❄️", "🧊", "😊", "🐟"]
+      },
+      "drawSpec": {
+        "waddleAmount": 4,
+        "layers": [
+          { "type": "legs", "spread": 5, "length": 0, "color": "accent", "footStyle": "flat", "footRx": 5 },
+          { "type": "body", "rx": 11, "ry": 13 },
+          { "type": "patch", "position": "belly", "color": "#ECEFF1", "rx": 7, "ry": 9 },
+          { "type": "wings", "wingStyle": "flap", "speed": 200 },
+          { "type": "head", "rx": 10, "ry": 9 },
+          { "type": "patch", "position": "face", "color": "#ECEFF1", "rx": 7, "ry": 6 },
+          { "type": "beak" },
+          { "type": "accessory", "accessoryKind": "scarf", "color": "#E53935" },
+          { "type": "eyes", "style": "standard", "size": 2 },
+          { "type": "cheeks" }
+        ]
       }
     },
     {
@@ -148,6 +203,16 @@
         "interactionChance": 0.2,
         "ballInterest": 0.1,
         "chatEmojis": ["👻", "💀", "🌙", "✨", "😶"]
+      },
+      "drawSpec": {
+        "movement": "float",
+        "layers": [
+          { "type": "glow", "color": "rgba(200, 200, 255, 0.08)", "radius": 22, "pulseSpeed": 800 },
+          { "type": "ghostBody", "waves": 5, "waveHeight": 6, "shimmer": true },
+          { "type": "eyes", "style": "custom", "size": 3.5, "pupilColor": "#4A148C", "spacing": 4 },
+          { "type": "mouth", "style": "o" },
+          { "type": "sparkles", "sparkleStyle": "floating", "count": 2, "color": "#CE93D8", "speed": 600 }
+        ]
       }
     }
   ]

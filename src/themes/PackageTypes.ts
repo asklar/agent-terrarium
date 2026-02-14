@@ -108,10 +108,15 @@ export interface AgentDefinition {
 
   /**
    * Body shape to use from the built-in shape library.
-   * The renderer has draw functions keyed by this name.
-   * Unknown shapes fall back to "generic".
+   * @deprecated Use `drawSpec` instead. Kept for backward compat.
    */
   shape: string;
+
+  /**
+   * Declarative draw specification. An ordered list of layers
+   * rendered back-to-front. If omitted, falls back to generic shape.
+   */
+  drawSpec?: DrawSpec;
 
   /** Default personality values (used when adding a new agent) */
   personality: AgentPersonalityDefaults;
@@ -150,6 +155,224 @@ export interface AgentPersonalityDefaults {
   interactionChance: number;
   ballInterest: number;
   chatEmojis: string[];
+}
+
+// ─── Draw Spec (Data-Driven Avatar Rendering) ──────────────────────
+
+/** Color value: either a palette key ("body","head","eyes","accent","cheek") or a CSS color string */
+export type ColorRef = "body" | "head" | "eyes" | "accent" | "cheek" | (string & {});
+
+export interface DrawSpec {
+  /** Movement mode: "walk" uses legs, "float" bobs without legs (ghost-like) */
+  movement?: "walk" | "float";
+  /** Body rotation angle (degrees) when walking (penguin waddle = 4) */
+  waddleAmount?: number;
+  /** Ordered list of visual layers drawn back-to-front */
+  layers: DrawLayer[];
+}
+
+export type DrawLayer =
+  | LegsLayer
+  | BodyLayer
+  | HeadLayer
+  | EarsLayer
+  | EyesLayer
+  | CheeksLayer
+  | MouthLayer
+  | TailLayer
+  | WingsLayer
+  | GlowLayer
+  | SparklesLayer
+  | PatchLayer
+  | VisorLayer
+  | WhiskersLayer
+  | BeakLayer
+  | NoseLayer
+  | AccessoryLayer
+  | GhostBodyLayer;
+
+export interface LegsLayer {
+  type: "legs";
+  /** Half-distance between legs (default: 5) */
+  spread?: number;
+  /** Leg length in px (default: 8) */
+  length?: number;
+  /** Leg color (default: "accent") */
+  color?: ColorRef;
+  /** Foot style: "round" (default) or "flat" (penguin-like) */
+  footStyle?: "round" | "flat";
+  /** Foot rx for flat feet (default: 5) */
+  footRx?: number;
+}
+
+export interface BodyLayer {
+  type: "body";
+  /** Horizontal radius (default: 10) */
+  rx?: number;
+  /** Vertical radius (default: 10) */
+  ry?: number;
+  /** Body color (default: "body") */
+  color?: ColorRef;
+}
+
+export interface HeadLayer {
+  type: "head";
+  /** Horizontal radius (default: 10) */
+  rx?: number;
+  /** Vertical radius (default: 10) */
+  ry?: number;
+  /** Head color (default: "head") */
+  color?: ColorRef;
+}
+
+export interface EarsLayer {
+  type: "ears";
+  /** Ear shape style */
+  style: "pointed" | "round";
+  /** Outer ear size (default: 11 for pointed, 4 for round) */
+  size?: number;
+  /** Inner ear / pink color (default: "#FFAB91") */
+  innerColor?: string;
+}
+
+export interface EyesLayer {
+  type: "eyes";
+  /** "standard" uses drawEyes helper with blink; "custom" draws explicit pupils */
+  style?: "standard" | "custom";
+  /** Eye size (default: 2.5) */
+  size?: number;
+  /** Pupil color for custom eyes (default: "accent") */
+  pupilColor?: ColorRef;
+  /** Eye spacing from center (default: 4) */
+  spacing?: number;
+}
+
+export interface CheeksLayer {
+  type: "cheeks";
+}
+
+export interface MouthLayer {
+  type: "mouth";
+  /** Mouth shape (default: "smile") */
+  style?: "smile" | "small" | "o" | "w";
+  /** Use different style when moving (e.g. squirrel: "o" when moving, "small" when idle) */
+  movingStyle?: "smile" | "small" | "o" | "w";
+}
+
+export interface TailLayer {
+  type: "tail";
+  /** Sway animation speed divisor (lower=faster, default: 200) */
+  swaySpeed?: number;
+  /** Sway amplitude in px (default: 6) */
+  swayAmount?: number;
+  /** Tail color (default: "accent" for cat-style, "body" for squirrel-style) */
+  color?: ColorRef;
+  /** Tail visual style */
+  tailStyle?: "thin" | "fluffy";
+  /** Whether to draw a highlight streak (default: false) */
+  highlight?: boolean;
+}
+
+export interface WingsLayer {
+  type: "wings";
+  /** Wing animation style */
+  wingStyle: "flutter" | "flap";
+  /** Wing color (CSS color with alpha, default: body-based) */
+  color?: string;
+  /** Animation speed divisor (default: 250 for flutter, 200 for flap) */
+  speed?: number;
+}
+
+export interface GlowLayer {
+  type: "glow";
+  /** Glow color (CSS rgba string) */
+  color: string;
+  /** Glow radius (default: 16) */
+  radius?: number;
+  /** Pulse animation speed divisor (default: 600) */
+  pulseSpeed?: number;
+  /** Base alpha (default: 0.08) */
+  baseAlpha?: number;
+  /** Alpha variation (default: 0.04) */
+  alphaVar?: number;
+}
+
+export interface SparklesLayer {
+  type: "sparkles";
+  /** Sparkle animation style */
+  sparkleStyle: "star" | "orbit" | "floating";
+  /** Number of sparkles (default: 1 for star, 3 for orbit, 2 for floating) */
+  count?: number;
+  /** Sparkle color (CSS color or palette key) */
+  color?: ColorRef;
+  /** Animation speed divisor (default varies by style) */
+  speed?: number;
+}
+
+export interface PatchLayer {
+  type: "patch";
+  /** Where to draw the patch */
+  position: "belly" | "face";
+  /** Patch color (default: white-ish) */
+  color?: string;
+  /** Horizontal radius */
+  rx?: number;
+  /** Vertical radius */
+  ry?: number;
+}
+
+export interface VisorLayer {
+  type: "visor";
+  /** Band color (default: "accent") */
+  bandColor?: ColorRef;
+  /** Glow gradient colors (default: copilot blue) */
+  glowColors?: [string, string, string];
+  /** Whether to animate a scan line (default: true) */
+  scan?: boolean;
+}
+
+export interface WhiskersLayer {
+  type: "whiskers";
+  /** Number of whisker pairs per side (default: 3) */
+  count?: number;
+  /** Whisker length (default: 10) */
+  length?: number;
+}
+
+export interface BeakLayer {
+  type: "beak";
+  /** Beak color (default: "accent") */
+  color?: ColorRef;
+}
+
+export interface NoseLayer {
+  type: "nose";
+  /** Nose color (default: "#5D4037") */
+  color?: string;
+  /** Nose rx (default: 2) */
+  rx?: number;
+  /** Nose ry (default: 1.5) */
+  ry?: number;
+}
+
+export interface AccessoryLayer {
+  type: "accessory";
+  /** Accessory type */
+  accessoryKind: "scarf" | "idle-prop";
+  /** Primary color */
+  color?: string;
+  /** For idle-prop: only show when not moving (default: true) */
+  idleOnly?: boolean;
+}
+
+export interface GhostBodyLayer {
+  type: "ghostBody";
+  /** Number of bottom waves (default: 5) */
+  waves?: number;
+  /** Wave amplitude (default: 6) */
+  waveHeight?: number;
+  /** Whether to draw inner shimmer (default: true) */
+  shimmer?: boolean;
 }
 
 // ─── Gear / Accessories ─────────────────────────────────────────────
