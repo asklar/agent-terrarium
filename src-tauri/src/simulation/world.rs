@@ -213,12 +213,14 @@ impl World {
                                 content: emoji_a.clone(),
                                 timer: 2.5,
                                 is_emoji: true,
+                                is_event: false,
                             });
                             new_bubbles.push(ChatBubble {
                                 agent_id: id_b,
                                 content: emoji_b,
                                 timer: 2.5,
                                 is_emoji: true,
+                                is_event: false,
                             });
 
                             state.events.push(TerrariumEvent::AgentInteraction {
@@ -283,6 +285,7 @@ impl World {
                     content: emoji.to_string(),
                     timer: 2.0,
                     is_emoji: true,
+                    is_event: false,
                 });
             }
         }
@@ -512,6 +515,7 @@ impl World {
             content,
             timer: duration,
             is_emoji,
+            is_event: true,
         });
     }
 
@@ -537,6 +541,7 @@ impl World {
             content: emoji.to_string(),
             timer: 2.0,
             is_emoji: true,
+            is_event: false,
         });
     }
 

@@ -266,6 +266,7 @@ export function TerrariumCanvas({
           agent.position.x,
           agent.position.y - AGENT_SIZE - 10,
           bubble.content,
+          bubble.is_event ? "thought" : "chat",
         );
       }
     }
@@ -1461,6 +1462,7 @@ function drawBubble(
   x: number,
   y: number,
   text: string,
+  style: "chat" | "thought" = "chat",
 ) {
   ctx.save();
 
@@ -1471,23 +1473,37 @@ function drawBubble(
   const width = metrics.width + padding * 2;
   const height = 24;
 
-  ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+  const isThought = style === "thought";
+  ctx.fillStyle = isThought
+    ? "rgba(230, 220, 255, 0.92)"
+    : "rgba(255, 255, 255, 0.95)";
   ctx.shadowColor = "rgba(0,0,0,0.2)";
   ctx.shadowBlur = 4;
   ctx.beginPath();
   ctx.roundRect(x - width / 2, y - height, width, height, 8);
   ctx.fill();
 
-  // Pointer
-  ctx.shadowBlur = 0;
-  ctx.beginPath();
-  ctx.moveTo(x - 4, y);
-  ctx.lineTo(x, y + 6);
-  ctx.lineTo(x + 4, y);
-  ctx.fill();
+  if (isThought) {
+    // Thought bubble: small circles instead of pointer
+    ctx.shadowBlur = 0;
+    ctx.beginPath();
+    ctx.arc(x + 2, y + 3, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + 5, y + 8, 2, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    // Chat bubble: pointer triangle
+    ctx.shadowBlur = 0;
+    ctx.beginPath();
+    ctx.moveTo(x - 4, y);
+    ctx.lineTo(x, y + 6);
+    ctx.lineTo(x + 4, y);
+    ctx.fill();
+  }
 
   // Text
-  ctx.fillStyle = "#333";
+  ctx.fillStyle = isThought ? "#555" : "#333";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(text, x, y - height / 2);

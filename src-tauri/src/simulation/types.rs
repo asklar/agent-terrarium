@@ -130,6 +130,9 @@ pub struct ChatBubble {
     pub content: String,
     pub timer: f64,
     pub is_emoji: bool,
+    /// Whether this bubble was triggered by an awareness event (vs social interaction)
+    #[serde(default)]
+    pub is_event: bool,
 }
 
 /// Events that occur in the terrarium world

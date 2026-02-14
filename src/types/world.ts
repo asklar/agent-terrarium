@@ -60,6 +60,7 @@ export interface ChatBubble {
   content: string;
   timer: number;
   is_emoji: boolean;
+  is_event?: boolean;
 }
 
 export interface ChatMessage {
