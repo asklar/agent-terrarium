@@ -143,6 +143,9 @@ pub struct WorldState {
     /// Fraction of window height where the ground starts (0.0 = top, 1.0 = bottom)
     pub ground_y_ratio: f64,
     pub tick: u64,
+    /// Current mouse position (for hover slowdown). None if mouse is outside window.
+    #[serde(skip)]
+    pub mouse_pos: Option<Vec2>,
 }
 
 /// Saved agent definition for config persistence

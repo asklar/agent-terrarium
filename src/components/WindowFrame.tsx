@@ -77,6 +77,13 @@ export function WindowFrame() {
         <span className="drag-label" data-tauri-drag-region>
           🌿 Agent Terrarium
         </span>
+        <button
+          className="titlebar-close"
+          onClick={() => getCurrentWindow().close()}
+          title="Close"
+        >
+          ✕
+        </button>
       </div>
 
       {/* Resize handles on all edges and corners */}

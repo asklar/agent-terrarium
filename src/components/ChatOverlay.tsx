@@ -38,6 +38,7 @@ export function ChatOverlay({
       await onSend(session.agent_id, text);
     } finally {
       setIsLoading(false);
+      requestAnimationFrame(() => inputRef.current?.focus());
     }
   }, [inputText, isLoading, onSend, session.agent_id]);
 

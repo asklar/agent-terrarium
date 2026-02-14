@@ -1,7 +1,7 @@
 mod agents;
 mod simulation;
 
-use simulation::types::Vec2;
+use simulation::types::{AppConfig, Vec2};
 use simulation::world::World;
 use std::sync::Arc;
 use std::time::Duration;
@@ -36,6 +36,46 @@ fn resize_world(world: tauri::State<'_, Arc<World>>, width: f64, height: f64) {
     world.resize(width, height);
 }
 
+#[tauri::command]
+fn add_agent(world: tauri::State<'_, Arc<World>>, avatar: String, name: String) {
+    world.add_agent(&avatar, &name);
+}
+
+#[tauri::command]
+fn remove_agent(world: tauri::State<'_, Arc<World>>, agent_id: String) {
+    world.remove_agent(&agent_id);
+}
+
+#[tauri::command]
+fn update_mouse(world: tauri::State<'_, Arc<World>>, x: Option<f64>, y: Option<f64>) {
+    world.update_mouse(x, y);
+}
+
+fn config_path() -> std::path::PathBuf {
+    let mut path = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
+    path.push("agent-terrarium.json");
+    path
+}
+
+#[tauri::command]
+fn save_config(theme: String, world: tauri::State<'_, Arc<World>>) -> Result<(), String> {
+    let agents = world.get_agent_configs();
+    let config = AppConfig { theme, agents };
+    let json = serde_json::to_string_pretty(&config).map_err(|e| e.to_string())?;
+    std::fs::write(config_path(), json).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn load_config() -> Result<AppConfig, String> {
+    let path = config_path();
+    if !path.exists() {
+        return Err("No config file found".to_string());
+    }
+    let json = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+    serde_json::from_str(&json).map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let world = Arc::new(World::new(Vec2::new(800.0, 400.0)));
@@ -60,6 +100,11 @@ pub fn run() {
             send_message,
             dismiss_chat,
             resize_world,
+            add_agent,
+            remove_agent,
+            update_mouse,
+            save_config,
+            load_config,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

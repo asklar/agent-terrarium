@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 
-export type ThemeName = "meadow" | "night" | "desert" | "ocean";
+export type ThemeName = "meadow" | "night" | "desert" | "ocean" | "forest_dawn" | "castle";
 
 interface AnimatedBackgroundProps {
   theme: ThemeName;
@@ -14,6 +14,16 @@ interface Particle {
   opacity: number;
   drift: number;
   phase: number;
+}
+
+interface ShootingStar {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  maxLife: number;
+  size: number;
 }
 
 const THEMES: Record<
@@ -74,11 +84,34 @@ const THEMES: Record<
     grassAccent: "#006064",
     features: ["waves", "seaweed"],
   },
+  forest_dawn: {
+    sky: ["#1A0A2E", "#4A1942", "#B85C38", "#F0A500", "#FFF3CD"],
+    ground: "#2E4A1E",
+    groundAccent: "#1B3A0E",
+    particleColor: "#FFECB3",
+    particleCount: 18,
+    particleType: "leaf",
+    grassColor: "#3E6B2F",
+    grassAccent: "#2E5A1F",
+    features: ["trees", "mist", "fireflies", "grass"],
+  },
+  castle: {
+    sky: ["#1A1A2E", "#16213E", "#2C3E6B"],
+    ground: "#5D4E37",
+    groundAccent: "#4A3C2A",
+    particleColor: "#FF9800",
+    particleCount: 6,
+    particleType: "sand",
+    grassColor: "#6D5D4B",
+    grassAccent: "#5D4E37",
+    features: ["castle_walls", "torches", "banners"],
+  },
 };
 
 export function AnimatedBackground({ theme }: AnimatedBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
+  const shootingStarsRef = useRef<ShootingStar[]>([]);
   const animRef = useRef<number>(0);
 
   useEffect(() => {
@@ -127,6 +160,8 @@ export function AnimatedBackground({ theme }: AnimatedBackgroundProps) {
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, w, h);
 
+      const groundY = h * 0.72;
+
       // Draw theme features
       if (t.features.includes("clouds")) {
         drawClouds(ctx, w, h, time);
@@ -136,13 +171,29 @@ export function AnimatedBackground({ theme }: AnimatedBackgroundProps) {
       }
       if (t.features.includes("stars")) {
         drawStars(ctx, w, h, time);
+        // Shooting stars
+        updateAndDrawShootingStars(ctx, w, h, dt, shootingStarsRef);
       }
       if (t.features.includes("waves")) {
         drawWaves(ctx, w, h, time);
       }
+      if (t.features.includes("trees")) {
+        drawTrees(ctx, w, groundY, time);
+      }
+      if (t.features.includes("mist")) {
+        drawMist(ctx, w, h, groundY, time);
+      }
+      if (t.features.includes("castle_walls")) {
+        drawCastleWalls(ctx, w, groundY);
+      }
+      if (t.features.includes("torches")) {
+        drawTorches(ctx, w, groundY, time);
+      }
+      if (t.features.includes("banners")) {
+        drawBanners(ctx, w, groundY, time);
+      }
 
       // Ground
-      const groundY = h * 0.72;
       const groundGrad = ctx.createLinearGradient(0, groundY, 0, h);
       groundGrad.addColorStop(0, t.ground);
       groundGrad.addColorStop(1, t.groundAccent);
@@ -177,6 +228,11 @@ export function AnimatedBackground({ theme }: AnimatedBackgroundProps) {
       // Cactus
       if (t.features.includes("cactus")) {
         drawCacti(ctx, w, groundY);
+      }
+
+      // Fireflies
+      if (t.features.includes("fireflies")) {
+        drawFireflies(ctx, w, h, groundY, time);
       }
 
       // Particles
@@ -502,4 +558,295 @@ function drawParticle(
   }
 
   ctx.restore();
+}
+
+function updateAndDrawShootingStars(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  dt: number,
+  starsRef: React.RefObject<ShootingStar[]>,
+) {
+  const stars = starsRef.current!;
+  // Spawn occasionally
+  if (Math.random() < 0.003 && stars.length < 2) {
+    stars.push({
+      x: Math.random() * w * 0.8,
+      y: Math.random() * h * 0.3,
+      vx: 300 + Math.random() * 400,
+      vy: 100 + Math.random() * 150,
+      life: 0,
+      maxLife: 0.5 + Math.random() * 0.5,
+      size: 1.5 + Math.random() * 1.5,
+    });
+  }
+
+  for (let i = stars.length - 1; i >= 0; i--) {
+    const s = stars[i];
+    s.life += dt;
+    s.x += s.vx * dt;
+    s.y += s.vy * dt;
+
+    const progress = s.life / s.maxLife;
+    const alpha = progress < 0.1 ? progress / 0.1 : 1 - (progress - 0.1) / 0.9;
+
+    if (s.life >= s.maxLife || s.x > w || s.y > h) {
+      stars.splice(i, 1);
+      continue;
+    }
+
+    // Trail
+    ctx.save();
+    const grad = ctx.createLinearGradient(
+      s.x, s.y,
+      s.x - s.vx * 0.06, s.y - s.vy * 0.06,
+    );
+    grad.addColorStop(0, `rgba(255, 255, 240, ${alpha * 0.9})`);
+    grad.addColorStop(1, `rgba(255, 255, 240, 0)`);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = s.size;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y);
+    ctx.lineTo(s.x - s.vx * 0.06, s.y - s.vy * 0.06);
+    ctx.stroke();
+
+    // Head glow
+    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.size * 0.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawTrees(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  groundY: number,
+  time: number,
+) {
+  const treePositions = [0.08, 0.22, 0.38, 0.55, 0.72, 0.88, 0.95];
+  for (let i = 0; i < treePositions.length; i++) {
+    const x = w * treePositions[i];
+    const waveOffset = Math.sin(x * 0.02 + time * 0.0005) * 4;
+    const baseY = groundY + waveOffset;
+    const height = 50 + (i % 3) * 20;
+    const sway = Math.sin(time * 0.0008 + i * 1.5) * 2;
+
+    // Trunk
+    ctx.fillStyle = "#3E2723";
+    ctx.beginPath();
+    ctx.roundRect(x - 4, baseY - height * 0.4, 8, height * 0.4, 2);
+    ctx.fill();
+
+    // Canopy layers (darker at bottom, lighter at top)
+    const layers = [
+      { yOff: 0, w: 28, h: 20, color: "#1B5E20" },
+      { yOff: -14, w: 22, h: 18, color: "#2E7D32" },
+      { yOff: -26, w: 16, h: 14, color: "#388E3C" },
+    ];
+    for (const l of layers) {
+      ctx.fillStyle = l.color;
+      ctx.beginPath();
+      ctx.moveTo(x + sway - l.w / 2, baseY - height * 0.4 + l.yOff);
+      ctx.lineTo(x + sway, baseY - height * 0.4 + l.yOff - l.h);
+      ctx.lineTo(x + sway + l.w / 2, baseY - height * 0.4 + l.yOff);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+}
+
+function drawMist(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  _h: number,
+  groundY: number,
+  time: number,
+) {
+  ctx.save();
+  for (let i = 0; i < 4; i++) {
+    const drift = Math.sin(time * 0.0003 + i * 2) * 40;
+    const y = groundY - 10 + i * 8;
+    const alpha = 0.06 + Math.sin(time * 0.0005 + i) * 0.03;
+    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+    ctx.beginPath();
+    ctx.ellipse(w * 0.3 + drift + i * 60, y, 120 + i * 30, 12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(w * 0.7 - drift + i * 40, y + 5, 100 + i * 20, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawFireflies(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  groundY: number,
+  time: number,
+) {
+  for (let i = 0; i < 12; i++) {
+    const x = ((i * 67 + 20) % w) + Math.sin(time * 0.001 + i * 2.3) * 15;
+    const y = groundY - 20 + Math.sin(time * 0.0015 + i * 1.7) * 30;
+    if (y > h - 10) continue;
+    const glow = 0.3 + Math.sin(time * 0.004 + i * 3.1) * 0.4;
+    if (glow < 0.15) continue;
+
+    // Outer glow
+    ctx.fillStyle = `rgba(255, 235, 59, ${glow * 0.3})`;
+    ctx.beginPath();
+    ctx.arc(x, y, 6, 0, Math.PI * 2);
+    ctx.fill();
+    // Inner bright
+    ctx.fillStyle = `rgba(255, 255, 200, ${glow})`;
+    ctx.beginPath();
+    ctx.arc(x, y, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawCastleWalls(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  groundY: number,
+) {
+  // Back wall
+  ctx.fillStyle = "#4A4A5A";
+  ctx.fillRect(0, groundY - 80, w, 80);
+
+  // Stone texture
+  ctx.strokeStyle = "rgba(0,0,0,0.1)";
+  ctx.lineWidth = 1;
+  for (let row = 0; row < 5; row++) {
+    const y = groundY - 80 + row * 16;
+    const offset = row % 2 === 0 ? 0 : 20;
+    for (let col = -1; col < w / 40 + 1; col++) {
+      const x = col * 40 + offset;
+      ctx.strokeRect(x, y, 40, 16);
+    }
+  }
+
+  // Crenellations
+  ctx.fillStyle = "#4A4A5A";
+  const merlonW = 18;
+  const merlonH = 14;
+  const gap = 12;
+  for (let x = 0; x < w; x += merlonW + gap) {
+    ctx.fillRect(x, groundY - 80 - merlonH, merlonW, merlonH);
+  }
+
+  // Window arches
+  ctx.fillStyle = "#1A1A2E";
+  for (let i = 0; i < 3; i++) {
+    const x = w * (0.25 + i * 0.25);
+    const y = groundY - 55;
+    ctx.beginPath();
+    ctx.arc(x, y, 8, Math.PI, 0);
+    ctx.fillRect(x - 8, y, 16, 12);
+    ctx.fill();
+  }
+
+  // Cobblestone ground
+  ctx.fillStyle = "#5D5060";
+  ctx.fillRect(0, groundY, w, 10);
+  ctx.strokeStyle = "rgba(0,0,0,0.15)";
+  for (let row = 0; row < 6; row++) {
+    const y = groundY + row * 12;
+    const offset = row % 2 === 0 ? 0 : 15;
+    for (let col = -1; col < w / 30 + 1; col++) {
+      ctx.beginPath();
+      ctx.roundRect(col * 30 + offset, y, 28, 10, 3);
+      ctx.stroke();
+    }
+  }
+}
+
+function drawTorches(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  groundY: number,
+  time: number,
+) {
+  const positions = [w * 0.15, w * 0.5, w * 0.85];
+  for (let i = 0; i < positions.length; i++) {
+    const x = positions[i];
+    const y = groundY - 50;
+
+    // Torch bracket
+    ctx.fillStyle = "#5D4037";
+    ctx.fillRect(x - 2, y, 4, 20);
+
+    // Flame flicker
+    const flicker = Math.sin(time * 0.01 + i * 2) * 2;
+    const flicker2 = Math.cos(time * 0.015 + i * 3) * 1.5;
+
+    // Outer glow
+    ctx.fillStyle = `rgba(255, 152, 0, ${0.15 + Math.sin(time * 0.008 + i) * 0.05})`;
+    ctx.beginPath();
+    ctx.arc(x, y - 4, 18, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Flame body
+    ctx.fillStyle = "#FF9800";
+    ctx.beginPath();
+    ctx.moveTo(x - 5, y);
+    ctx.quadraticCurveTo(x - 3 + flicker2, y - 10, x + flicker, y - 14);
+    ctx.quadraticCurveTo(x + 3 - flicker2, y - 10, x + 5, y);
+    ctx.closePath();
+    ctx.fill();
+
+    // Inner flame
+    ctx.fillStyle = "#FFF176";
+    ctx.beginPath();
+    ctx.moveTo(x - 2, y);
+    ctx.quadraticCurveTo(x - 1 + flicker, y - 6, x + flicker * 0.5, y - 9);
+    ctx.quadraticCurveTo(x + 1 - flicker, y - 6, x + 2, y);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawBanners(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  groundY: number,
+  time: number,
+) {
+  const bannerColors = ["#C62828", "#1565C0", "#6A1B9A"];
+  const positions = [w * 0.3, w * 0.5, w * 0.7];
+
+  for (let i = 0; i < positions.length; i++) {
+    const x = positions[i];
+    const y = groundY - 70;
+    const sway = Math.sin(time * 0.002 + i * 2) * 3;
+    const color = bannerColors[i % bannerColors.length];
+
+    // Pole
+    ctx.strokeStyle = "#8D6E63";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, y - 5);
+    ctx.lineTo(x, y + 30);
+    ctx.stroke();
+
+    // Banner cloth
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + 14 + sway, y + 2);
+    ctx.lineTo(x + 12 + sway * 0.8, y + 22);
+    ctx.lineTo(x + 7 + sway * 0.5, y + 18);
+    ctx.lineTo(x, y + 22);
+    ctx.closePath();
+    ctx.fill();
+
+    // Banner emblem (simple shield shape)
+    ctx.fillStyle = "rgba(255,255,255,0.3)";
+    ctx.beginPath();
+    ctx.arc(x + 7 + sway * 0.5, y + 10, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }

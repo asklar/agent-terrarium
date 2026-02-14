@@ -25,6 +25,7 @@ impl World {
                 bounds,
                 ground_y_ratio: 0.72,
                 tick: 0,
+                mouse_pos: None,
             }),
         }
     }
@@ -123,8 +124,18 @@ impl World {
                 }
             }
 
-            // Apply velocity
-            let vel = state.agents[i].velocity;
+            // Apply velocity with hover slowdown
+            let mouse = state.mouse_pos;
+            let mut speed_scale = 1.0;
+            if let Some(mp) = mouse {
+                let dist = state.agents[i].position.distance_to(&mp);
+                let slowdown_radius = 80.0;
+                if dist < slowdown_radius {
+                    // Smoothly scale from 1.0 at edge to 0.1 at center
+                    speed_scale = 0.1 + 0.9 * (dist / slowdown_radius);
+                }
+            }
+            let vel = state.agents[i].velocity * speed_scale;
             state.agents[i].position = state.agents[i].position + vel * TICK_RATE;
 
             // Bounce off bounds (agents stay on ground surface)
@@ -309,20 +320,65 @@ impl World {
         let mut state = self.state.lock().unwrap();
         state.bounds = Vec2::new(width, height);
     }
+
+    pub fn add_agent(&self, avatar: &str, name: &str) {
+        let mut state = self.state.lock().unwrap();
+        let bounds = state.bounds;
+        let ground_y = bounds.y * state.ground_y_ratio;
+        let id = format!("{}_{}", avatar, state.tick);
+        let agent = create_agent(&id, name, avatar, &bounds, ground_y);
+        state.agents.push(agent);
+    }
+
+    pub fn remove_agent(&self, agent_id: &str) {
+        let mut state = self.state.lock().unwrap();
+        state.agents.retain(|a| a.id != agent_id);
+        state.chat_sessions.retain(|s| s.agent_id != agent_id);
+        state.bubbles.retain(|b| b.agent_id != agent_id);
+    }
+
+    pub fn list_agents(&self) -> Vec<(String, String, String)> {
+        let state = self.state.lock().unwrap();
+        state.agents.iter().map(|a| (a.id.clone(), a.name.clone(), a.avatar.clone())).collect()
+    }
+
+    pub fn update_mouse(&self, x: Option<f64>, y: Option<f64>) {
+        let mut state = self.state.lock().unwrap();
+        state.mouse_pos = match (x, y) {
+            (Some(mx), Some(my)) => Some(Vec2::new(mx, my)),
+            _ => None,
+        };
+    }
+
+    pub fn get_agent_configs(&self) -> Vec<AgentConfig> {
+        let state = self.state.lock().unwrap();
+        state.agents.iter().map(|a| AgentConfig {
+            id: a.id.clone(),
+            name: a.name.clone(),
+            avatar: a.avatar.clone(),
+            personality: a.personality.clone(),
+        }).collect()
+    }
+
+    pub fn load_from_config(&self, config: &AppConfig) {
+        let mut state = self.state.lock().unwrap();
+        let bounds = state.bounds;
+        let ground_y = bounds.y * state.ground_y_ratio;
+        state.agents.clear();
+        state.chat_sessions.clear();
+        state.bubbles.clear();
+        for ac in &config.agents {
+            let mut agent = create_agent(&ac.id, &ac.name, &ac.avatar, &bounds, ground_y);
+            agent.personality = ac.personality.clone();
+            state.agents.push(agent);
+        }
+    }
 }
 
-fn create_default_agents(bounds: &Vec2) -> Vec<Agent> {
-    let ground_y = bounds.y * 0.72;
-    vec![
-        Agent {
-            id: "cat".into(),
-            name: "Pixel Cat".into(),
-            avatar: "cat".into(),
-            position: Vec2::new(bounds.x * 0.2, ground_y + 20.0),
-            velocity: Vec2::zero(),
-            state: AgentState::Idle,
-            direction: Direction::Right,
-            personality: Personality {
+fn create_agent(id: &str, name: &str, avatar: &str, bounds: &Vec2, ground_y: f64) -> Agent {
+    let (personality, y_pos) = match avatar {
+        "cat" => (
+            Personality {
                 speed_min: 30.0,
                 speed_max: 120.0,
                 movement_style: MovementStyle::Wander,
@@ -330,19 +386,10 @@ fn create_default_agents(bounds: &Vec2) -> Vec<Agent> {
                 ball_interest: 0.9,
                 chat_emojis: vec!["😺".into(), "😻".into(), "🐱".into(), "✨".into(), "💕".into()],
             },
-            target: None,
-            state_timer: 0.0,
-            interaction_cooldown: 0.0,
-        },
-        Agent {
-            id: "copilot".into(),
-            name: "Copilot".into(),
-            avatar: "copilot".into(),
-            position: Vec2::new(bounds.x * 0.4, ground_y + 20.0),
-            velocity: Vec2::zero(),
-            state: AgentState::Idle,
-            direction: Direction::Right,
-            personality: Personality {
+            ground_y + 20.0,
+        ),
+        "copilot" => (
+            Personality {
                 speed_min: 25.0,
                 speed_max: 80.0,
                 movement_style: MovementStyle::Patrol,
@@ -350,19 +397,10 @@ fn create_default_agents(bounds: &Vec2) -> Vec<Agent> {
                 ball_interest: 0.5,
                 chat_emojis: vec!["✨".into(), "💡".into(), "🚀".into(), "💻".into(), "🤝".into()],
             },
-            target: None,
-            state_timer: 0.0,
-            interaction_cooldown: 0.0,
-        },
-        Agent {
-            id: "squirrel".into(),
-            name: "Squirrel".into(),
-            avatar: "squirrel".into(),
-            position: Vec2::new(bounds.x * 0.6, ground_y + 20.0),
-            velocity: Vec2::zero(),
-            state: AgentState::Idle,
-            direction: Direction::Left,
-            personality: Personality {
+            ground_y + 20.0,
+        ),
+        "squirrel" => (
+            Personality {
                 speed_min: 50.0,
                 speed_max: 180.0,
                 movement_style: MovementStyle::Bounce,
@@ -370,19 +408,10 @@ fn create_default_agents(bounds: &Vec2) -> Vec<Agent> {
                 ball_interest: 0.8,
                 chat_emojis: vec!["🐿️".into(), "🌰".into(), "🍂".into(), "😆".into(), "💨".into()],
             },
-            target: None,
-            state_timer: 0.0,
-            interaction_cooldown: 0.0,
-        },
-        Agent {
-            id: "penguin".into(),
-            name: "Penguin".into(),
-            avatar: "penguin".into(),
-            position: Vec2::new(bounds.x * 0.8, ground_y + 20.0),
-            velocity: Vec2::zero(),
-            state: AgentState::Idle,
-            direction: Direction::Left,
-            personality: Personality {
+            ground_y + 20.0,
+        ),
+        "penguin" => (
+            Personality {
                 speed_min: 15.0,
                 speed_max: 40.0,
                 movement_style: MovementStyle::Wander,
@@ -390,19 +419,10 @@ fn create_default_agents(bounds: &Vec2) -> Vec<Agent> {
                 ball_interest: 0.4,
                 chat_emojis: vec!["🐧".into(), "❄️".into(), "🧊".into(), "😊".into(), "🐟".into()],
             },
-            target: None,
-            state_timer: 0.0,
-            interaction_cooldown: 0.0,
-        },
-        Agent {
-            id: "ghost".into(),
-            name: "Ghost".into(),
-            avatar: "ghost".into(),
-            position: Vec2::new(bounds.x * 0.5, ground_y * 0.5),
-            velocity: Vec2::zero(),
-            state: AgentState::Idle,
-            direction: Direction::Right,
-            personality: Personality {
+            ground_y + 20.0,
+        ),
+        "ghost" => (
+            Personality {
                 speed_min: 10.0,
                 speed_max: 50.0,
                 movement_style: MovementStyle::Float,
@@ -410,11 +430,56 @@ fn create_default_agents(bounds: &Vec2) -> Vec<Agent> {
                 ball_interest: 0.1,
                 chat_emojis: vec!["👻".into(), "💀".into(), "🌙".into(), "✨".into(), "😶".into()],
             },
-            target: None,
-            state_timer: 0.0,
-            interaction_cooldown: 0.0,
-        },
-    ]
+            ground_y * 0.5,
+        ),
+        _ => (
+            Personality {
+                speed_min: 20.0,
+                speed_max: 80.0,
+                movement_style: MovementStyle::Wander,
+                interaction_chance: 0.5,
+                ball_interest: 0.5,
+                chat_emojis: vec!["😊".into(), "👋".into(), "✨".into()],
+            },
+            ground_y + 20.0,
+        ),
+    };
+
+    let x_pos = 32.0 + rand_f64() * (bounds.x - 64.0);
+    Agent {
+        id: id.into(),
+        name: name.into(),
+        avatar: avatar.into(),
+        position: Vec2::new(x_pos, y_pos),
+        velocity: Vec2::zero(),
+        state: AgentState::Idle,
+        direction: if rand_f64() > 0.5 { Direction::Right } else { Direction::Left },
+        personality,
+        target: None,
+        state_timer: 0.0,
+        interaction_cooldown: 0.0,
+    }
+}
+
+fn create_default_agents(bounds: &Vec2) -> Vec<Agent> {
+    let ground_y = bounds.y * 0.72;
+    let defaults = [
+        ("cat", "Pixel Cat"),
+        ("copilot", "Copilot"),
+        ("squirrel", "Squirrel"),
+        ("penguin", "Penguin"),
+        ("ghost", "Ghost"),
+    ];
+    defaults
+        .iter()
+        .enumerate()
+        .map(|(i, (avatar, name))| {
+            let mut agent = create_agent(avatar, name, avatar, bounds, ground_y);
+            // Spread agents evenly for default layout
+            agent.position.x = bounds.x * (0.2 + 0.15 * i as f64);
+            agent
+        })
+        .collect()
 }
 
 fn pick_new_target(agent: &mut Agent, bounds: &Vec2, ground_y: f64) {

@@ -55,6 +55,24 @@ html, body, #root {
   pointer-events: none;
 }
 
+.titlebar-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s;
+}
+
+.titlebar-close:hover {
+  background: rgba(232, 17, 35, 0.85);
+  color: #fff;
+}
+
 /* Chat Overlay */
 .chat-overlay {
   background: rgba(255, 255, 255, 0.95);
@@ -163,4 +181,83 @@ html, body, #root {
 .chat-send:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+/* Context Menu */
+.context-menu {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  min-width: 170px;
+  padding: 4px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 12px;
+  overflow: hidden;
+  animation: contextMenuIn 0.12s ease-out;
+}
+
+@keyframes contextMenuIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  color: #333;
+  border-radius: 6px;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.context-menu-item:hover:not(.disabled) {
+  background: rgba(139, 195, 74, 0.15);
+}
+
+.context-menu-item.active {
+  font-weight: 600;
+  color: #4CAF50;
+}
+
+.context-menu-item.disabled {
+  color: #aaa;
+  cursor: default;
+}
+
+.context-menu-item.context-menu-back {
+  color: #888;
+  font-size: 11px;
+}
+
+.context-menu-arrow {
+  margin-left: auto;
+  color: #aaa;
+  font-size: 10px;
+}
+
+.context-menu-check {
+  margin-left: auto;
+  color: #4CAF50;
+  font-weight: bold;
+}
+
+.context-menu-divider {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.08);
+  margin: 3px 8px;
 }

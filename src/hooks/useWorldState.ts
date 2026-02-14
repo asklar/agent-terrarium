@@ -47,6 +47,34 @@ export function useWorldState() {
     await invoke("resize_world", { width, height });
   }, []);
 
+  const addAgent = useCallback(async (avatar: string, name: string) => {
+    await invoke("add_agent", { avatar, name });
+  }, []);
+
+  const removeAgent = useCallback(async (agentId: string) => {
+    await invoke("remove_agent", { agentId });
+  }, []);
+
+  const updateMouse = useCallback(async (x: number | null, y: number | null) => {
+    await invoke("update_mouse", { x, y });
+  }, []);
+
+  const saveConfig = useCallback(async (theme: string) => {
+    try {
+      await invoke("save_config", { theme });
+    } catch (e) {
+      console.error("Failed to save config:", e);
+    }
+  }, []);
+
+  const loadConfig = useCallback(async () => {
+    try {
+      return await invoke<{ theme: string; agents: unknown[] }>("load_config");
+    } catch {
+      return null;
+    }
+  }, []);
+
   return {
     worldState,
     throwBall,
@@ -54,5 +82,10 @@ export function useWorldState() {
     sendMessage,
     dismissChat,
     resizeWorld,
+    addAgent,
+    removeAgent,
+    updateMouse,
+    saveConfig,
+    loadConfig,
   };
 }
