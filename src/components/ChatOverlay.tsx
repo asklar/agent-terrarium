@@ -1,4 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { ChatSession } from "../types/world";
 
 interface ChatOverlayProps {
@@ -99,7 +101,7 @@ export function ChatOverlay({
             key={i}
             className={`chat-message ${msg.from_user ? "user" : "agent"}`}
           >
-            {msg.text}
+            {msg.from_user ? msg.text : <Markdown remarkPlugins={[remarkGfm]}>{msg.text}</Markdown>}
           </div>
         ))}
         <div ref={messagesEndRef} />
