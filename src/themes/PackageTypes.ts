@@ -100,9 +100,6 @@ export interface AgentDefinition {
   /** Emoji icon for menus */
   icon: string;
 
-  /** Color palette */
-  colors: AgentColors;
-
   /** Voice profile for Animalese greeting sounds */
   voice: VoiceProfile;
 
@@ -131,14 +128,6 @@ export interface AgentDefinition {
   };
 }
 
-export interface AgentColors {
-  body: string;
-  head: string;
-  eyes: string;
-  accent: string;
-  cheek: string;
-}
-
 export interface VoiceProfile {
   basePitch: number;
   pitchVar: number;
@@ -158,9 +147,6 @@ export interface AgentPersonalityDefaults {
 }
 
 // ─── Draw Spec (Data-Driven Avatar Rendering) ──────────────────────
-
-/** Color value: either a palette key ("body","head","eyes","accent","cheek") or a CSS color string */
-export type ColorRef = "body" | "head" | "eyes" | "accent" | "cheek" | (string & {});
 
 export interface DrawSpec {
   /** Movement mode: "walk" uses legs, "float" bobs without legs (ghost-like) */
@@ -197,8 +183,8 @@ export interface LegsLayer {
   spread?: number;
   /** Leg length in px (default: 8) */
   length?: number;
-  /** Leg color (default: "accent") */
-  color?: ColorRef;
+  /** Leg color */
+  color: string;
   /** Foot style: "round" (default) or "flat" (penguin-like) */
   footStyle?: "round" | "flat";
   /** Foot rx for flat feet (default: 5) */
@@ -211,8 +197,8 @@ export interface BodyLayer {
   rx?: number;
   /** Vertical radius (default: 10) */
   ry?: number;
-  /** Body color (default: "body") */
-  color?: ColorRef;
+  /** Body fill color */
+  color: string;
 }
 
 export interface HeadLayer {
@@ -221,17 +207,19 @@ export interface HeadLayer {
   rx?: number;
   /** Vertical radius (default: 10) */
   ry?: number;
-  /** Head color (default: "head") */
-  color?: ColorRef;
+  /** Head fill color */
+  color: string;
 }
 
 export interface EarsLayer {
   type: "ears";
   /** Ear shape style */
   style: "pointed" | "round";
+  /** Outer ear color */
+  color: string;
   /** Outer ear size (default: 11 for pointed, 4 for round) */
   size?: number;
-  /** Inner ear / pink color (default: "#FFAB91") */
+  /** Inner ear color (default: "#FFAB91") */
   innerColor?: string;
 }
 
@@ -239,46 +227,50 @@ export interface EyesLayer {
   type: "eyes";
   /** "standard" uses drawEyes helper with blink; "custom" draws explicit pupils */
   style?: "standard" | "custom";
+  /** Eye color (iris/pupil color for standard, whites for custom) */
+  color: string;
   /** Eye size (default: 2.5) */
   size?: number;
-  /** Pupil color for custom eyes (default: "accent") */
-  pupilColor?: ColorRef;
+  /** Pupil color for custom eyes */
+  pupilColor?: string;
   /** Eye spacing from center (default: 4) */
   spacing?: number;
 }
 
 export interface CheeksLayer {
   type: "cheeks";
+  /** Cheek blush color */
+  color: string;
 }
 
 export interface MouthLayer {
   type: "mouth";
   /** Mouth shape (default: "smile") */
   style?: "smile" | "small" | "o" | "w";
-  /** Use different style when moving (e.g. squirrel: "o" when moving, "small" when idle) */
+  /** Use different style when moving */
   movingStyle?: "smile" | "small" | "o" | "w";
 }
 
 export interface TailLayer {
   type: "tail";
+  /** Tail color */
+  color: string;
   /** Sway animation speed divisor (lower=faster, default: 200) */
   swaySpeed?: number;
   /** Sway amplitude in px (default: 6) */
   swayAmount?: number;
-  /** Tail color (default: "accent" for cat-style, "body" for squirrel-style) */
-  color?: ColorRef;
   /** Tail visual style */
   tailStyle?: "thin" | "fluffy";
-  /** Whether to draw a highlight streak (default: false) */
-  highlight?: boolean;
+  /** Highlight color for fluffy tails (omit to skip) */
+  highlightColor?: string;
 }
 
 export interface WingsLayer {
   type: "wings";
   /** Wing animation style */
   wingStyle: "flutter" | "flap";
-  /** Wing color (CSS color with alpha, default: body-based) */
-  color?: string;
+  /** Wing color (CSS color, for flutter use rgba for transparency) */
+  color: string;
   /** Animation speed divisor (default: 250 for flutter, 200 for flap) */
   speed?: number;
 }
@@ -301,10 +293,10 @@ export interface SparklesLayer {
   type: "sparkles";
   /** Sparkle animation style */
   sparkleStyle: "star" | "orbit" | "floating";
+  /** Sparkle color (CSS color) */
+  color: string;
   /** Number of sparkles (default: 1 for star, 3 for orbit, 2 for floating) */
   count?: number;
-  /** Sparkle color (CSS color or palette key) */
-  color?: ColorRef;
   /** Animation speed divisor (default varies by style) */
   speed?: number;
 }
@@ -323,8 +315,8 @@ export interface PatchLayer {
 
 export interface VisorLayer {
   type: "visor";
-  /** Band color (default: "accent") */
-  bandColor?: ColorRef;
+  /** Band color */
+  bandColor: string;
   /** Glow gradient colors (default: copilot blue) */
   glowColors?: [string, string, string];
   /** Whether to animate a scan line (default: true) */
@@ -341,8 +333,8 @@ export interface WhiskersLayer {
 
 export interface BeakLayer {
   type: "beak";
-  /** Beak color (default: "accent") */
-  color?: ColorRef;
+  /** Beak color */
+  color: string;
 }
 
 export interface NoseLayer {
@@ -367,6 +359,8 @@ export interface AccessoryLayer {
 
 export interface GhostBodyLayer {
   type: "ghostBody";
+  /** Body fill color */
+  color: string;
   /** Number of bottom waves (default: 5) */
   waves?: number;
   /** Wave amplitude (default: 6) */

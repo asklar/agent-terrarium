@@ -7,13 +7,6 @@
       "name": "Claude",
       "icon": "🧡",
       "shape": "claude",
-      "colors": {
-        "body": "#D97757",
-        "head": "#E8956F",
-        "eyes": "#FFFFFF",
-        "accent": "#B85C3A",
-        "cheek": "#F4A98A"
-      },
       "voice": {
         "basePitch": 420,
         "pitchVar": 90,
@@ -35,13 +28,13 @@
       },
       "drawSpec": {
         "layers": [
-          { "type": "legs", "spread": 5, "length": 8, "color": "accent" },
-          { "type": "body", "rx": 10, "ry": 11 },
+          { "type": "legs", "spread": 5, "length": 8, "color": "#B85C3A" },
+          { "type": "body", "color": "#D97757", "rx": 10, "ry": 11 },
           { "type": "glow", "color": "rgba(217, 119, 87, 0.08)", "radius": 16, "pulseSpeed": 600, "baseAlpha": 0.08, "alphaVar": 0.04 },
-          { "type": "head", "rx": 10, "ry": 10 },
+          { "type": "head", "color": "#E8956F", "rx": 10, "ry": 10 },
           { "type": "sparkles", "sparkleStyle": "orbit", "count": 3, "color": "#FFC896", "speed": 800 },
-          { "type": "eyes", "style": "custom", "size": 2.5, "pupilColor": "accent", "spacing": 4 },
-          { "type": "cheeks" },
+          { "type": "eyes", "style": "custom", "color": "#FFFFFF", "size": 2.5, "pupilColor": "#B85C3A", "spacing": 4 },
+          { "type": "cheeks", "color": "#F4A98A" },
           { "type": "mouth", "style": "small" }
         ]
       }

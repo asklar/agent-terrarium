@@ -3,7 +3,6 @@ export type {
   ThemeDefinition,
   ThemeMusic,
   AgentDefinition,
-  AgentColors,
   VoiceProfile,
   AgentPersonalityDefaults,
   ParticleType,

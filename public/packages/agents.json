@@ -7,13 +7,6 @@
       "name": "Cat",
       "icon": "🐱",
       "shape": "cat",
-      "colors": {
-        "body": "#FF9800",
-        "head": "#FFB74D",
-        "eyes": "#333",
-        "accent": "#E65100",
-        "cheek": "#FF8A80"
-      },
       "voice": {
         "basePitch": 700,
         "pitchVar": 150,
@@ -32,14 +25,14 @@
       },
       "drawSpec": {
         "layers": [
-          { "type": "tail", "tailStyle": "thin", "swaySpeed": 200, "swayAmount": 6, "color": "accent" },
-          { "type": "legs", "spread": 5, "length": 8, "color": "accent" },
-          { "type": "body", "rx": 10, "ry": 10 },
-          { "type": "head", "rx": 11, "ry": 10 },
-          { "type": "ears", "style": "pointed", "size": 11, "innerColor": "#FFAB91" },
+          { "type": "tail", "tailStyle": "thin", "color": "#E65100", "swaySpeed": 200, "swayAmount": 6 },
+          { "type": "legs", "color": "#E65100", "spread": 5, "length": 8 },
+          { "type": "body", "color": "#FF9800", "rx": 10, "ry": 10 },
+          { "type": "head", "color": "#FFB74D", "rx": 11, "ry": 10 },
+          { "type": "ears", "style": "pointed", "color": "#FFB74D", "size": 11, "innerColor": "#FFAB91" },
           { "type": "whiskers" },
-          { "type": "eyes", "style": "standard", "size": 2.5 },
-          { "type": "cheeks" },
+          { "type": "eyes", "style": "standard", "color": "#333", "size": 2.5 },
+          { "type": "cheeks", "color": "#FF8A80" },
           { "type": "mouth", "style": "w" }
         ]
       }
@@ -49,13 +42,6 @@
       "name": "Copilot",
       "icon": "🤖",
       "shape": "copilot",
-      "colors": {
-        "body": "#1F6FEB",
-        "head": "#58A6FF",
-        "eyes": "#FFFFFF",
-        "accent": "#0D1117",
-        "cheek": "#90CAF9"
-      },
       "voice": {
         "basePitch": 500,
         "pitchVar": 80,
@@ -77,13 +63,13 @@
       },
       "drawSpec": {
         "layers": [
-          { "type": "legs", "spread": 5, "length": 8, "color": "accent" },
-          { "type": "body", "rx": 10, "ry": 10 },
+          { "type": "legs", "color": "#0D1117", "spread": 5, "length": 8 },
+          { "type": "body", "color": "#1F6FEB", "rx": 10, "ry": 10 },
           { "type": "wings", "wingStyle": "flutter", "color": "rgba(31, 111, 235, 0.35)", "speed": 250 },
-          { "type": "head", "rx": 10, "ry": 10 },
-          { "type": "visor" },
+          { "type": "head", "color": "#58A6FF", "rx": 10, "ry": 10 },
+          { "type": "visor", "bandColor": "#0D1117" },
           { "type": "sparkles", "sparkleStyle": "star", "color": "#58A6FF", "speed": 400 },
-          { "type": "cheeks" },
+          { "type": "cheeks", "color": "#90CAF9" },
           { "type": "mouth", "style": "smile" }
         ]
       }
@@ -93,13 +79,6 @@
       "name": "Squirrel",
       "icon": "🐿️",
       "shape": "squirrel",
-      "colors": {
-        "body": "#8D6E63",
-        "head": "#A1887F",
-        "eyes": "#333",
-        "accent": "#5D4037",
-        "cheek": "#FFAB91"
-      },
       "voice": {
         "basePitch": 900,
         "pitchVar": 200,
@@ -118,16 +97,16 @@
       },
       "drawSpec": {
         "layers": [
-          { "type": "tail", "tailStyle": "fluffy", "swaySpeed": 300, "swayAmount": 5, "color": "body", "highlight": true },
-          { "type": "legs", "spread": 4, "length": 7, "color": "accent" },
-          { "type": "body", "rx": 9, "ry": 9 },
+          { "type": "tail", "tailStyle": "fluffy", "color": "#8D6E63", "highlightColor": "#A1887F", "swaySpeed": 300, "swayAmount": 5 },
+          { "type": "legs", "color": "#5D4037", "spread": 4, "length": 7 },
+          { "type": "body", "color": "#8D6E63", "rx": 9, "ry": 9 },
           { "type": "patch", "position": "belly", "color": "#A1887F", "rx": 5, "ry": 5 },
-          { "type": "head", "rx": 9, "ry": 9, "color": "head" },
-          { "type": "ears", "style": "round", "size": 4, "innerColor": "#FFAB91" },
+          { "type": "head", "color": "#A1887F", "rx": 9, "ry": 9 },
+          { "type": "ears", "style": "round", "color": "#8D6E63", "size": 4, "innerColor": "#FFAB91" },
           { "type": "nose" },
           { "type": "accessory", "accessoryKind": "idle-prop", "idleOnly": true },
-          { "type": "eyes", "style": "standard", "size": 2 },
-          { "type": "cheeks" },
+          { "type": "eyes", "style": "standard", "color": "#333", "size": 2 },
+          { "type": "cheeks", "color": "#FFAB91" },
           { "type": "mouth", "style": "small", "movingStyle": "o" }
         ]
       }
@@ -137,13 +116,6 @@
       "name": "Penguin",
       "icon": "🐧",
       "shape": "penguin",
-      "colors": {
-        "body": "#37474F",
-        "head": "#455A64",
-        "eyes": "#333",
-        "accent": "#FF9800",
-        "cheek": "#F48FB1"
-      },
       "voice": {
         "basePitch": 350,
         "pitchVar": 60,
@@ -163,16 +135,16 @@
       "drawSpec": {
         "waddleAmount": 4,
         "layers": [
-          { "type": "legs", "spread": 5, "length": 0, "color": "accent", "footStyle": "flat", "footRx": 5 },
-          { "type": "body", "rx": 11, "ry": 13 },
+          { "type": "legs", "color": "#FF9800", "spread": 5, "length": 0, "footStyle": "flat", "footRx": 5 },
+          { "type": "body", "color": "#37474F", "rx": 11, "ry": 13 },
           { "type": "patch", "position": "belly", "color": "#ECEFF1", "rx": 7, "ry": 9 },
-          { "type": "wings", "wingStyle": "flap", "speed": 200 },
-          { "type": "head", "rx": 10, "ry": 9 },
+          { "type": "wings", "wingStyle": "flap", "color": "#37474F", "speed": 200 },
+          { "type": "head", "color": "#455A64", "rx": 10, "ry": 9 },
           { "type": "patch", "position": "face", "color": "#ECEFF1", "rx": 7, "ry": 6 },
-          { "type": "beak" },
+          { "type": "beak", "color": "#FF9800" },
           { "type": "accessory", "accessoryKind": "scarf", "color": "#E53935" },
-          { "type": "eyes", "style": "standard", "size": 2 },
-          { "type": "cheeks" }
+          { "type": "eyes", "style": "standard", "color": "#333", "size": 2 },
+          { "type": "cheeks", "color": "#F48FB1" }
         ]
       }
     },
@@ -181,13 +153,6 @@
       "name": "Ghost",
       "icon": "👻",
       "shape": "ghost",
-      "colors": {
-        "body": "#E8EAF6",
-        "head": "#F5F5F5",
-        "eyes": "#7E57C2",
-        "accent": "#B39DDB",
-        "cheek": "#CE93D8"
-      },
       "voice": {
         "basePitch": 280,
         "pitchVar": 40,
@@ -208,10 +173,10 @@
         "movement": "float",
         "layers": [
           { "type": "glow", "color": "rgba(200, 200, 255, 0.08)", "radius": 22, "pulseSpeed": 800 },
-          { "type": "ghostBody", "waves": 5, "waveHeight": 6, "shimmer": true },
-          { "type": "eyes", "style": "custom", "size": 3.5, "pupilColor": "#4A148C", "spacing": 4 },
+          { "type": "ghostBody", "color": "#E8EAF6", "waves": 5, "waveHeight": 6, "shimmer": true },
+          { "type": "eyes", "style": "custom", "color": "#7E57C2", "size": 3.5, "pupilColor": "#4A148C", "spacing": 4 },
           { "type": "mouth", "style": "o" },
-          { "type": "sparkles", "sparkleStyle": "floating", "count": 2, "color": "#CE93D8", "speed": 600 }
+          { "type": "sparkles", "sparkleStyle": "floating", "color": "#CE93D8", "count": 2, "speed": 600 }
         ]
       }
     }

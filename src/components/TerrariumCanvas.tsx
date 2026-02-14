@@ -1,6 +1,5 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import type { WorldState, Agent } from "../types/world";
-import { AGENT_COLORS } from "./AgentSprites";
 import { registry } from "../themes";
 import { playAgentSound, getSharedAudioCtx } from "../audio/agentSounds";
 
@@ -18,11 +17,11 @@ const BALL_SIZE = 10;
 /** Fallback drawSpec for avatars without one */
 const DEFAULT_DRAW_SPEC: import("../themes/PackageTypes").DrawSpec = {
   layers: [
-    { type: "legs" },
-    { type: "body" },
-    { type: "head" },
-    { type: "eyes" },
-    { type: "cheeks" },
+    { type: "legs", color: "#666" },
+    { type: "body", color: "#888" },
+    { type: "head", color: "#AAA" },
+    { type: "eyes", color: "#333" },
+    { type: "cheeks", color: "#FF8A80" },
     { type: "mouth", style: "smile" },
   ],
 };
@@ -456,7 +455,6 @@ export function TerrariumCanvas({
 function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent) {
   const { x, y } = agent.position;
   const agentDef = registry.getAgent(agent.avatar);
-  const colors = agentDef?.colors ?? AGENT_COLORS[agent.avatar] ?? AGENT_COLORS.cat;
   const isMoving =
     agent.state === "Walking" ||
     agent.state === "Running" ||
@@ -494,7 +492,7 @@ function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent) {
 
   // Dispatch to data-driven renderer
   const spec = agentDef?.drawSpec ?? DEFAULT_DRAW_SPEC;
-  drawFromSpec(ctx, colors, bob, legPhase, squish, isMoving, t, spec);
+  drawFromSpec(ctx, bob, legPhase, squish, isMoving, t, spec);
 
   // State indicator particles
   if (agent.state === "Interacting") {
@@ -1014,19 +1012,10 @@ function drawMouth(
 
 // ─── Data-Driven Renderer ───────────────────────────────────────────
 
-import type { DrawSpec, DrawLayer, ColorRef } from "../themes/PackageTypes";
-
-type Palette = (typeof AGENT_COLORS)[string];
-
-function resolveColor(ref: ColorRef | undefined, palette: Palette, fallback: string): string {
-  if (!ref) return fallback;
-  if (ref in palette) return palette[ref as keyof Palette];
-  return ref;
-}
+import type { DrawSpec, DrawLayer } from "../themes/PackageTypes";
 
 function drawFromSpec(
   ctx: CanvasRenderingContext2D,
-  c: Palette,
   bob: number,
   legPhase: number,
   squish: number,
@@ -1044,7 +1033,7 @@ function drawFromSpec(
   }
 
   for (const layer of spec.layers) {
-    drawLayer(ctx, c, bob, headY, legPhase, squish, isMoving, t, layer);
+    drawLayer(ctx, bob, headY, legPhase, squish, isMoving, t, layer);
   }
 
   if (waddle) {
@@ -1054,7 +1043,6 @@ function drawFromSpec(
 
 function drawLayer(
   ctx: CanvasRenderingContext2D,
-  c: Palette,
   bob: number,
   headY: number,
   legPhase: number,
@@ -1067,12 +1055,10 @@ function drawLayer(
     case "legs": {
       const spread = layer.spread ?? 5;
       const len = layer.length ?? 8;
-      const color = resolveColor(layer.color, c, c.accent);
       if (layer.footStyle === "flat") {
-        // Penguin-style flat feet
         const lOff = isMoving ? Math.sin(legPhase) * 3 : 0;
         const rOff = isMoving ? Math.sin(legPhase + Math.PI) * 3 : 0;
-        ctx.fillStyle = color;
+        ctx.fillStyle = layer.color;
         ctx.beginPath();
         ctx.ellipse(-spread, AGENT_SIZE / 2 - 4 + bob + lOff, layer.footRx ?? 5, 2.5, 0, 0, Math.PI * 2);
         ctx.fill();
@@ -1080,30 +1066,26 @@ function drawLayer(
         ctx.ellipse(spread, AGENT_SIZE / 2 - 4 + bob + rOff, layer.footRx ?? 5, 2.5, 0, 0, Math.PI * 2);
         ctx.fill();
       } else {
-        drawLegs(ctx, color, bob, legPhase, isMoving, spread, len);
+        drawLegs(ctx, layer.color, bob, legPhase, isMoving, spread, len);
       }
       break;
     }
 
     case "body": {
-      const rx = layer.rx ?? 10;
-      const ry = layer.ry ?? 10;
-      ctx.fillStyle = resolveColor(layer.color, c, c.body);
+      ctx.fillStyle = layer.color;
       ctx.save();
       ctx.scale(squish, 2 - squish);
       ctx.beginPath();
-      ctx.ellipse(0, (2 + bob) / (2 - squish), rx, ry, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, (2 + bob) / (2 - squish), layer.rx ?? 10, layer.ry ?? 10, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
       break;
     }
 
     case "head": {
-      const rx = layer.rx ?? 10;
-      const ry = layer.ry ?? 10;
-      ctx.fillStyle = resolveColor(layer.color, c, c.head);
+      ctx.fillStyle = layer.color;
       ctx.beginPath();
-      ctx.ellipse(0, headY, rx, ry, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, headY, layer.rx ?? 10, layer.ry ?? 10, 0, 0, Math.PI * 2);
       ctx.fill();
       break;
     }
@@ -1111,9 +1093,7 @@ function drawLayer(
     case "ears": {
       if (layer.style === "pointed") {
         const sz = layer.size ?? 11;
-        const innerColor = layer.innerColor ?? "#FFAB91";
-        // Outer ears
-        ctx.fillStyle = c.head;
+        ctx.fillStyle = layer.color;
         ctx.beginPath();
         ctx.moveTo(-sz + 1, headY - 5);
         ctx.lineTo(-sz + 4, headY - 16);
@@ -1124,8 +1104,7 @@ function drawLayer(
         ctx.lineTo(sz - 4, headY - 16);
         ctx.lineTo(sz - 1, headY - 5);
         ctx.fill();
-        // Inner ears
-        ctx.fillStyle = innerColor;
+        ctx.fillStyle = layer.innerColor ?? "#FFAB91";
         ctx.beginPath();
         ctx.moveTo(-sz + 3, headY - 6);
         ctx.lineTo(-sz + 4.5, headY - 13);
@@ -1137,17 +1116,15 @@ function drawLayer(
         ctx.lineTo(sz - 3, headY - 6);
         ctx.fill();
       } else {
-        // Round ears
         const sz = layer.size ?? 4;
-        const innerColor = layer.innerColor ?? "#FFAB91";
-        ctx.fillStyle = c.body;
+        ctx.fillStyle = layer.color;
         ctx.beginPath();
         ctx.arc(-7, headY - 8, sz, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
         ctx.arc(7, headY - 8, sz, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = innerColor;
+        ctx.fillStyle = layer.innerColor ?? "#FFAB91";
         ctx.beginPath();
         ctx.arc(-7, headY - 8, sz / 2, 0, Math.PI * 2);
         ctx.fill();
@@ -1162,31 +1139,30 @@ function drawLayer(
       if (layer.style === "custom") {
         const sz = layer.size ?? 2.5;
         const spacing = layer.spacing ?? 4;
-        const pupilColor = resolveColor(layer.pupilColor, c, c.accent);
-        // Eye whites
-        ctx.fillStyle = c.eyes;
+        ctx.fillStyle = layer.color;
         ctx.beginPath();
         ctx.ellipse(-spacing, headY - 2, sz, sz + 0.3, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
         ctx.ellipse(spacing, headY - 2, sz, sz + 0.3, 0, 0, Math.PI * 2);
         ctx.fill();
-        // Pupils
-        ctx.fillStyle = pupilColor;
-        ctx.beginPath();
-        ctx.arc(-spacing, headY - 1.5, sz * 0.48, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(spacing, headY - 1.5, sz * 0.48, 0, Math.PI * 2);
-        ctx.fill();
+        if (layer.pupilColor) {
+          ctx.fillStyle = layer.pupilColor;
+          ctx.beginPath();
+          ctx.arc(-spacing, headY - 1.5, sz * 0.48, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(spacing, headY - 1.5, sz * 0.48, 0, Math.PI * 2);
+          ctx.fill();
+        }
       } else {
-        drawEyes(ctx, c.eyes, 0, headY - 2, layer.size ?? 2.5, t);
+        drawEyes(ctx, layer.color, 0, headY - 2, layer.size ?? 2.5, t);
       }
       break;
     }
 
     case "cheeks":
-      drawCheeks(ctx, c.cheek, 0, headY + 1);
+      drawCheeks(ctx, layer.color, 0, headY + 1);
       break;
 
     case "mouth": {
@@ -1196,30 +1172,24 @@ function drawLayer(
     }
 
     case "tail": {
-      const swaySpeed = layer.swaySpeed ?? 200;
-      const swayAmt = layer.swayAmount ?? 6;
-      const color = resolveColor(layer.color, c, c.accent);
-      const sway = Math.sin(t / swaySpeed) * swayAmt;
-
+      const sway = Math.sin(t / (layer.swaySpeed ?? 200)) * (layer.swayAmount ?? 6);
       if (layer.tailStyle === "fluffy") {
-        // Squirrel-style fluffy tail
-        ctx.fillStyle = resolveColor(layer.color, c, c.body);
+        ctx.fillStyle = layer.color;
         ctx.beginPath();
         ctx.moveTo(8, 6 + bob);
         ctx.bezierCurveTo(16, 0 + bob + sway, 22, -10 + bob - sway, 18, -20 + bob);
         ctx.bezierCurveTo(14, -22 + bob + sway, 10, -16 + bob, 12, -8 + bob - sway);
         ctx.bezierCurveTo(10, -2 + bob + sway, 10, 4 + bob, 8, 6 + bob);
         ctx.fill();
-        if (layer.highlight) {
-          ctx.fillStyle = c.head;
+        if (layer.highlightColor) {
+          ctx.fillStyle = layer.highlightColor;
           ctx.beginPath();
           ctx.bezierCurveTo(14, -2 + bob + sway, 18, -12 + bob - sway, 16, -18 + bob);
           ctx.bezierCurveTo(14, -16 + bob, 12, -8 + bob, 10, -2 + bob);
           ctx.fill();
         }
       } else {
-        // Cat-style thin tail
-        ctx.fillStyle = color;
+        ctx.fillStyle = layer.color;
         ctx.beginPath();
         ctx.moveTo(10, 4 + bob);
         ctx.bezierCurveTo(18, -2 + bob + sway, 20, -14 + bob - sway, 14, -18 + bob + sway);
@@ -1231,10 +1201,9 @@ function drawLayer(
 
     case "wings": {
       const speed = layer.speed ?? (layer.wingStyle === "flap" ? 200 : 250);
+      ctx.fillStyle = layer.color;
       if (layer.wingStyle === "flutter") {
-        // Copilot-style cape flutter
         const flutter = Math.sin(t / speed) * 3;
-        ctx.fillStyle = layer.color ?? `rgba(${parseInt(c.body.slice(1, 3), 16)}, ${parseInt(c.body.slice(3, 5), 16)}, ${parseInt(c.body.slice(5, 7), 16)}, 0.35)`;
         ctx.beginPath();
         ctx.moveTo(-9, -2 + bob);
         ctx.bezierCurveTo(-16, 4 + bob + flutter, -14, 14 + bob - flutter, -8, 12 + bob);
@@ -1246,9 +1215,7 @@ function drawLayer(
         ctx.lineTo(7, 4 + bob);
         ctx.fill();
       } else {
-        // Penguin-style flap
         const flapAngle = isMoving ? Math.sin(t / speed) * 0.3 : 0.1;
-        ctx.fillStyle = resolveColor(layer.color, c, c.body);
         ctx.save();
         ctx.translate(-11, -2 + bob);
         ctx.rotate(-flapAngle - 0.3);
@@ -1268,54 +1235,47 @@ function drawLayer(
     }
 
     case "glow": {
-      const pulseSpeed = layer.pulseSpeed ?? 600;
-      const baseAlpha = layer.baseAlpha ?? 0.08;
-      const alphaVar = layer.alphaVar ?? 0.04;
-      const radius = layer.radius ?? 16;
-      const alpha = baseAlpha + Math.sin(t / pulseSpeed) * alphaVar;
-      // Parse the base color and apply dynamic alpha
+      const alpha = (layer.baseAlpha ?? 0.08) + Math.sin(t / (layer.pulseSpeed ?? 600)) * (layer.alphaVar ?? 0.04);
       ctx.fillStyle = layer.color.replace(/[\d.]+\)$/, `${alpha})`);
       ctx.beginPath();
-      ctx.ellipse(0, 2 + bob, radius, radius, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 2 + bob, layer.radius ?? 16, layer.radius ?? 16, 0, 0, Math.PI * 2);
       ctx.fill();
       break;
     }
 
     case "sparkles": {
+      const color = layer.color;
+      const toRgba = (c: string, a: number) =>
+        c.startsWith("rgba") ? c : `rgba(${parseInt(c.slice(1, 3), 16)}, ${parseInt(c.slice(3, 5), 16)}, ${parseInt(c.slice(5, 7), 16)}, ${a})`;
+
       if (layer.sparkleStyle === "star") {
-        // Single pulsing star on top of head (copilot-style)
         const speed = layer.speed ?? 400;
         const sparkleAlpha = 0.3 + Math.sin(t / speed) * 0.5;
         const sparkleSize = 2 + Math.sin(t / (speed * 0.75)) * 1;
-        const color = resolveColor(layer.color, c, c.accent);
-        ctx.fillStyle = color.startsWith("rgba") ? color : `rgba(${parseInt(color.slice(1, 3), 16)}, ${parseInt(color.slice(3, 5), 16)}, ${parseInt(color.slice(5, 7), 16)}, ${sparkleAlpha})`;
+        ctx.fillStyle = toRgba(color, sparkleAlpha);
         drawStar(ctx, 0, headY - 14, sparkleSize, 4);
       } else if (layer.sparkleStyle === "orbit") {
-        // Orbiting dots (claude-style)
         const count = layer.count ?? 3;
         const speed = layer.speed ?? 800;
-        const color = resolveColor(layer.color, c, c.cheek);
         for (let i = 0; i < count; i++) {
           const angle = (t / speed) + (i * Math.PI * 2) / count;
           const radius = 13 + Math.sin(t / (speed / 2) + i) * 2;
           const sx = Math.cos(angle) * radius;
           const sy = headY - 4 + Math.sin(angle) * 5;
           const alpha = 0.3 + Math.sin(t / (speed * 0.375) + i * 2) * 0.3;
-          ctx.fillStyle = color.startsWith("rgba") ? color : `rgba(${parseInt(color.slice(1, 3), 16)}, ${parseInt(color.slice(3, 5), 16)}, ${parseInt(color.slice(5, 7), 16)}, ${alpha})`;
+          ctx.fillStyle = toRgba(color, alpha);
           ctx.beginPath();
           ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
           ctx.fill();
         }
       } else {
-        // Floating sparkles (ghost-style)
         const count = layer.count ?? 2;
         const speed = layer.speed ?? 600;
-        const color = resolveColor(layer.color, c, c.cheek);
         for (let i = 0; i < count; i++) {
           const sx = Math.sin(t / speed + i * 3) * 16;
           const sy = -14 + Math.cos(t / (speed * 1.33) + i * 2) * 6 + bob;
           const sa = 0.2 + Math.sin(t / (speed * 0.67) + i * 5) * 0.3;
-          ctx.fillStyle = color.startsWith("rgba") ? color : `rgba(${parseInt(color.slice(1, 3), 16)}, ${parseInt(color.slice(3, 5), 16)}, ${parseInt(color.slice(5, 7), 16)}, ${sa})`;
+          ctx.fillStyle = toRgba(color, sa);
           drawStar(ctx, sx, sy, 2, 4);
         }
       }
@@ -1323,13 +1283,11 @@ function drawLayer(
     }
 
     case "patch": {
-      const color = layer.color ?? "#ECEFF1";
-      ctx.fillStyle = color;
+      ctx.fillStyle = layer.color ?? "#ECEFF1";
       ctx.beginPath();
       if (layer.position === "belly") {
         ctx.ellipse(0, 4 + bob, layer.rx ?? 5, layer.ry ?? 5, 0, 0, Math.PI * 2);
       } else {
-        // Face patch
         ctx.ellipse(0, headY + 1, layer.rx ?? 7, layer.ry ?? 6, 0, 0, Math.PI * 2);
       }
       ctx.fill();
@@ -1337,12 +1295,10 @@ function drawLayer(
     }
 
     case "visor": {
-      const bandColor = resolveColor(layer.bandColor, c, c.accent);
-      ctx.fillStyle = bandColor;
+      ctx.fillStyle = layer.bandColor;
       ctx.beginPath();
       ctx.roundRect(-10, headY - 4, 20, 6, 3);
       ctx.fill();
-      // Glow gradient
       const colors = layer.glowColors ?? ["#58A6FF", "#79C0FF", "#58A6FF"];
       const visorGrad = ctx.createLinearGradient(-8, headY - 3, 8, headY + 1);
       visorGrad.addColorStop(0, colors[0]);
@@ -1352,7 +1308,6 @@ function drawLayer(
       ctx.beginPath();
       ctx.roundRect(-8, headY - 3, 16, 4, 2);
       ctx.fill();
-      // Scan line
       if (layer.scan !== false) {
         const scanX = ((t / 15) % 24) - 12;
         ctx.fillStyle = "rgba(255,255,255,0.4)";
@@ -1381,7 +1336,7 @@ function drawLayer(
     }
 
     case "beak": {
-      ctx.fillStyle = resolveColor(layer.color, c, c.accent);
+      ctx.fillStyle = layer.color;
       ctx.beginPath();
       ctx.moveTo(-2, headY + 2);
       ctx.lineTo(0, headY + 6);
@@ -1409,7 +1364,6 @@ function drawLayer(
         ctx.fill();
       } else if (layer.accessoryKind === "idle-prop") {
         if (layer.idleOnly !== false && isMoving) break;
-        // Acorn (squirrel idle prop)
         ctx.fillStyle = layer.color ?? "#795548";
         ctx.beginPath();
         ctx.ellipse(6, 6 + bob, 3, 4, 0.2, 0, Math.PI * 2);
@@ -1423,17 +1377,16 @@ function drawLayer(
     }
 
     case "ghostBody": {
-      const waves = layer.waves ?? 5;
-      const waveHeight = layer.waveHeight ?? 6;
-      const yBase = bob; // float bob already applied
-
-      ctx.fillStyle = c.body;
+      const yBase = bob;
+      ctx.fillStyle = layer.color;
       ctx.beginPath();
       ctx.moveTo(-12, 6 + yBase);
       ctx.lineTo(-12, -4 + yBase);
       ctx.quadraticCurveTo(-12, -16 + yBase, 0, -16 + yBase);
       ctx.quadraticCurveTo(12, -16 + yBase, 12, -4 + yBase);
       ctx.lineTo(12, 6 + yBase);
+      const waves = layer.waves ?? 5;
+      const waveHeight = layer.waveHeight ?? 6;
       for (let i = 0; i < waves; i++) {
         const wx = 12 - (i * 24) / waves;
         const wy = 6 + yBase + (i % 2 === 0 ? waveHeight : 0) + Math.sin(t / 300 + i) * 2;
@@ -1442,8 +1395,6 @@ function drawLayer(
       }
       ctx.closePath();
       ctx.fill();
-
-      // Inner shimmer
       if (layer.shimmer !== false) {
         ctx.fillStyle = "rgba(255,255,255,0.15)";
         ctx.beginPath();
