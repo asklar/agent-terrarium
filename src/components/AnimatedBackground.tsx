@@ -55,6 +55,10 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
 
     // Initialize weather data for dynamic sky
     if (isDynamic) {
+      // Snap to current sky state immediately (no slow lerp from default)
+      const initialTarget = computeTargetSky(Date.now(), getCachedWeather(), debugTime ?? null, debugWeather ?? null);
+      skyStateRef.current = initialTarget;
+
       fetchLocation().then((loc) => {
         if (loc) fetchWeather(loc).catch(() => {});
       }).catch(() => {});
@@ -104,8 +108,8 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
       if (isDynamic) {
         const weather = getCachedWeather();
         const target = computeTargetSky(Date.now(), weather, debugTime ?? null, debugWeather ?? null);
-        // Lerp speed: normal transitions ~0.02/frame, debug ~0.08/frame
-        const lerpSpeed = (debugTime != null || debugWeather != null) ? 0.08 : 0.02;
+        // Debug: fast transition (~0.5s), normal: gradual (~3s)
+        const lerpSpeed = (debugTime != null || debugWeather != null) ? 0.25 : 0.02;
         skyStateRef.current = lerpSkyState(skyStateRef.current, target, lerpSpeed);
         skyColors = skyStateRef.current.skyColors;
       }
