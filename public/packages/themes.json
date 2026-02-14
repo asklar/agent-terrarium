@@ -82,7 +82,7 @@
     },
     {
       "id": "forest_dawn",
-      "name": "Forest at Dawn",
+      "name": "Forest",
       "icon": "🌅",
       "sky": ["#1A0A2E", "#4A1942", "#B85C38", "#F0A500", "#FFF3CD"],
       "ground": "#2E4A1E",
