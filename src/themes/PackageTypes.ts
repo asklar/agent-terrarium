@@ -62,10 +62,19 @@ export interface ThemeDefinition {
 
   /**
    * Ordered list of decorators to draw.
-   * Each is a built-in draw function name.
+   * Each name refers to a built-in draw function OR a custom decorator
+   * defined in the `customDecorators` array below.
    * Unknown names are silently skipped.
    */
   decorators: string[];
+
+  /**
+   * Custom SVG-path-based decorators defined inline in the theme.
+   * Each entry maps a decorator name to a list of SVG path elements,
+   * so external package authors can create rich visuals without
+   * modifying app code.
+   */
+  customDecorators?: CustomDecoratorDef[];
 
   /** Optional lofi 8-bit music configuration */
   music?: ThemeMusic;
@@ -95,6 +104,44 @@ export interface ThemeMusic {
 }
 
 export type ParticleType = "leaf" | "star" | "sand" | "bubble";
+
+// ─── Custom Decorators (SVG-path based) ─────────────────────────────
+
+/**
+ * A custom decorator defined entirely in JSON using SVG path data.
+ * This allows external package authors to create rich theme visuals
+ * (landmarks, structures, scenery) without modifying app code.
+ */
+export interface CustomDecoratorDef {
+  /** Name referenced in the theme's `decorators` array */
+  name: string;
+  /** Ordered list of SVG path elements drawn back-to-front */
+  elements: SvgElement[];
+}
+
+/**
+ * A single SVG path element positioned on the canvas.
+ * Coordinates in the `d` attribute define the shape in local space;
+ * `x`/`y` position the shape's origin on the canvas.
+ */
+export interface SvgElement {
+  /** SVG path data string (the `d` attribute) */
+  d: string;
+  /** Fill color (CSS color string, or "none" to skip fill) */
+  fill?: string;
+  /** Stroke color */
+  stroke?: string;
+  /** Stroke width in px (default: 1) */
+  strokeWidth?: number;
+  /** X position as a fraction of canvas width (0 = left, 1 = right) */
+  x: number;
+  /** Y position as a fraction from top of canvas to ground line (0 = top, 1 = ground) */
+  y: number;
+  /** Uniform scale factor applied to the path (default: 1) */
+  scale?: number;
+  /** Opacity 0–1 (default: 1) */
+  opacity?: number;
+}
 
 // ─── Agent Avatar ───────────────────────────────────────────────────
 

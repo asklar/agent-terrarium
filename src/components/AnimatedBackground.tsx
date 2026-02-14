@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import { registry } from "../themes";
-import type { ThemeDefinition, ParticleType } from "../themes";
+import type { ThemeDefinition, ParticleType, CustomDecoratorDef } from "../themes";
 import { fetchLocation, fetchWeather, getCachedWeather, getLocation } from "../weather/weatherService";
 import { computeTargetSky, lerpSkyState } from "../weather/skyCalculator";
 import { DEFAULT_SKY } from "../weather/types";
@@ -261,7 +261,8 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
         for (const dec of t.decorators) {
           if (dec === "clouds" || dec === "stars" || dec === "moon" || dec === "shooting_stars") continue;
           const fn = DECORATORS[dec];
-          if (fn) fn(ctx, w, h, groundY, time, dt, t, shootingStarsRef);
+          if (fn) { fn(ctx, w, h, groundY, time, dt, t, shootingStarsRef); }
+          else { const cd = findCustomDecorator(t, dec); if (cd) drawCustomDecorator(ctx, w, groundY, cd); }
         }
         // Draw clouds with dynamic opacity and color based on weather
         const sky = skyStateRef.current;
@@ -324,7 +325,8 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
       } else {
         for (const dec of t.decorators) {
           const fn = DECORATORS[dec];
-          if (fn) fn(ctx, w, h, groundY, time, dt, t, shootingStarsRef);
+          if (fn) { fn(ctx, w, h, groundY, time, dt, t, shootingStarsRef); }
+          else { const cd = findCustomDecorator(t, dec); if (cd) drawCustomDecorator(ctx, w, groundY, cd); }
         }
       }
 
@@ -722,6 +724,42 @@ function drawGalaxy(
   }
 
   ctx.restore();
+}
+
+// --- Custom SVG-path decorator rendering ---
+
+function drawCustomDecorator(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  groundY: number,
+  def: CustomDecoratorDef,
+) {
+  for (const el of def.elements) {
+    ctx.save();
+    const px = el.x * w;
+    const py = el.y * groundY;
+    ctx.translate(px, py);
+    const s = el.scale ?? 1;
+    ctx.scale(s, s);
+    if (el.opacity !== undefined && el.opacity < 1) ctx.globalAlpha = el.opacity;
+
+    const path = new Path2D(el.d);
+    if (el.fill && el.fill !== "none") {
+      ctx.fillStyle = el.fill;
+      ctx.fill(path);
+    }
+    if (el.stroke) {
+      ctx.strokeStyle = el.stroke;
+      ctx.lineWidth = (el.strokeWidth ?? 1) / s;
+      ctx.stroke(path);
+    }
+    ctx.restore();
+  }
+}
+
+/** Look up a custom decorator by name from the theme's customDecorators array */
+function findCustomDecorator(theme: ThemeDefinition, name: string): CustomDecoratorDef | undefined {
+  return theme.customDecorators?.find(cd => cd.name === name);
 }
 
 const DECORATORS: Record<string, DecoratorFn> = {

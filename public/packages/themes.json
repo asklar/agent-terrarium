@@ -118,6 +118,138 @@
         "volume": 0.1,
         "chords": [[0, 3, 7], [8, 11, 15], [5, 8, 12], [0, 3, 7]]
       }
+    },
+    {
+      "id": "seattle",
+      "name": "Seattle",
+      "icon": "🌧️",
+      "sky": ["#546E7A", "#78909C", "#90A4AE", "#B0BEC5"],
+      "ground": "#5D6B5E",
+      "groundAccent": "#4A564A",
+      "groundWave": 2,
+      "grass": { "color": "#6B8C5A", "accent": "#5A7A4A" },
+      "particles": { "type": "leaf", "color": "#90A4AE", "count": 10 },
+      "decorators": ["clouds", "mt_rainier", "space_needle", "fremont_troll", "mist", "grass"],
+      "customDecorators": [
+        {
+          "name": "mt_rainier",
+          "elements": [
+            {
+              "d": "M 0 0 L -140 90 L -120 90 L -80 50 L -55 65 L -20 40 L 20 55 L 55 40 L 80 60 L 120 90 L 140 90 Z",
+              "fill": "#5C6B7A",
+              "x": 0.72,
+              "y": 0.35,
+              "scale": 1.4,
+              "opacity": 0.7
+            },
+            {
+              "d": "M 0 0 L -35 24 L -22 16 L -8 26 L 8 14 L 22 25 L 35 18 Z",
+              "fill": "#E8EAF0",
+              "x": 0.72,
+              "y": 0.35,
+              "scale": 1.4,
+              "opacity": 0.8
+            },
+            {
+              "d": "M 0 0 L -80 55 L -60 55 L -35 30 L -10 45 L 60 55 L 80 55 Z",
+              "fill": "#4A5968",
+              "x": 0.62,
+              "y": 0.52,
+              "scale": 1.2,
+              "opacity": 0.5
+            }
+          ]
+        },
+        {
+          "name": "space_needle",
+          "elements": [
+            {
+              "d": "M -1 -45 L 1 -45 L 1 -10 L -1 -10 Z",
+              "fill": "#B0BEC5",
+              "x": 0.3,
+              "y": 0.58,
+              "scale": 1.5
+            },
+            {
+              "d": "M -28 -10 Q 0 -18 28 -10 L 22 -4 L -22 -4 Z",
+              "fill": "#CFD8DC",
+              "x": 0.3,
+              "y": 0.58,
+              "scale": 1.5
+            },
+            {
+              "d": "M -30 -4 L 30 -4 L 24 3 L -24 3 Z",
+              "fill": "#90A4AE",
+              "x": 0.3,
+              "y": 0.58,
+              "scale": 1.5
+            },
+            {
+              "d": "M -3 3 L 3 3 L 4 55 L -4 55 Z",
+              "fill": "#B0BEC5",
+              "x": 0.3,
+              "y": 0.58,
+              "scale": 1.5
+            },
+            {
+              "d": "M -4 48 L -18 65 L -14 65 L 0 52 L 14 65 L 18 65 L 4 48 Z",
+              "fill": "#90A4AE",
+              "x": 0.3,
+              "y": 0.58,
+              "scale": 1.5
+            }
+          ]
+        },
+        {
+          "name": "fremont_troll",
+          "elements": [
+            {
+              "d": "M -22 0 Q -28 -20 -20 -38 Q -12 -50 0 -50 Q 12 -50 20 -38 Q 28 -20 22 0 Z",
+              "fill": "#6D7B6D",
+              "x": 0.85,
+              "y": 0.98,
+              "scale": 0.7
+            },
+            {
+              "d": "M -18 -42 L -22 -56 L -12 -48 L -6 -58 L 0 -46 L 6 -56 L 12 -48 L 18 -55 L 15 -40 Z",
+              "fill": "#5A685A",
+              "x": 0.85,
+              "y": 0.98,
+              "scale": 0.7
+            },
+            {
+              "d": "M 0 -32 Q 0 -38 6 -38 Q 12 -38 12 -32 Q 12 -26 6 -26 Q 0 -26 0 -32 Z",
+              "fill": "#C8E6C9",
+              "x": 0.85,
+              "y": 0.98,
+              "scale": 0.7
+            },
+            {
+              "d": "M -22 -18 L -38 -24 L -36 -18 L -22 -12 Z",
+              "fill": "#5F6E5F",
+              "x": 0.85,
+              "y": 0.98,
+              "scale": 0.7
+            },
+            {
+              "d": "M 22 -18 L 38 -24 L 36 -18 L 22 -12 Z",
+              "fill": "#5F6E5F",
+              "x": 0.85,
+              "y": 0.98,
+              "scale": 0.7
+            }
+          ]
+        }
+      ],
+      "music": {
+        "bpm": 70,
+        "key": 58,
+        "scale": [0, 2, 3, 5, 7, 8, 10],
+        "wave": "sine",
+        "bassWave": "triangle",
+        "volume": 0.1,
+        "chords": [[0, 3, 7], [5, 8, 12], [3, 7, 10], [0, 3, 7]]
+      }
     }
   ]
 }
