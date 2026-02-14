@@ -354,18 +354,38 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
           ctx.restore();
         } else if (sky.weatherOverlay === "fog") {
           ctx.save();
-          ctx.globalAlpha = sky.weatherIntensity * 0.4;
-          for (let i = 0; i < 5; i++) {
-            const drift = Math.sin(time * 0.0002 + i * 1.5) * 50;
-            const fy = groundY - 20 + i * 12;
-            ctx.fillStyle = "rgba(220, 220, 230, 0.5)";
-            ctx.beginPath();
-            ctx.ellipse(w * 0.3 + drift + i * 50, fy, 150 + i * 30, 15, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.ellipse(w * 0.7 - drift + i * 30, fy + 8, 120 + i * 25, 12, 0, 0, Math.PI * 2);
-            ctx.fill();
+          // Full-screen fog wash
+          ctx.globalAlpha = sky.weatherIntensity * 0.25;
+          ctx.fillStyle = "rgba(200, 205, 215, 1)";
+          ctx.fillRect(0, 0, w, h);
+
+          // Layered drifting fog banks using radial gradients
+          for (let i = 0; i < 8; i++) {
+            const drift = Math.sin(time * 0.00015 * (1 + i * 0.3) + i * 2.1) * w * 0.15;
+            const vertDrift = Math.cos(time * 0.0001 + i * 1.7) * 15;
+            const cx = (i * w * 0.18) + drift;
+            const cy = groundY - 40 + (i % 3) * 25 + vertDrift;
+            const rx = 120 + (i % 4) * 40;
+            const ry = 50 + (i % 3) * 20;
+
+            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, rx);
+            grad.addColorStop(0, `rgba(210, 215, 225, ${0.3 * sky.weatherIntensity})`);
+            grad.addColorStop(0.5, `rgba(210, 215, 225, ${0.15 * sky.weatherIntensity})`);
+            grad.addColorStop(1, "rgba(210, 215, 225, 0)");
+
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = grad;
+            ctx.fillRect(cx - rx, cy - ry, rx * 2, ry * 2);
           }
+
+          // Upper atmosphere haze
+          const hazeGrad = ctx.createLinearGradient(0, 0, 0, h * 0.6);
+          hazeGrad.addColorStop(0, `rgba(200, 205, 215, ${0.15 * sky.weatherIntensity})`);
+          hazeGrad.addColorStop(1, "rgba(200, 205, 215, 0)");
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = hazeGrad;
+          ctx.fillRect(0, 0, w, h * 0.6);
+
           ctx.restore();
         } else {
           // Clear weather: drain weather particles
