@@ -33,7 +33,7 @@ interface ContextMenuProps {
   onConfigureAgent: (agent: Agent) => void;
 }
 
-type SubMenu = null | "theme" | "add" | "remove" | "gear" | "gear-agent" | "gear-slot" | "attention" | "backend" | "backend-agent";
+type SubMenu = null | "theme" | "add" | "remove" | "gear" | "gear-agent" | "gear-slot" | "attention" | "backend" | "backend-agent" | "configure";
 
 export function ContextMenu({
   x,
@@ -259,6 +259,27 @@ export function ContextMenu({
             🔔 Request Attention
             <span className="context-menu-arrow">▸</span>
           </button>
+          <div className="context-menu-divider" />
+          {agents.length > 0 && (
+            <>
+              {agents.length === 1 ? (
+                <button
+                  className="context-menu-item"
+                  onClick={guardedClick(() => handleConfigureAgent(agents[0].id))}
+                >
+                  ⚙️ Configure {agents[0].name}
+                </button>
+              ) : (
+                <button
+                  className="context-menu-item"
+                  onClick={guardedClick(() => setSubMenu("configure"))}
+                >
+                  ⚙️ Configure Agent
+                  <span className="context-menu-arrow">▸</span>
+                </button>
+              )}
+            </>
+          )}
         </>
       )}
 
@@ -451,6 +472,26 @@ export function ContextMenu({
               </button>
             ))
           )}
+        </>
+      )}
+      {subMenu === "configure" && (
+        <>
+          <button
+            className="context-menu-item context-menu-back"
+            onClick={() => setSubMenu(null)}
+          >
+            ◂ Back
+          </button>
+          <div className="context-menu-divider" />
+          {agents.map((a) => (
+            <button
+              key={a.id}
+              className="context-menu-item"
+              onClick={() => handleConfigureAgent(a.id)}
+            >
+              {registry.getAgent(a.avatar)?.icon ?? "❓"} {a.name}
+            </button>
+          ))}
         </>
       )}
       {subMenu === "backend" && (
