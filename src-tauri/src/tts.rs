@@ -4,6 +4,7 @@ use std::sync::OnceLock;
 struct SpeakRequest {
     text: String,
     voice_index: u32,
+    rate: i32,
     result_tx: mpsc::Sender<Result<Vec<u8>, String>>,
 }
 
@@ -37,7 +38,7 @@ fn get_sender() -> &'static mpsc::Sender<SpeakRequest> {
 
                 while let Ok(req) = rx.recv() {
                     let result =
-                        render_wav(&voice, &req.text, req.voice_index, &voices, voice_count);
+                        render_wav(&voice, &req.text, req.voice_index, &voices, voice_count, req.rate);
                     let _ = req.result_tx.send(result);
                 }
 
@@ -108,6 +109,7 @@ unsafe fn render_wav(
     voice_index: u32,
     voices: &[windows::Win32::Media::Speech::ISpObjectToken],
     voice_count: u32,
+    rate: i32,
 ) -> Result<Vec<u8>, String> {
     use windows::core::PCWSTR;
     use windows::Win32::Media::Speech::*;
@@ -119,6 +121,12 @@ unsafe fn render_wav(
         if let Err(e) = voice.SetVoice(&voices[idx as usize]) {
             log::warn!("SetVoice({}) failed: {}", idx, e);
         }
+    }
+
+    // Set SAPI speech rate (affects cadence/timing of generated speech)
+    let rate = rate.clamp(-10, 10);
+    if let Err(e) = voice.SetRate(rate) {
+        log::warn!("SetRate({}) failed: {}", rate, e);
     }
 
     // Create memory-backed IStream
@@ -242,12 +250,13 @@ unsafe fn wideptr_to_string(ptr: *mut u16) -> String {
 
 /// Render text to a pitch-shiftable WAV buffer via SAPI.
 /// Returns WAV bytes that the frontend can play with AudioBufferSourceNode.playbackRate.
-pub fn speak_to_wav(text: String, voice_index: u32) -> Result<Vec<u8>, String> {
+pub fn speak_to_wav(text: String, voice_index: u32, rate: i32) -> Result<Vec<u8>, String> {
     let (result_tx, result_rx) = mpsc::channel();
     let tx = get_sender();
     tx.send(SpeakRequest {
         text,
         voice_index,
+        rate,
         result_tx,
     })
     .map_err(|e| e.to_string())?;

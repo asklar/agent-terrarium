@@ -31,8 +31,8 @@ fn push_bubble(world: tauri::State<'_, Arc<World>>, agent_id: String, content: S
 }
 
 #[tauri::command]
-async fn speak_sapi(text: String, voice_index: u32) -> Result<Vec<u8>, String> {
-    std::thread::spawn(move || tts::speak_to_wav(text, voice_index))
+async fn speak_sapi(text: String, voice_index: u32, rate: i32) -> Result<Vec<u8>, String> {
+    std::thread::spawn(move || tts::speak_to_wav(text, voice_index, rate))
         .join()
         .map_err(|_| "TTS thread panicked".to_string())?
 }

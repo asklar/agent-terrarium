@@ -19,10 +19,15 @@ function getAudioCtx(): AudioContext {
 export async function speakText(text: string, avatarId: string) {
   const avatarDef = registry.getAgent(avatarId);
   const basePitch = avatarDef?.voice?.basePitch ?? 500;
+  // Normalized 0-1 position in the pitch spectrum
+  const t = Math.max(0, Math.min(1, (basePitch - 200) / 800));
 
-  // Map basePitch (200-1000 Hz) → playbackRate (1.2 to 2.2)
-  // Higher basePitch = faster playback = higher pitch (chipmunk effect)
-  const playbackRate = 1.2 + ((basePitch - 200) / 800) * 1.0;
+  // SAPI rate: controls speech cadence (-3 slow → +4 fast)
+  // Low basePitch agents speak deliberately, high ones chatter quickly
+  const sapiRate = Math.round(-3 + t * 7);
+
+  // Playback rate: real pitch shifting (0.85 deep → 2.0 chipmunk)
+  const playbackRate = 0.85 + t * 1.15;
 
   // Derive voice index from avatar ID hash
   let hash = 0;
@@ -32,14 +37,14 @@ export async function speakText(text: string, avatarId: string) {
   const voiceIndex = Math.abs(hash);
 
   console.log(
-    `SAPI TTS: avatar=${avatarId}, basePitch=${basePitch}, playbackRate=${playbackRate.toFixed(2)}, voiceIdx=${voiceIndex}`
+    `TTS: avatar=${avatarId}, basePitch=${basePitch}, sapiRate=${sapiRate}, playbackRate=${playbackRate.toFixed(2)}`
   );
 
   try {
-    // Get WAV bytes from Rust SAPI
     const wavBytes = await invoke<number[]>("speak_sapi", {
       text,
       voiceIndex,
+      rate: sapiRate,
     });
 
     // Convert to ArrayBuffer
