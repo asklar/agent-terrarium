@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
     branches: [main]
 
@@ -45,3 +46,71 @@ jobs:
 
       - name: Build frontend
         run: pnpm run build
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: check
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Build Tauri app (generates MSI)
+        run: pnpm tauri build
+
+      - name: Create MSIX package
+        shell: pwsh
+        run: |
+          $stagingDir = "msix-staging"
+          New-Item -ItemType Directory -Path $stagingDir -Force
+
+          # Copy built executable
+          Copy-Item "src-tauri\target\release\agent-terrarium.exe" $stagingDir\
+
+          # Copy any DLLs the executable depends on
+          Get-ChildItem "src-tauri\target\release\*.dll" | Copy-Item -Destination $stagingDir\
+
+          # Copy MSIX manifest and required icon assets
+          Copy-Item "AppxManifest.xml" $stagingDir\
+          Copy-Item "src-tauri\icons\Square150x150Logo.png" $stagingDir\
+          Copy-Item "src-tauri\icons\Square44x44Logo.png" $stagingDir\
+          Copy-Item "src-tauri\icons\StoreLogo.png" $stagingDir\
+
+          # Locate makeappx.exe from the Windows SDK
+          $makeAppx = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter "makeappx.exe" |
+            Where-Object { $_.FullName -like "*\x64\*" } |
+            Sort-Object { [version]($_.Directory.Parent.Name) } -Descending |
+            Select-Object -First 1
+          Write-Host "Using: $($makeAppx.FullName)"
+
+          & $makeAppx.FullName pack /d $stagingDir /p "AgentTerrarium.msix" /nv
+          Write-Host "Created AgentTerrarium.msix"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            src-tauri/target/release/bundle/msi/*.msi
+            AgentTerrarium.msix
