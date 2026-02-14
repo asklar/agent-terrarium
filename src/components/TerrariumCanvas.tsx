@@ -534,10 +534,11 @@ function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent, isThinking?: boo
   if (isThinking) {
     const scale = 0.85 + Math.sin(t / 250) * 0.15;
     const floatY = Math.sin(t / 400) * 2;
+    const thinkX = AGENT_SIZE / 2 + 4;
     const thinkY = -AGENT_SIZE / 2 - 22 + bob + floatY;
     if (flip) ctx.scale(-1, 1);
     ctx.save();
-    ctx.translate(0, thinkY);
+    ctx.translate(thinkX, thinkY);
     ctx.scale(scale, scale);
     ctx.font = "16px serif";
     ctx.textAlign = "center";
@@ -548,7 +549,7 @@ function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent, isThinking?: boo
     for (let i = 0; i < 2; i++) {
       const dotScale = 0.3 - i * 0.1;
       const dotY = thinkY + 12 + i * 6;
-      const dotX = -4 + i * 2;
+      const dotX = thinkX - 4 + i * 2;
       ctx.fillStyle = "rgba(200, 200, 220, 0.6)";
       ctx.beginPath();
       ctx.arc(dotX, dotY, 2 * dotScale + 1, 0, Math.PI * 2);

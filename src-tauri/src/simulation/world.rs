@@ -193,6 +193,8 @@ impl World {
                         && state.agents[j].state != AgentState::Chatting
                         && state.agents[i].state != AgentState::Interacting
                         && state.agents[j].state != AgentState::Interacting
+                        && state.agents[i].state != AgentState::NeedsAttention
+                        && state.agents[j].state != AgentState::NeedsAttention
                     {
                         let chance = (state.agents[i].personality.interaction_chance
                             + state.agents[j].personality.interaction_chance)

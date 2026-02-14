@@ -28,10 +28,14 @@ export function ChatOverlay({
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const prevMsgCountRef = useRef(session.messages.length);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [session.messages]);
+    if (session.messages.length !== prevMsgCountRef.current) {
+      prevMsgCountRef.current = session.messages.length;
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [session.messages.length]);
 
   useEffect(() => {
     inputRef.current?.focus();

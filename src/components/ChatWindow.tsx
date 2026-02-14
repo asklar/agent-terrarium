@@ -46,9 +46,15 @@ export function ChatWindow({ agentId }: ChatWindowProps) {
     return () => cancelAnimationFrame(animFrame);
   }, [agentId]);
 
+  const prevMsgCountRef = useRef(0);
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [session?.messages]);
+    const count = session?.messages.length ?? 0;
+    if (count !== prevMsgCountRef.current) {
+      prevMsgCountRef.current = count;
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [session?.messages.length]);
 
   useEffect(() => {
     inputRef.current?.focus();
