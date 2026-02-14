@@ -28,9 +28,9 @@
           "name": "space_needle",
           "file": "seattle/space-needle.svg",
           "fileX": 0.3,
-          "fileY": 0.55,
-          "fileWidth": 90,
-          "fileHeight": 170
+          "fileY": 0.52,
+          "fileWidth": 70,
+          "fileHeight": 200
         },
         {
           "name": "fremont_troll",
