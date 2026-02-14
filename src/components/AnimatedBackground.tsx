@@ -40,6 +40,10 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
   const animRef = useRef<number>(0);
   const skyStateRef = useRef<SkyState>({ ...DEFAULT_SKY });
   const weatherParticlesRef = useRef<Particle[]>([]);
+  const debugTimeRef = useRef(debugTime);
+  debugTimeRef.current = debugTime;
+  const debugWeatherRef = useRef(debugWeather);
+  debugWeatherRef.current = debugWeather;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -56,7 +60,7 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
     // Initialize weather data for dynamic sky
     if (isDynamic) {
       // Snap to current sky state immediately (no slow lerp from default)
-      const initialTarget = computeTargetSky(Date.now(), getCachedWeather(), debugTime ?? null, debugWeather ?? null);
+      const initialTarget = computeTargetSky(Date.now(), getCachedWeather(), debugTimeRef.current ?? null, debugWeatherRef.current ?? null);
       skyStateRef.current = initialTarget;
 
       fetchLocation().then((loc) => {
@@ -107,9 +111,9 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
 
       if (isDynamic) {
         const weather = getCachedWeather();
-        const target = computeTargetSky(Date.now(), weather, debugTime ?? null, debugWeather ?? null);
+        const target = computeTargetSky(Date.now(), weather, debugTimeRef.current ?? null, debugWeatherRef.current ?? null);
         // Debug: fast transition (~0.5s), normal: gradual (~3s)
-        const lerpSpeed = (debugTime != null || debugWeather != null) ? 0.25 : 0.02;
+        const lerpSpeed = (debugTimeRef.current != null || debugWeatherRef.current != null) ? 0.25 : 0.02;
         skyStateRef.current = lerpSkyState(skyStateRef.current, target, lerpSpeed);
         skyColors = skyStateRef.current.skyColors;
       }
