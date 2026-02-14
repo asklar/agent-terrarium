@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { registry } from "../themes";
 import type { GearSlot } from "../themes/PackageTypes";
 import type { Agent } from "../types/world";
+import { setCredential } from "../utils/credentials";
 
 interface BackendOption {
   id: string;
@@ -11,6 +12,7 @@ interface BackendOption {
 const BACKEND_OPTIONS: BackendOption[] = [
   { id: "echo", label: "Echo (NPC)" },
   { id: "copilot", label: "GitHub Copilot" },
+  { id: "openai", label: "OpenAI" },
   { id: "claude", label: "Claude" },
   { id: "openclaw", label: "OpenClaw" },
   { id: "msagent", label: "Microsoft Agent Framework" },
@@ -184,6 +186,16 @@ export function ContextMenu({
       awareness_level: existing?.awareness_level ?? 0,
     });
   }, [selectedAgentId, agents, onSetBackend]);
+
+  const handleSetApiKey = useCallback(() => {
+    if (!selectedAgentId) return;
+    const agent = agents.find((a) => a.id === selectedAgentId);
+    const backendId = agent?.backend_config?.backend_id ?? "echo";
+    if (backendId === "echo") return;
+    const key = window.prompt(`API key for ${BACKEND_OPTIONS.find((b) => b.id === backendId)?.label ?? backendId}:`);
+    if (key === null || key === "") return;
+    setCredential(backendId, key);
+  }, [selectedAgentId, agents]);
 
   const GEAR_SLOTS: { slot: GearSlot; icon: string; label: string }[] = [
     { slot: "hat", icon: "🎩", label: "Hat" },
@@ -503,6 +515,18 @@ export function ContextMenu({
           >
             💬 Set Prompt...
           </button>
+          {(() => {
+            const agent = agents.find((a) => a.id === selectedAgentId);
+            const bid = agent?.backend_config?.backend_id ?? "echo";
+            return bid !== "echo" ? (
+              <button
+                className="context-menu-item"
+                onClick={handleSetApiKey}
+              >
+                🔑 Set API Key...
+              </button>
+            ) : null;
+          })()}
         </>
       )}
     </div>

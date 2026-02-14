@@ -5,6 +5,7 @@ use tauri_plugin_store::StoreExt;
 
 use agents::backend::{BackendConfig, BackendMessage, MessageRole};
 use agents::echo::EchoBackend;
+use agents::openai_compat;
 use agents::registry::BackendRegistry;
 use simulation::types::{AppConfig, Vec2};
 use simulation::world::World;
@@ -27,7 +28,7 @@ fn click_agent(world: tauri::State<'_, Arc<World>>, agent_id: String) -> bool {
 }
 
 #[tauri::command]
-async fn send_message(world: tauri::State<'_, Arc<World>>, agent_id: String, text: String) -> Result<String, String> {
+async fn send_message(world: tauri::State<'_, Arc<World>>, app: tauri::AppHandle, agent_id: String, text: String) -> Result<String, String> {
     // Add user message and get backend config
     let backend_config = world.add_user_message(&agent_id, &text);
 
@@ -55,6 +56,17 @@ async fn send_message(world: tauri::State<'_, Arc<World>>, agent_id: String, tex
     let backend = registry
         .get(&backend_config.backend_id)
         .unwrap_or_else(|| registry.get("echo").expect("echo backend must be registered"));
+
+    // Lazily load credential from store if backend needs one and isn't ready
+    if !backend.is_available().await {
+        if let Some(cred_key) = backend.credential_key() {
+            if let Ok(store) = app.store("credentials.json") {
+                if let Some(key) = store.get(cred_key).and_then(|v| v.as_str().map(String::from)) {
+                    backend.set_api_key(key).await;
+                }
+            }
+        }
+    }
 
     let response = backend
         .respond(&backend_config, &messages)
@@ -220,9 +232,11 @@ fn get_splash_wait(state: tauri::State<'_, SplashWait>) -> bool {
 pub fn run() {
     let splash_wait = std::env::args().any(|a| a == "--splash-wait");
 
-    // Create backend registry with echo backend
+    // Create backend registry with all backends
     let mut registry = BackendRegistry::new();
     registry.register(Arc::new(EchoBackend));
+    registry.register(Arc::new(openai_compat::create_copilot_backend()));
+    registry.register(Arc::new(openai_compat::create_openai_backend()));
     let registry = Arc::new(registry);
 
     let world = Arc::new(World::new(Vec2::new(800.0, 400.0), registry));

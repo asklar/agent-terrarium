@@ -72,4 +72,12 @@ pub trait AgentBackend: Send + Sync {
 
     /// Check if this backend is available/configured
     async fn is_available(&self) -> bool;
+
+    /// Set API key for this backend (no-op by default)
+    async fn set_api_key(&self, _key: String) {}
+
+    /// Get the credential key for loading from the store (None for backends that don't need keys)
+    fn credential_key(&self) -> Option<&str> {
+        None
+    }
 }
