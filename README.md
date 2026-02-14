@@ -3,9 +3,7 @@
 A cute, persistent desktop companion app where AI agents live in a tiny animated world on your screen. Think Stardew Valley meets desktop pets — agents wander, interact with each other, and chat with you.
 
 <p align="center">
-
-https://github.com/asklar/agent-terrarium/raw/main/Agent-terrarium-480.mp4
-
+  <img src="demo.gif" alt="Agent Terrarium Demo" width="480" />
 </p>
 
 Built with **Tauri v2** (Rust backend) + **React** (Canvas 2D frontend).
