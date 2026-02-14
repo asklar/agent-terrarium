@@ -13,7 +13,9 @@
         "wave": "sine",
         "syllables": 3,
         "speed": 0.08,
-        "volume": 0.09
+        "volume": 0.09,
+        "ttsRate": 0,
+        "ttsPitchShift": 1.1
       },
       "personality": {
         "speedMin": 20,

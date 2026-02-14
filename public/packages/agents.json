@@ -13,7 +13,9 @@
         "wave": "triangle",
         "syllables": 3,
         "speed": 0.07,
-        "volume": 0.1
+        "volume": 0.1,
+        "ttsRate": 1,
+        "ttsPitchShift": 1.6
       },
       "personality": {
         "speedMin": 30,
@@ -48,7 +50,9 @@
         "wave": "sine",
         "syllables": 4,
         "speed": 0.06,
-        "volume": 0.08
+        "volume": 0.08,
+        "ttsRate": 2,
+        "ttsPitchShift": 1.3
       },
       "personality": {
         "speedMin": 25,
@@ -85,7 +89,9 @@
         "wave": "triangle",
         "syllables": 5,
         "speed": 0.05,
-        "volume": 0.08
+        "volume": 0.08,
+        "ttsRate": 4,
+        "ttsPitchShift": 1.9
       },
       "personality": {
         "speedMin": 50,
@@ -122,7 +128,9 @@
         "wave": "sine",
         "syllables": 2,
         "speed": 0.1,
-        "volume": 0.1
+        "volume": 0.1,
+        "ttsRate": -1,
+        "ttsPitchShift": 0.95
       },
       "personality": {
         "speedMin": 15,
@@ -159,7 +167,9 @@
         "wave": "sine",
         "syllables": 3,
         "speed": 0.12,
-        "volume": 0.06
+        "volume": 0.06,
+        "ttsRate": -3,
+        "ttsPitchShift": 0.85
       },
       "personality": {
         "speedMin": 10,

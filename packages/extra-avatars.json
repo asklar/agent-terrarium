@@ -13,7 +13,9 @@
         "wave": "square",
         "syllables": 4,
         "speed": 0.05,
-        "volume": 0.12
+        "volume": 0.12,
+        "ttsRate": 3,
+        "ttsPitchShift": 1.7
       },
       "personality": {
         "speedMin": 60,
@@ -49,7 +51,9 @@
         "wave": "triangle",
         "syllables": 3,
         "speed": 0.06,
-        "volume": 0.09
+        "volume": 0.09,
+        "ttsRate": 5,
+        "ttsPitchShift": 2.0
       },
       "personality": {
         "speedMin": 20,
@@ -88,7 +92,9 @@
         "wave": "square",
         "syllables": 1,
         "speed": 0.08,
-        "volume": 0.15
+        "volume": 0.15,
+        "ttsRate": 0,
+        "ttsPitchShift": 1.4
       },
       "personality": {
         "speedMin": 15,
