@@ -494,6 +494,113 @@ html, body, #root {
   cursor: pointer;
 }
 
+/* Debug Panel */
+.debug-panel {
+  position: fixed;
+  z-index: 1500;
+  background: rgba(30, 30, 40, 0.92);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  min-width: 220px;
+  max-width: 320px;
+  backdrop-filter: blur(8px);
+  animation: contextMenuIn 0.15s ease-out;
+  user-select: none;
+}
+
+.debug-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 10px 10px 0 0;
+  cursor: grab;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.debug-panel-header:active { cursor: grabbing; }
+
+.debug-panel-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.debug-panel-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.debug-section {
+  padding: 6px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.debug-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 5px;
+}
+
+.debug-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.debug-chip {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.75);
+  border-radius: 5px;
+  padding: 3px 7px;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+
+.debug-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.debug-chip.active {
+  background: rgba(139, 195, 74, 0.25);
+  border-color: rgba(139, 195, 74, 0.5);
+  color: #C5E1A5;
+}
+
+.debug-chip.debug-reset {
+  width: 100%;
+  text-align: center;
+  border-color: rgba(239, 83, 80, 0.3);
+  color: rgba(239, 83, 80, 0.8);
+}
+
+.debug-chip.debug-reset:hover {
+  background: rgba(239, 83, 80, 0.15);
+  color: #EF5350;
+}
+
+.debug-no-agents {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+  font-style: italic;
+}
+
 /* About Dialog */
 .about-dialog {
   background: rgba(255, 255, 255, 0.97);

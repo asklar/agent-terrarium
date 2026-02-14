@@ -8,6 +8,7 @@ import { ThemeMusic } from "./components/ThemeMusic";
 import { ContextMenu } from "./components/ContextMenu";
 import { AgentConfigDialog } from "./components/AgentConfigDialog";
 import { AboutDialog } from "./components/AboutDialog";
+import { DebugPanel } from "./components/DebugPanel";
 import { registry } from "./themes";
 import { playAgentSound } from "./audio/agentSounds";
 import { getCurrentWindow, currentMonitor } from "@tauri-apps/api/window";
@@ -79,6 +80,7 @@ function App() {
   } | null>(null);
   const [configAgent, setConfigAgent] = useState<Agent | null>(null);
   const [showAbout, setShowAbout] = useState(false);
+  const [showDebug, setShowDebug] = useState(false);
   const [thinkingAgentIds, setThinkingAgentIds] = useState<Set<string>>(new Set());
   const [poppedOutAgents, setPoppedOutAgents] = useState<Set<string>>(new Set());
   const themeRef = useRef(theme);
@@ -431,8 +433,6 @@ function App() {
           agents={worldState?.agents ?? []}
           currentTheme={theme}
           dynamicSky={dynamicSky}
-          debugTime={debugTime}
-          debugWeather={debugWeather}
           onClose={() => setContextMenu(null)}
           onThemeChange={setTheme}
           onDynamicSkyToggle={() => {
@@ -442,8 +442,6 @@ function App() {
               return next;
             });
           }}
-          onDebugTime={setDebugTime}
-          onDebugWeather={setDebugWeather}
           onAddAgent={async (avatar, name) => {
             await addAgent(avatar, name);
             saveConfig(theme, undefined, musicMutedRef.current, dynamicSkyRef.current);
@@ -457,9 +455,8 @@ function App() {
             playGearSound(agentId);
             saveConfig(theme, undefined, musicMutedRef.current, dynamicSkyRef.current);
           }}
-          onRequestAttention={(agentId) => {
-            setTimeout(() => requestAttention(agentId), 5000);
-          }}
+          onToggleDebug={() => setShowDebug((v) => !v)}
+          debugOpen={showDebug}
           onAbout={() => setShowAbout(true)}
         />
       )}
@@ -476,6 +473,20 @@ function App() {
         />
       )}
       {showAbout && <AboutDialog onClose={() => setShowAbout(false)} />}
+      {showDebug && (
+        <DebugPanel
+          agents={worldState?.agents ?? []}
+          dynamicSky={dynamicSky}
+          debugTime={debugTime}
+          debugWeather={debugWeather}
+          onDebugTime={setDebugTime}
+          onDebugWeather={setDebugWeather}
+          onRequestAttention={(agentId) => {
+            setTimeout(() => requestAttention(agentId), 5000);
+          }}
+          onClose={() => setShowDebug(false)}
+        />
+      )}
     </div>
   );
 }
