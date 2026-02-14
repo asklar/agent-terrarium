@@ -162,4 +162,15 @@ pub struct AgentConfig {
 pub struct AppConfig {
     pub theme: String,
     pub agents: Vec<AgentConfig>,
+    #[serde(default)]
+    pub window: Option<WindowConfig>,
+}
+
+/// Saved window position and size
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WindowConfig {
+    pub x: i32,
+    pub y: i32,
+    pub width: u32,
+    pub height: u32,
 }

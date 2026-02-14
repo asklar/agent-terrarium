@@ -5,6 +5,7 @@ import { ChatOverlay } from "./components/ChatOverlay";
 import { AnimatedBackground, type ThemeName } from "./components/AnimatedBackground";
 import { WindowFrame } from "./components/WindowFrame";
 import { ContextMenu } from "./components/ContextMenu";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import "./App.css";
 
 function App() {
@@ -27,15 +28,55 @@ function App() {
     x: number;
     y: number;
   } | null>(null);
+  const themeRef = useRef(theme);
+  themeRef.current = theme;
 
-  // Load config on mount
+  // Load config on mount and restore window position
   useEffect(() => {
-    loadConfig().then((config) => {
+    loadConfig().then(async (config) => {
       if (config?.theme) {
         setTheme(config.theme as ThemeName);
       }
+      const w = (config as Record<string, unknown> | null)?.window as
+        | { x: number; y: number; width: number; height: number }
+        | undefined;
+      if (w) {
+        const win = getCurrentWindow();
+        await win.setPosition(new (await import("@tauri-apps/api/dpi")).LogicalPosition(w.x, w.y));
+        await win.setSize(new (await import("@tauri-apps/api/dpi")).LogicalSize(w.width, w.height));
+      }
     });
   }, [loadConfig]);
+
+  // Save window bounds on move/resize (debounced)
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const saveWindowBounds = async () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        try {
+          const win = getCurrentWindow();
+          const pos = await win.outerPosition();
+          const size = await win.outerSize();
+          saveConfig(themeRef.current, {
+            x: pos.x,
+            y: pos.y,
+            width: size.width,
+            height: size.height,
+          });
+        } catch { /* ignore */ }
+      }, 500);
+    };
+
+    const unlistenMove = getCurrentWindow().onMoved(saveWindowBounds);
+    const unlistenResize = getCurrentWindow().onResized(saveWindowBounds);
+
+    return () => {
+      clearTimeout(timer);
+      unlistenMove.then((f) => f());
+      unlistenResize.then((f) => f());
+    };
+  }, [saveConfig]);
 
   // Save config when theme changes (debounced after first render)
   const initialRef = useRef(true);

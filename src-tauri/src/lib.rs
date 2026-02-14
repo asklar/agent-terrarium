@@ -58,9 +58,13 @@ fn config_path() -> std::path::PathBuf {
 }
 
 #[tauri::command]
-fn save_config(theme: String, world: tauri::State<'_, Arc<World>>) -> Result<(), String> {
+fn save_config(theme: String, window_x: Option<i32>, window_y: Option<i32>, window_width: Option<u32>, window_height: Option<u32>, world: tauri::State<'_, Arc<World>>) -> Result<(), String> {
     let agents = world.get_agent_configs();
-    let config = AppConfig { theme, agents };
+    let window = match (window_x, window_y, window_width, window_height) {
+        (Some(x), Some(y), Some(w), Some(h)) => Some(simulation::types::WindowConfig { x, y, width: w, height: h }),
+        _ => None,
+    };
+    let config = AppConfig { theme, agents, window };
     let json = serde_json::to_string_pretty(&config).map_err(|e| e.to_string())?;
     std::fs::write(config_path(), json).map_err(|e| e.to_string())?;
     Ok(())
