@@ -82,6 +82,11 @@ pub trait AgentBackend: Send + Sync {
         Ok(vec![])
     }
 
+    /// List available custom agents for this backend (empty by default)
+    async fn list_agents(&self, _cwd: Option<&str>) -> Result<Vec<AgentOption>, String> {
+        Ok(vec![])
+    }
+
     /// Set API key for this backend (no-op by default)
     async fn set_api_key(&self, _key: String) {}
 
@@ -96,4 +101,12 @@ pub trait AgentBackend: Send + Sync {
 pub struct ModelOption {
     pub id: String,
     pub name: String,
+}
+
+/// A custom agent option returned by list_agents
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentOption {
+    pub name: String,
+    /// Where the agent was found (user, repo, org)
+    pub source: String,
 }

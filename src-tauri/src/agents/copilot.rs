@@ -3,7 +3,7 @@ use copilot_sdk::{Client, CustomAgentConfig, SessionConfig, SystemMessageConfig,
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use super::backend::{AgentBackend, BackendConfig, BackendMessage, BackendResponse, MessageRole, ModelOption};
+use super::backend::{AgentBackend, AgentOption, BackendConfig, BackendMessage, BackendResponse, MessageRole, ModelOption};
 
 pub struct CopilotBackend {
     client: Arc<RwLock<Option<Client>>>,
@@ -122,5 +122,49 @@ impl AgentBackend for CopilotBackend {
                 name: m.name,
             })
             .collect())
+    }
+
+    async fn list_agents(&self, cwd: Option<&str>) -> Result<Vec<AgentOption>, String> {
+        let mut agents = Vec::new();
+
+        // Scan ~/.copilot/agents/*.md (user-level)
+        if let Some(home) = dirs::home_dir() {
+            let user_dir = home.join(".copilot").join("agents");
+            if let Ok(entries) = std::fs::read_dir(&user_dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.extension().and_then(|e| e.to_str()) == Some("md") {
+                        if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                            agents.push(AgentOption {
+                                name: stem.to_string(),
+                                source: "user".to_string(),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        // Scan <cwd>/.github/agents/*.md (repo-level)
+        if let Some(dir) = cwd {
+            let repo_dir = std::path::Path::new(dir).join(".github").join("agents");
+            if let Ok(entries) = std::fs::read_dir(&repo_dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.extension().and_then(|e| e.to_str()) == Some("md") {
+                        if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                            if !agents.iter().any(|a| a.name == stem) {
+                                agents.push(AgentOption {
+                                    name: stem.to_string(),
+                                    source: "repo".to_string(),
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(agents)
     }
 }

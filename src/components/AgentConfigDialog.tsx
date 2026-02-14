@@ -18,6 +18,11 @@ interface ModelOption {
   name: string;
 }
 
+interface AgentOption {
+  name: string;
+  source: string;
+}
+
 interface AgentConfigDialogProps {
   agent: Agent;
   onSave: (agentId: string, name: string, backendConfig: BackendConfig) => void;
@@ -49,6 +54,7 @@ export function AgentConfigDialog({ agent, onSave, onClose }: AgentConfigDialogP
   const [awarenessLevel, setAwarenessLevel] = useState(agent.backend_config?.awareness_level ?? 0);
   const [cwd, setCwd] = useState(agent.backend_config?.cwd ?? "");
   const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
+  const [agentOptions, setAgentOptions] = useState<AgentOption[]>([]);
   const [loadingModels, setLoadingModels] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -73,6 +79,19 @@ export function AgentConfigDialog({ agent, onSave, onClose }: AgentConfigDialogP
       });
     return () => { cancelled = true; };
   }, [backendId]);
+
+  // Fetch available custom agents when backend or cwd changes
+  useEffect(() => {
+    setAgentOptions([]);
+    if (backendId === "echo") return;
+    let cancelled = false;
+    invoke<AgentOption[]>("list_backend_agents", { backendId, cwd: cwd || null })
+      .then((agents) => {
+        if (!cancelled) setAgentOptions(agents);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [backendId, cwd]);
 
   // Close on Escape
   useEffect(() => {
@@ -165,13 +184,22 @@ export function AgentConfigDialog({ agent, onSave, onClose }: AgentConfigDialogP
           </label>
 
           <label className="agent-config-label">
-            Custom Agent Name
-            <input
-              className="agent-config-input"
+            Custom Agent
+            <select
+              className="agent-config-select"
               value={customAgent}
               onChange={(e) => setCustomAgent(e.target.value)}
-              placeholder="optional — names a sub-agent identity"
-            />
+            >
+              <option value="">None</option>
+              {customAgent && !agentOptions.some((a) => a.name === customAgent) && (
+                <option value={customAgent}>{customAgent}</option>
+              )}
+              {agentOptions.map((a) => (
+                <option key={`${a.source}:${a.name}`} value={a.name}>
+                  {a.name} ({a.source})
+                </option>
+              ))}
+            </select>
           </label>
 
           <label className="agent-config-label">
