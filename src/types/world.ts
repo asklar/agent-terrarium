@@ -36,6 +36,7 @@ export interface Agent {
   target: Vec2 | null;
   state_timer: number;
   interaction_cooldown: number;
+  gear: string[];
 }
 
 export interface Ball {

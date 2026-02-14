@@ -103,6 +103,9 @@ pub struct Agent {
     pub target: Option<Vec2>,
     pub state_timer: f64,
     pub interaction_cooldown: f64,
+    /// Equipped gear item ids
+    #[serde(default)]
+    pub gear: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -155,6 +158,9 @@ pub struct AgentConfig {
     pub name: String,
     pub avatar: String,
     pub personality: Personality,
+    /// Equipped gear item ids
+    #[serde(default)]
+    pub gear: Vec<String>,
 }
 
 /// Persisted app configuration

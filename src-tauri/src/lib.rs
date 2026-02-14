@@ -51,6 +51,11 @@ fn update_mouse(world: tauri::State<'_, Arc<World>>, x: Option<f64>, y: Option<f
     world.update_mouse(x, y);
 }
 
+#[tauri::command]
+fn set_gear(world: tauri::State<'_, Arc<World>>, agent_id: String, gear_ids: Vec<String>) {
+    world.set_gear(&agent_id, gear_ids);
+}
+
 fn config_path() -> std::path::PathBuf {
     let mut path = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
     path.push("agent-terrarium.json");
@@ -107,6 +112,7 @@ pub fn run() {
             add_agent,
             remove_agent,
             update_mouse,
+            set_gear,
             save_config,
             load_config,
         ])

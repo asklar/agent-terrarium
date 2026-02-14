@@ -1,9 +1,9 @@
 import { useRef, useEffect } from "react";
-
-export type ThemeName = "meadow" | "night" | "desert" | "ocean" | "forest_dawn" | "castle";
+import { registry } from "../themes";
+import type { ThemeDefinition, ParticleType } from "../themes";
 
 interface AnimatedBackgroundProps {
-  theme: ThemeName;
+  theme: string;
 }
 
 interface Particle {
@@ -26,88 +26,6 @@ interface ShootingStar {
   size: number;
 }
 
-const THEMES: Record<
-  ThemeName,
-  {
-    sky: string[];
-    ground: string;
-    groundAccent: string;
-    particleColor: string;
-    particleCount: number;
-    particleType: "leaf" | "star" | "sand" | "bubble";
-    grassColor: string;
-    grassAccent: string;
-    features: string[];
-  }
-> = {
-  meadow: {
-    sky: ["#87CEEB", "#B4E4FF", "#E8F5E9"],
-    ground: "#7CB342",
-    groundAccent: "#689F38",
-    particleColor: "#A5D6A7",
-    particleCount: 12,
-    particleType: "leaf",
-    grassColor: "#66BB6A",
-    grassAccent: "#43A047",
-    features: ["flowers", "clouds", "grass"],
-  },
-  night: {
-    sky: ["#0D1B2A", "#1B2838", "#1A237E"],
-    ground: "#1B5E20",
-    groundAccent: "#2E7D32",
-    particleColor: "#FFECB3",
-    particleCount: 30,
-    particleType: "star",
-    grassColor: "#2E7D32",
-    grassAccent: "#1B5E20",
-    features: ["stars", "moon", "grass"],
-  },
-  desert: {
-    sky: ["#FF8F00", "#FFB74D", "#FFF8E1"],
-    ground: "#D4A053",
-    groundAccent: "#C49040",
-    particleColor: "#FFE0B2",
-    particleCount: 8,
-    particleType: "sand",
-    grassColor: "#C49040",
-    grassAccent: "#A67832",
-    features: ["cactus", "clouds"],
-  },
-  ocean: {
-    sky: ["#0277BD", "#4FC3F7", "#B3E5FC"],
-    ground: "#0277BD",
-    groundAccent: "#01579B",
-    particleColor: "#B3E5FC",
-    particleCount: 15,
-    particleType: "bubble",
-    grassColor: "#00838F",
-    grassAccent: "#006064",
-    features: ["waves", "seaweed"],
-  },
-  forest_dawn: {
-    sky: ["#1A0A2E", "#4A1942", "#B85C38", "#F0A500", "#FFF3CD"],
-    ground: "#2E4A1E",
-    groundAccent: "#1B3A0E",
-    particleColor: "#FFECB3",
-    particleCount: 18,
-    particleType: "leaf",
-    grassColor: "#3E6B2F",
-    grassAccent: "#2E5A1F",
-    features: ["trees", "mist", "fireflies", "grass"],
-  },
-  castle: {
-    sky: ["#1A1A2E", "#16213E", "#2C3E6B"],
-    ground: "#5D4E37",
-    groundAccent: "#4A3C2A",
-    particleColor: "#FF9800",
-    particleCount: 6,
-    particleType: "sand",
-    grassColor: "#6D5D4B",
-    grassAccent: "#5D4E37",
-    features: ["castle_walls", "torches", "banners"],
-  },
-};
-
 export function AnimatedBackground({ theme }: AnimatedBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
@@ -121,18 +39,22 @@ export function AnimatedBackground({ theme }: AnimatedBackgroundProps) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const t = THEMES[theme];
+    const t = registry.getTheme(theme);
+    if (!t) return;
 
     // Initialize particles
-    particlesRef.current = Array.from({ length: t.particleCount }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height * 0.7,
-      size: 2 + Math.random() * 4,
-      speed: 0.2 + Math.random() * 0.5,
-      opacity: 0.3 + Math.random() * 0.7,
-      drift: (Math.random() - 0.5) * 0.3,
-      phase: Math.random() * Math.PI * 2,
-    }));
+    const pc = t.particles;
+    particlesRef.current = pc
+      ? Array.from({ length: pc.count }, () => ({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height * 0.7,
+          size: 2 + Math.random() * 4,
+          speed: 0.2 + Math.random() * 0.5,
+          opacity: 0.3 + Math.random() * 0.7,
+          drift: (Math.random() - 0.5) * 0.3,
+          phase: Math.random() * Math.PI * 2,
+        }))
+      : [];
 
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -162,47 +84,22 @@ export function AnimatedBackground({ theme }: AnimatedBackgroundProps) {
 
       const groundY = h * 0.72;
 
-      // Draw theme features
-      if (t.features.includes("clouds")) {
-        drawClouds(ctx, w, h, time);
-      }
-      if (t.features.includes("moon")) {
-        drawMoon(ctx, w);
-      }
-      if (t.features.includes("stars")) {
-        drawStars(ctx, w, h, time);
-        // Shooting stars
-        updateAndDrawShootingStars(ctx, w, h, dt, shootingStarsRef);
-      }
-      if (t.features.includes("waves")) {
-        drawWaves(ctx, w, h, time);
-      }
-      if (t.features.includes("trees")) {
-        drawTrees(ctx, w, groundY, time);
-      }
-      if (t.features.includes("mist")) {
-        drawMist(ctx, w, h, groundY, time);
-      }
-      if (t.features.includes("castle_walls")) {
-        drawCastleWalls(ctx, w, groundY);
-      }
-      if (t.features.includes("torches")) {
-        drawTorches(ctx, w, groundY, time);
-      }
-      if (t.features.includes("banners")) {
-        drawBanners(ctx, w, groundY, time);
+      // Draw decorators (order from theme definition)
+      for (const dec of t.decorators) {
+        const fn = DECORATORS[dec];
+        if (fn) fn(ctx, w, h, groundY, time, dt, t, shootingStarsRef);
       }
 
       // Ground
+      const waveAmp = t.groundWave ?? 4;
       const groundGrad = ctx.createLinearGradient(0, groundY, 0, h);
       groundGrad.addColorStop(0, t.ground);
       groundGrad.addColorStop(1, t.groundAccent);
       ctx.fillStyle = groundGrad;
       ctx.beginPath();
-      // Wavy ground line
       ctx.moveTo(0, groundY);
       for (let x = 0; x <= w; x += 20) {
-        const wave = Math.sin(x * 0.02 + time * 0.0005) * 4;
+        const wave = Math.sin(x * 0.02 + time * 0.0005) * waveAmp;
         ctx.lineTo(x, groundY + wave);
       }
       ctx.lineTo(w, h);
@@ -210,63 +107,15 @@ export function AnimatedBackground({ theme }: AnimatedBackgroundProps) {
       ctx.closePath();
       ctx.fill();
 
-      // Grass tufts
-      if (t.features.includes("grass")) {
-        drawGrass(ctx, w, groundY, time, t.grassColor, t.grassAccent);
-      }
-
-      // Flowers
-      if (t.features.includes("flowers")) {
-        drawFlowers(ctx, w, groundY, time);
-      }
-
-      // Seaweed
-      if (t.features.includes("seaweed")) {
-        drawSeaweed(ctx, w, h, time);
-      }
-
-      // Cactus
-      if (t.features.includes("cactus")) {
-        drawCacti(ctx, w, groundY);
-      }
-
-      // Fireflies
-      if (t.features.includes("fireflies")) {
-        drawFireflies(ctx, w, h, groundY, time);
-      }
-
       // Particles
-      for (const p of particlesRef.current) {
-        drawParticle(ctx, p, t.particleColor, t.particleType, time);
-
-        // Update particle position
-        if (t.particleType === "leaf") {
-          p.y += p.speed * dt * 30;
-          p.x += Math.sin(time * 0.001 + p.phase) * p.drift * dt * 30;
-          if (p.y > canvas.height) {
-            p.y = -p.size;
-            p.x = Math.random() * canvas.width;
-          }
-        } else if (t.particleType === "bubble") {
-          p.y -= p.speed * dt * 20;
-          p.x += Math.sin(time * 0.002 + p.phase) * 0.5;
-          if (p.y < -p.size) {
-            p.y = canvas.height + p.size;
-            p.x = Math.random() * canvas.width;
-          }
-        } else if (t.particleType === "star") {
-          p.opacity = 0.3 + Math.sin(time * 0.003 + p.phase) * 0.4;
-        } else if (t.particleType === "sand") {
-          p.x += p.speed * dt * 40;
-          p.y += Math.sin(time * 0.001 + p.phase) * 0.2;
-          if (p.x > canvas.width + p.size) {
-            p.x = -p.size;
-            p.y = Math.random() * canvas.height * 0.7;
-          }
+      if (pc) {
+        for (const p of particlesRef.current) {
+          drawParticle(ctx, p, pc.color, pc.type, time);
+          updateParticle(p, pc.type, dt, time, canvas.width, canvas.height);
         }
       }
 
-      // Border with rounded corners (terrarium frame)
+      // Border
       ctx.strokeStyle = "rgba(0,0,0,0.15)";
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -300,10 +149,73 @@ export function AnimatedBackground({ theme }: AnimatedBackgroundProps) {
   );
 }
 
+// Decorator type: all draw functions share this signature
+type DecoratorFn = (
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  groundY: number,
+  time: number,
+  dt: number,
+  theme: ThemeDefinition,
+  shootingStarsRef: React.RefObject<ShootingStar[]>,
+) => void;
+
+/** Registry of built-in decorator draw functions, keyed by name */
+const DECORATORS: Record<string, DecoratorFn> = {
+  clouds: (ctx, w, _h, _gy, time) => drawClouds(ctx, w, time),
+  moon: (ctx, w) => drawMoon(ctx, w),
+  stars: (ctx, w, h, _gy, time) => drawStars(ctx, w, h, time),
+  shooting_stars: (ctx, w, h, _gy, _time, dt, _theme, ref) =>
+    updateAndDrawShootingStars(ctx, w, h, dt, ref),
+  waves: (ctx, w, h, _gy, time) => drawWaves(ctx, w, h, time),
+  seaweed: (ctx, w, h, _gy, time) => drawSeaweed(ctx, w, h, time),
+  flowers: (ctx, w, _h, gy, time) => drawFlowers(ctx, w, gy, time),
+  grass: (ctx, w, _h, gy, time, _dt, theme) => {
+    if (theme.grass) drawGrass(ctx, w, gy, time, theme.grass.color, theme.grass.accent);
+  },
+  cactus: (ctx, w, _h, gy) => drawCacti(ctx, w, gy),
+  trees: (ctx, w, _h, gy, time) => drawTrees(ctx, w, gy, time),
+  mist: (ctx, w, h, gy, time) => drawMist(ctx, w, h, gy, time),
+  fireflies: (ctx, w, h, gy, time) => drawFireflies(ctx, w, h, gy, time),
+  castle_walls: (ctx, w, _h, gy) => drawCastleWalls(ctx, w, gy),
+  torches: (ctx, w, _h, gy, time) => drawTorches(ctx, w, gy, time),
+  banners: (ctx, w, _h, gy, time) => drawBanners(ctx, w, gy, time),
+};
+
+function updateParticle(
+  p: Particle,
+  type: ParticleType,
+  dt: number,
+  time: number,
+  canvasW: number,
+  canvasH: number,
+) {
+  switch (type) {
+    case "leaf":
+      p.y += p.speed * dt * 30;
+      p.x += Math.sin(time * 0.001 + p.phase) * p.drift * dt * 30;
+      if (p.y > canvasH) { p.y = -p.size; p.x = Math.random() * canvasW; }
+      break;
+    case "bubble":
+      p.y -= p.speed * dt * 20;
+      p.x += Math.sin(time * 0.002 + p.phase) * 0.5;
+      if (p.y < -p.size) { p.y = canvasH + p.size; p.x = Math.random() * canvasW; }
+      break;
+    case "star":
+      p.opacity = 0.3 + Math.sin(time * 0.003 + p.phase) * 0.4;
+      break;
+    case "sand":
+      p.x += p.speed * dt * 40;
+      p.y += Math.sin(time * 0.001 + p.phase) * 0.2;
+      if (p.x > canvasW + p.size) { p.x = -p.size; p.y = Math.random() * canvasH * 0.7; }
+      break;
+  }
+}
+
 function drawClouds(
   ctx: CanvasRenderingContext2D,
   w: number,
-  _h: number,
   time: number,
 ) {
   ctx.fillStyle = "rgba(255, 255, 255, 0.6)";

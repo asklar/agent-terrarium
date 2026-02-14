@@ -55,6 +55,10 @@ export function useWorldState() {
     await invoke("remove_agent", { agentId });
   }, []);
 
+  const setGear = useCallback(async (agentId: string, gearIds: string[]) => {
+    await invoke("set_gear", { agentId, gearIds });
+  }, []);
+
   const updateMouse = useCallback(async (x: number | null, y: number | null) => {
     await invoke("update_mouse", { x, y });
   }, []);
@@ -90,6 +94,7 @@ export function useWorldState() {
     resizeWorld,
     addAgent,
     removeAgent,
+    setGear,
     updateMouse,
     saveConfig,
     loadConfig,

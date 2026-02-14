@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useWorldState } from "./hooks/useWorldState";
 import { TerrariumCanvas } from "./components/TerrariumCanvas";
 import { ChatOverlay } from "./components/ChatOverlay";
-import { AnimatedBackground, type ThemeName } from "./components/AnimatedBackground";
+import { AnimatedBackground } from "./components/AnimatedBackground";
 import { WindowFrame } from "./components/WindowFrame";
 import { ContextMenu } from "./components/ContextMenu";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -18,12 +18,13 @@ function App() {
     resizeWorld,
     addAgent,
     removeAgent,
+    setGear,
     updateMouse,
     saveConfig,
     loadConfig,
   } = useWorldState();
 
-  const [theme, setTheme] = useState<ThemeName>("meadow");
+  const [theme, setTheme] = useState("meadow");
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -35,7 +36,7 @@ function App() {
   useEffect(() => {
     loadConfig().then(async (config) => {
       if (config?.theme) {
-        setTheme(config.theme as ThemeName);
+        setTheme(config.theme);
       }
       const w = (config as Record<string, unknown> | null)?.window as
         | { x: number; y: number; width: number; height: number }
@@ -176,6 +177,10 @@ function App() {
           }}
           onRemoveAgent={async (agentId) => {
             await removeAgent(agentId);
+            saveConfig(theme);
+          }}
+          onSetGear={async (agentId, gearIds) => {
+            await setGear(agentId, gearIds);
             saveConfig(theme);
           }}
         />

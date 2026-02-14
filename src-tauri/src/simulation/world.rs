@@ -350,6 +350,13 @@ impl World {
         };
     }
 
+    pub fn set_gear(&self, agent_id: &str, gear_ids: Vec<String>) {
+        let mut state = self.state.lock().unwrap();
+        if let Some(agent) = state.agents.iter_mut().find(|a| a.id == agent_id) {
+            agent.gear = gear_ids;
+        }
+    }
+
     pub fn get_agent_configs(&self) -> Vec<AgentConfig> {
         let state = self.state.lock().unwrap();
         state.agents.iter().map(|a| AgentConfig {
@@ -357,6 +364,7 @@ impl World {
             name: a.name.clone(),
             avatar: a.avatar.clone(),
             personality: a.personality.clone(),
+            gear: a.gear.clone(),
         }).collect()
     }
 
@@ -370,6 +378,7 @@ impl World {
         for ac in &config.agents {
             let mut agent = create_agent(&ac.id, &ac.name, &ac.avatar, &bounds, ground_y);
             agent.personality = ac.personality.clone();
+            agent.gear = ac.gear.clone();
             state.agents.push(agent);
         }
     }
@@ -458,6 +467,7 @@ fn create_agent(id: &str, name: &str, avatar: &str, bounds: &Vec2, ground_y: f64
         target: None,
         state_timer: 0.0,
         interaction_cooldown: 0.0,
+        gear: Vec::new(),
     }
 }
 

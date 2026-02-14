@@ -1,36 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ThemeName } from "./AnimatedBackground";
+import { registry } from "../themes";
+import type { GearSlot } from "../themes/PackageTypes";
 import type { Agent } from "../types/world";
 
 interface ContextMenuProps {
   x: number;
   y: number;
   agents: Agent[];
-  currentTheme: ThemeName;
+  currentTheme: string;
   onClose: () => void;
-  onThemeChange: (theme: ThemeName) => void;
+  onThemeChange: (theme: string) => void;
   onAddAgent: (avatar: string, name: string) => void;
   onRemoveAgent: (agentId: string) => void;
+  onSetGear: (agentId: string, gearIds: string[]) => void;
 }
 
-const THEMES: { id: ThemeName; label: string; icon: string }[] = [
-  { id: "meadow", label: "Meadow", icon: "🌿" },
-  { id: "night", label: "Night", icon: "🌙" },
-  { id: "desert", label: "Desert", icon: "🏜️" },
-  { id: "ocean", label: "Ocean", icon: "🌊" },
-  { id: "forest_dawn", label: "Forest at Dawn", icon: "🌅" },
-  { id: "castle", label: "Castle", icon: "🏰" },
-];
-
-const AVATARS: { id: string; label: string; icon: string }[] = [
-  { id: "cat", label: "Cat", icon: "🐱" },
-  { id: "copilot", label: "Copilot", icon: "🤖" },
-  { id: "squirrel", label: "Squirrel", icon: "🐿️" },
-  { id: "penguin", label: "Penguin", icon: "🐧" },
-  { id: "ghost", label: "Ghost", icon: "👻" },
-];
-
-type SubMenu = null | "theme" | "add" | "remove";
+type SubMenu = null | "theme" | "add" | "remove" | "gear" | "gear-agent" | "gear-slot";
 
 export function ContextMenu({
   x,
@@ -41,9 +26,12 @@ export function ContextMenu({
   onThemeChange,
   onAddAgent,
   onRemoveAgent,
+  onSetGear,
 }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [subMenu, setSubMenu] = useState<SubMenu>(null);
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<GearSlot | null>(null);
   const readyRef = useRef(false);
 
   // Ignore clicks for a brief moment after menu appears
@@ -88,8 +76,8 @@ export function ContextMenu({
   );
 
   const handleTheme = useCallback(
-    (theme: ThemeName) => {
-      onThemeChange(theme);
+    (themeId: string) => {
+      onThemeChange(themeId);
       onClose();
     },
     [onThemeChange, onClose],
@@ -110,6 +98,38 @@ export function ContextMenu({
     },
     [onRemoveAgent, onClose],
   );
+
+  const handleSelectAgent = useCallback((agentId: string) => {
+    setSelectedAgentId(agentId);
+    setSubMenu("gear-agent");
+  }, []);
+
+  const handleSelectSlot = useCallback((slot: GearSlot) => {
+    setSelectedSlot(slot);
+    setSubMenu("gear-slot");
+  }, []);
+
+  const handleToggleGear = useCallback(
+    (gearId: string) => {
+      if (!selectedAgentId) return;
+      const agent = agents.find((a) => a.id === selectedAgentId);
+      if (!agent) return;
+      const current = agent.gear ?? [];
+      const next = current.includes(gearId)
+        ? current.filter((g) => g !== gearId)
+        : [...current, gearId];
+      onSetGear(selectedAgentId, next);
+    },
+    [selectedAgentId, agents, onSetGear],
+  );
+
+  const GEAR_SLOTS: { slot: GearSlot; icon: string; label: string }[] = [
+    { slot: "hat", icon: "🎩", label: "Hat" },
+    { slot: "face", icon: "🕶️", label: "Face" },
+    { slot: "neck", icon: "🧣", label: "Neck" },
+    { slot: "body", icon: "🧥", label: "Body" },
+    { slot: "back", icon: "🦸", label: "Back" },
+  ];
 
   // Keep menu within viewport
   const menuStyle: React.CSSProperties = {
@@ -144,6 +164,14 @@ export function ContextMenu({
             ➖ Remove Agent
             <span className="context-menu-arrow">▸</span>
           </button>
+          <div className="context-menu-divider" />
+          <button
+            className="context-menu-item"
+            onClick={guardedClick(() => setSubMenu("gear"))}
+          >
+            👒 Gear
+            <span className="context-menu-arrow">▸</span>
+          </button>
         </>
       )}
 
@@ -156,13 +184,13 @@ export function ContextMenu({
             ◂ Back
           </button>
           <div className="context-menu-divider" />
-          {THEMES.map((t) => (
+          {registry.getAllThemes().map((t) => (
             <button
               key={t.id}
               className={`context-menu-item ${t.id === currentTheme ? "active" : ""}`}
               onClick={() => handleTheme(t.id)}
             >
-              {t.icon} {t.label}
+              {t.icon} {t.name}
               {t.id === currentTheme && (
                 <span className="context-menu-check">✓</span>
               )}
@@ -180,13 +208,13 @@ export function ContextMenu({
             ◂ Back
           </button>
           <div className="context-menu-divider" />
-          {AVATARS.map((a) => (
+          {registry.getAllAgents().map((a) => (
             <button
               key={a.id}
               className="context-menu-item"
-              onClick={() => handleAdd(a.id, a.label)}
+              onClick={() => handleAdd(a.id, a.name)}
             >
-              {a.icon} {a.label}
+              {a.icon} {a.name}
             </button>
           ))}
         </>
@@ -210,11 +238,105 @@ export function ContextMenu({
                 className="context-menu-item"
                 onClick={() => handleRemove(a.id)}
               >
-                {AVATARS.find((av) => av.id === a.avatar)?.icon ?? "❓"}{" "}
+                {registry.getAgent(a.avatar)?.icon ?? "❓"}{" "}
                 {a.name}
               </button>
             ))
           )}
+        </>
+      )}
+      {subMenu === "gear" && (
+        <>
+          <button
+            className="context-menu-item context-menu-back"
+            onClick={() => setSubMenu(null)}
+          >
+            ◂ Back
+          </button>
+          <div className="context-menu-divider" />
+          {agents.length === 0 ? (
+            <div className="context-menu-item disabled">No agents</div>
+          ) : (
+            agents.map((a) => (
+              <button
+                key={a.id}
+                className="context-menu-item"
+                onClick={() => handleSelectAgent(a.id)}
+              >
+                {registry.getAgent(a.avatar)?.icon ?? "❓"} {a.name}
+                {(a.gear?.length ?? 0) > 0 && (
+                  <span className="context-menu-check">
+                    {a.gear.map((g) => registry.getGear(g)?.icon ?? "").join("")}
+                  </span>
+                )}
+                <span className="context-menu-arrow">▸</span>
+              </button>
+            ))
+          )}
+        </>
+      )}
+
+      {subMenu === "gear-agent" && selectedAgentId && (
+        <>
+          <button
+            className="context-menu-item context-menu-back"
+            onClick={() => setSubMenu("gear")}
+          >
+            ◂ Back
+          </button>
+          <div className="context-menu-divider" />
+          {GEAR_SLOTS.map(({ slot, icon, label }) => {
+            const agent = agents.find((a) => a.id === selectedAgentId);
+            const equipped = (agent?.gear ?? [])
+              .map((g) => registry.getGear(g))
+              .filter((g) => g?.slot === slot);
+            return (
+              <button
+                key={slot}
+                className="context-menu-item"
+                onClick={() => handleSelectSlot(slot)}
+              >
+                {icon} {label}
+                {equipped.length > 0 && (
+                  <span className="context-menu-check">
+                    {equipped.map((g) => g?.icon ?? "").join("")}
+                  </span>
+                )}
+                <span className="context-menu-arrow">▸</span>
+              </button>
+            );
+          })}
+        </>
+      )}
+
+      {subMenu === "gear-slot" && selectedAgentId && selectedSlot && (
+        <>
+          <button
+            className="context-menu-item context-menu-back"
+            onClick={() => setSubMenu("gear-agent")}
+          >
+            ◂ Back
+          </button>
+          <div className="context-menu-divider" />
+          {registry
+            .getAllGear()
+            .filter((g) => g.slot === selectedSlot)
+            .map((g) => {
+              const agent = agents.find((a) => a.id === selectedAgentId);
+              const isEquipped = (agent?.gear ?? []).includes(g.id);
+              return (
+                <button
+                  key={g.id}
+                  className={`context-menu-item ${isEquipped ? "active" : ""}`}
+                  onClick={() => handleToggleGear(g.id)}
+                >
+                  {g.icon} {g.name}
+                  {isEquipped && (
+                    <span className="context-menu-check">✓</span>
+                  )}
+                </button>
+              );
+            })}
         </>
       )}
     </div>

@@ -1,6 +1,7 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import type { WorldState, Agent } from "../types/world";
 import { AGENT_COLORS } from "./AgentSprites";
+import { registry } from "../themes";
 
 interface TerrariumCanvasProps {
   worldState: WorldState | null;
@@ -12,6 +13,17 @@ interface TerrariumCanvasProps {
 
 const AGENT_SIZE = 32;
 const BALL_SIZE = 10;
+
+// Image cache for gear/agent images (SVG, PNG)
+const imageCache = new Map<string, HTMLImageElement>();
+function getOrLoadImage(url: string): HTMLImageElement | null {
+  const cached = imageCache.get(url);
+  if (cached) return cached.complete ? cached : null;
+  const img = new Image();
+  img.src = url;
+  imageCache.set(url, img);
+  return null; // not ready yet
+}
 
 export function TerrariumCanvas({
   worldState,
@@ -61,68 +73,16 @@ export function TerrariumCanvas({
       const ctx = audioCtxRef.current;
       if (ctx.state === "suspended") ctx.resume();
 
-      // Each agent has a unique voice profile
-      const voices: Record<
-        string,
-        {
-          basePitch: number;
-          pitchVar: number;
-          wave: OscillatorType;
-          syllables: number;
-          speed: number;
-          volume: number;
-        }
-      > = {
-        cat: {
-          basePitch: 700,
-          pitchVar: 150,
-          wave: "triangle",
-          syllables: 3,
-          speed: 0.07,
-          volume: 0.1,
-        },
-        copilot: {
-          basePitch: 500,
-          pitchVar: 80,
-          wave: "sine",
-          syllables: 4,
-          speed: 0.06,
-          volume: 0.08,
-        },
-        squirrel: {
-          basePitch: 900,
-          pitchVar: 200,
-          wave: "triangle",
-          syllables: 5,
-          speed: 0.05,
-          volume: 0.08,
-        },
-        penguin: {
-          basePitch: 350,
-          pitchVar: 60,
-          wave: "sine",
-          syllables: 2,
-          speed: 0.1,
-          volume: 0.1,
-        },
-        ghost: {
-          basePitch: 280,
-          pitchVar: 40,
-          wave: "sine",
-          syllables: 3,
-          speed: 0.12,
-          volume: 0.06,
-        },
-        robot: {
-          basePitch: 400,
-          pitchVar: 100,
-          wave: "square",
-          syllables: 3,
-          speed: 0.08,
-          volume: 0.05,
-        },
+      // Voice profile from package registry
+      const agentDef = registry.getAgent(agent.avatar);
+      const v = agentDef?.voice ?? {
+        basePitch: 500,
+        pitchVar: 80,
+        wave: "sine" as OscillatorType,
+        syllables: 3,
+        speed: 0.07,
+        volume: 0.08,
       };
-      const v = voices[agent.avatar] ?? voices.copilot;
 
       let t = ctx.currentTime;
       for (let i = 0; i < v.syllables; i++) {
@@ -402,7 +362,8 @@ export function TerrariumCanvas({
 
 function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent) {
   const { x, y } = agent.position;
-  const colors = AGENT_COLORS[agent.avatar] || AGENT_COLORS.cat;
+  const agentDef = registry.getAgent(agent.avatar);
+  const colors = agentDef?.colors ?? AGENT_COLORS[agent.avatar] ?? AGENT_COLORS.cat;
   const isMoving =
     agent.state === "Walking" ||
     agent.state === "Running" ||
@@ -429,6 +390,9 @@ function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent) {
   const squish = isMoving
     ? 1 + Math.sin(walkCycle * 2) * 0.04
     : 1 + Math.sin(t / 500) * 0.015; // idle breathing
+
+  // Draw back-slot gear (cape etc.) BEHIND the agent body
+  drawGearBySlots(ctx, agent.gear ?? [], bob, ["back"]);
 
   // Dispatch to per-agent draw
   switch (agent.avatar) {
@@ -465,6 +429,9 @@ function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent) {
     }
   }
 
+  // Draw equipped gear (front slots: hat, face, neck, body)
+  drawGearBySlots(ctx, agent.gear ?? [], bob, ["body", "neck", "face", "hat"]);
+
   // Name tag with background
   if (flip) ctx.scale(-1, 1);
   ctx.font = "bold 8px 'Segoe UI', sans-serif";
@@ -478,6 +445,335 @@ function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent) {
   ctx.fillText(agent.name, 0, AGENT_SIZE / 2 + 13);
 
   ctx.restore();
+}
+
+// --- Gear rendering ---
+
+function drawGearBySlots(
+  ctx: CanvasRenderingContext2D,
+  gearIds: string[],
+  bob: number,
+  slots: string[],
+) {
+  for (const gearId of gearIds) {
+    const def = registry.getGear(gearId);
+    if (!def || !slots.includes(def.slot)) continue;
+    ctx.save();
+
+    // If an image is provided, draw it instead of the shape primitive
+    if (def.image) {
+      const img = getOrLoadImage(def.image);
+      if (img) {
+        const w = def.imageWidth ?? AGENT_SIZE;
+        const h = def.imageHeight ?? AGENT_SIZE;
+        const anchorY = getSlotAnchorY(def.slot, bob) + (def.imageOffsetY ?? 0);
+        ctx.drawImage(img, -w / 2, anchorY - h / 2, w, h);
+      }
+      ctx.restore();
+      continue;
+    }
+
+    switch (def.shape) {
+      case "top-hat":
+        drawTopHat(ctx, def.color, def.accentColor, bob);
+        break;
+      case "party-hat":
+        drawPartyHat(ctx, def.color, def.accentColor, bob);
+        break;
+      case "crown":
+        drawCrown(ctx, def.color, def.accentColor, bob);
+        break;
+      case "wizard-hat":
+        drawWizardHat(ctx, def.color, def.accentColor, bob);
+        break;
+      case "flower-crown":
+        drawFlowerCrown(ctx, def.color, def.accentColor, bob);
+        break;
+      case "bow-tie":
+        drawBowTie(ctx, def.color, bob);
+        break;
+      case "scarf":
+        drawScarf(ctx, def.color, def.accentColor, bob);
+        break;
+      case "sunglasses":
+        drawSunglasses(ctx, def.color, bob);
+        break;
+      case "cape":
+        drawCape(ctx, def.color, bob);
+        break;
+      case "sweater":
+        drawSweater(ctx, def.color, def.accentColor, bob);
+        break;
+    }
+    ctx.restore();
+  }
+}
+
+/** Default Y anchor per gear slot, relative to agent center */
+function getSlotAnchorY(slot: string, bob: number): number {
+  switch (slot) {
+    case "hat": return -AGENT_SIZE / 2 - 4 + bob;
+    case "face": return -12 + bob;
+    case "neck": return AGENT_SIZE / 4 - 2 + bob;
+    case "body": return -AGENT_SIZE / 8 + bob;
+    case "back": return -AGENT_SIZE / 4 + bob;
+    default: return bob;
+  }
+}
+
+function drawTopHat(
+  ctx: CanvasRenderingContext2D,
+  color: string,
+  accent: string | undefined,
+  bob: number
+) {
+  const hatY = -AGENT_SIZE / 2 - 4 + bob;
+  // Brim
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.ellipse(0, hatY, 10, 2.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Cylinder
+  ctx.fillRect(-6, hatY - 12, 12, 12);
+  // Band
+  ctx.fillStyle = accent ?? "#C62828";
+  ctx.fillRect(-6, hatY - 4, 12, 2.5);
+}
+
+function drawPartyHat(
+  ctx: CanvasRenderingContext2D,
+  color: string,
+  accent: string | undefined,
+  bob: number
+) {
+  const hatY = -AGENT_SIZE / 2 - 4 + bob;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(-7, hatY);
+  ctx.lineTo(0, hatY - 16);
+  ctx.lineTo(7, hatY);
+  ctx.closePath();
+  ctx.fill();
+  // Stripes
+  ctx.strokeStyle = accent ?? "#FFC107";
+  ctx.lineWidth = 1.5;
+  for (let i = 1; i <= 3; i++) {
+    const t = i / 4;
+    const w = 7 * (1 - t);
+    const sy = hatY - 16 * t;
+    ctx.beginPath();
+    ctx.moveTo(-w, sy);
+    ctx.lineTo(w, sy);
+    ctx.stroke();
+  }
+  // Pom-pom
+  ctx.fillStyle = accent ?? "#FFC107";
+  ctx.beginPath();
+  ctx.arc(0, hatY - 16, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawCrown(
+  ctx: CanvasRenderingContext2D,
+  color: string,
+  accent: string | undefined,
+  bob: number
+) {
+  const hatY = -AGENT_SIZE / 2 - 3 + bob;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(-8, hatY);
+  ctx.lineTo(-8, hatY - 8);
+  ctx.lineTo(-4, hatY - 5);
+  ctx.lineTo(0, hatY - 10);
+  ctx.lineTo(4, hatY - 5);
+  ctx.lineTo(8, hatY - 8);
+  ctx.lineTo(8, hatY);
+  ctx.closePath();
+  ctx.fill();
+  // Jewels
+  ctx.fillStyle = accent ?? "#FF5722";
+  ctx.beginPath();
+  ctx.arc(0, hatY - 4, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#2196F3";
+  ctx.beginPath();
+  ctx.arc(-5, hatY - 3, 1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(5, hatY - 3, 1, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawWizardHat(
+  ctx: CanvasRenderingContext2D,
+  color: string,
+  accent: string | undefined,
+  bob: number
+) {
+  const hatY = -AGENT_SIZE / 2 - 3 + bob;
+  // Brim
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.ellipse(0, hatY, 11, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Cone with curve
+  ctx.beginPath();
+  ctx.moveTo(-9, hatY);
+  ctx.quadraticCurveTo(-4, hatY - 18, 3, hatY - 22);
+  ctx.quadraticCurveTo(6, hatY - 10, 9, hatY);
+  ctx.closePath();
+  ctx.fill();
+  // Stars
+  ctx.fillStyle = accent ?? "#FFD54F";
+  ctx.font = "6px serif";
+  ctx.fillText("★", -2, hatY - 8);
+  ctx.fillText("★", 2, hatY - 14);
+}
+
+function drawFlowerCrown(
+  ctx: CanvasRenderingContext2D,
+  color: string,
+  accent: string | undefined,
+  bob: number
+) {
+  const hatY = -AGENT_SIZE / 2 - 2 + bob;
+  // Vine
+  ctx.strokeStyle = accent ?? "#81C784";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, hatY + 2, 9, Math.PI, 0);
+  ctx.stroke();
+  // Flowers
+  const positions = [-7, -3, 1, 5, 9];
+  for (let i = 0; i < positions.length; i++) {
+    ctx.fillStyle = i % 2 === 0 ? color : "#FFE082";
+    ctx.beginPath();
+    ctx.arc(positions[i], hatY - 1, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#FFF9C4";
+    ctx.beginPath();
+    ctx.arc(positions[i], hatY - 1, 1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawBowTie(
+  ctx: CanvasRenderingContext2D,
+  color: string,
+  bob: number
+) {
+  const neckY = AGENT_SIZE / 4 - 2 + bob;
+  ctx.fillStyle = color;
+  // Left triangle
+  ctx.beginPath();
+  ctx.moveTo(0, neckY);
+  ctx.lineTo(-6, neckY - 3);
+  ctx.lineTo(-6, neckY + 3);
+  ctx.closePath();
+  ctx.fill();
+  // Right triangle
+  ctx.beginPath();
+  ctx.moveTo(0, neckY);
+  ctx.lineTo(6, neckY - 3);
+  ctx.lineTo(6, neckY + 3);
+  ctx.closePath();
+  ctx.fill();
+  // Center knot
+  ctx.fillStyle = "#000";
+  ctx.beginPath();
+  ctx.arc(0, neckY, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawScarf(
+  ctx: CanvasRenderingContext2D,
+  color: string,
+  accent: string | undefined,
+  bob: number
+) {
+  const neckY = AGENT_SIZE / 4 - 2 + bob;
+  ctx.fillStyle = color;
+  // Wrap around neck
+  ctx.beginPath();
+  ctx.ellipse(0, neckY, 10, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Hanging end
+  ctx.fillRect(-3, neckY + 2, 5, 10);
+  // Stripes on the hanging end
+  ctx.fillStyle = accent ?? "#BBDEFB";
+  ctx.fillRect(-3, neckY + 4, 5, 1.5);
+  ctx.fillRect(-3, neckY + 8, 5, 1.5);
+}
+
+function drawSunglasses(
+  ctx: CanvasRenderingContext2D,
+  color: string,
+  bob: number
+) {
+  const eyeY = -12 + bob;
+  ctx.fillStyle = color;
+  // Left lens
+  ctx.beginPath();
+  ctx.roundRect(-8, eyeY - 3, 7, 5, 1.5);
+  ctx.fill();
+  // Right lens
+  ctx.beginPath();
+  ctx.roundRect(1, eyeY - 3, 7, 5, 1.5);
+  ctx.fill();
+  // Bridge
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(-1, eyeY);
+  ctx.lineTo(1, eyeY);
+  ctx.stroke();
+  // Arms
+  ctx.beginPath();
+  ctx.moveTo(-8, eyeY - 1);
+  ctx.lineTo(-12, eyeY - 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(8, eyeY - 1);
+  ctx.lineTo(12, eyeY - 2);
+  ctx.stroke();
+}
+
+function drawCape(
+  ctx: CanvasRenderingContext2D,
+  color: string,
+  bob: number
+) {
+  const topY = -AGENT_SIZE / 4 + bob;
+  ctx.fillStyle = color;
+  ctx.globalAlpha = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(-8, topY);
+  ctx.quadraticCurveTo(-12, topY + 16, -6, topY + 24);
+  ctx.lineTo(6, topY + 24);
+  ctx.quadraticCurveTo(12, topY + 16, 8, topY);
+  ctx.closePath();
+  ctx.fill();
+  ctx.globalAlpha = 1.0;
+}
+
+function drawSweater(
+  ctx: CanvasRenderingContext2D,
+  color: string,
+  accent: string | undefined,
+  bob: number
+) {
+  const bodyY = -AGENT_SIZE / 8 + bob;
+  ctx.fillStyle = color;
+  ctx.globalAlpha = 0.85;
+  ctx.beginPath();
+  ctx.roundRect(-9, bodyY, 18, 12, 3);
+  ctx.fill();
+  // Pattern
+  ctx.fillStyle = accent ?? "#FFF9C4";
+  ctx.fillRect(-7, bodyY + 3, 14, 1.5);
+  ctx.fillRect(-7, bodyY + 7, 14, 1.5);
+  ctx.globalAlpha = 1.0;
 }
 
 // --- Per-agent sprite functions ---

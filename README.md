@@ -94,7 +94,12 @@ src/                          # React frontend
     ChatOverlay.tsx           # Agent chat UI
     ContextMenu.tsx           # Right-click menu
     WindowFrame.tsx           # Drag region + resize handles
-    AgentSprites.ts           # Agent color palettes
+    AgentSprites.ts           # Agent color palettes (legacy fallback)
+  themes/
+    PackageTypes.ts           # Package, ThemeDefinition, AgentDefinition types
+    builtins.ts               # Built-in theme and agent packages
+    registry.ts               # PackageRegistry singleton
+    index.ts                  # Barrel export
   hooks/
     useWorldState.ts          # Tauri IPC polling hook
   types/
@@ -119,6 +124,33 @@ src-tauri/                    # Rust backend
 | 🌊 Ocean | Deep blue, waves, bubbles, seaweed |
 | 🌅 Forest at Dawn | Misty sunrise, tall trees, fireflies |
 | 🏰 Castle | Stone walls, torches, banners, cobblestone |
+
+## 📦 Package System
+
+Themes and agent avatars are defined as **declarative packages** — pure data objects that reference built-in rendering primitives by name. This means:
+
+- **Themes** specify colors, gradients, particle settings, and a list of "decorator" names (e.g. `"clouds"`, `"torches"`, `"fireflies"`)
+- **Agent avatars** specify color palettes, voice profiles, body shape names, and default personality values
+- **External packages** can be loaded from JSON files to add new themes and agents without modifying the app
+
+See `src/themes/PackageTypes.ts` for the full type definitions. Example theme package:
+
+```json
+{
+  "version": 1,
+  "name": "My Custom Theme Pack",
+  "themes": [{
+    "id": "my-theme",
+    "name": "My Theme",
+    "icon": "🎪",
+    "sky": ["#1a1a2e", "#16213e"],
+    "ground": "#4a3c2a",
+    "groundAccent": "#3d3020",
+    "particles": { "type": "star", "color": "#FFD700", "count": 20 },
+    "decorators": ["stars", "moon"]
+  }]
+}
+```
 
 ## 🤖 Agent Framework
 

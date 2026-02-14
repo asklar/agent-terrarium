@@ -33,11 +33,28 @@ This means the frontend is a pure view layer — it reads state, draws it, and s
 
 ## How to Add a New Theme
 
-1. **Add the theme name** to the `ThemeName` union type in `src/components/AnimatedBackground.tsx`
-2. **Add a theme entry** to the `THEMES` record with sky colors, ground colors, particle settings, and feature list
-3. **Implement draw functions** for any new features (e.g., `drawMyFeature()`)
-4. **Call your draw functions** in the render loop, gated by `t.features.includes("my_feature")`
-5. **Add to the context menu** in `src/components/ContextMenu.tsx` — add an entry to the `THEMES` array
+Themes are now declarative packages. Add a new theme by adding an entry to `src/themes/builtins.ts`:
+
+```typescript
+{
+  id: "my-theme",
+  name: "My Theme",
+  icon: "🎪",
+  sky: ["#1a1a2e", "#16213e"],
+  ground: "#4a3c2a",
+  groundAccent: "#3d3020",
+  particles: { type: "star", color: "#FFD700", count: 20 },
+  decorators: ["stars", "moon", "clouds"],
+}
+```
+
+The `decorators` array references built-in draw functions by name. Available decorators:
+`clouds`, `moon`, `stars`, `shooting_stars`, `waves`, `seaweed`, `flowers`, `grass`, `cactus`, `trees`, `mist`, `fireflies`, `castle_walls`, `torches`, `banners`
+
+To add a **new decorator** (custom draw function):
+1. Write the draw function in `src/components/AnimatedBackground.tsx`
+2. Add it to the `DECORATORS` map with a unique name
+3. Reference it from your theme's `decorators` array
 
 ## How to Add a New Agent Avatar
 
