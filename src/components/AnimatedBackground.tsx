@@ -56,6 +56,16 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
     const t = registry.getTheme(theme);
     if (!t) return;
 
+    // Pre-load SVG file images for custom decorators
+    const svgImages = new Map<string, HTMLImageElement>();
+    for (const cd of t.customDecorators ?? []) {
+      if (cd.file) {
+        const img = new Image();
+        img.src = `/packages/${cd.file}`;
+        svgImages.set(cd.name, img);
+      }
+    }
+
     const isDynamic = !!dynamicSky && !t.disableDynamicSky;
 
     // Initialize weather data for dynamic sky
@@ -262,7 +272,7 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
           if (dec === "clouds" || dec === "stars" || dec === "moon" || dec === "shooting_stars") continue;
           const fn = DECORATORS[dec];
           if (fn) { fn(ctx, w, h, groundY, time, dt, t, shootingStarsRef); }
-          else { const cd = findCustomDecorator(t, dec); if (cd) drawCustomDecorator(ctx, w, groundY, cd); }
+          else { const cd = findCustomDecorator(t, dec); if (cd) drawCustomDecorator(ctx, w, groundY, cd, svgImages); }
         }
         // Draw clouds with dynamic opacity and color based on weather
         const sky = skyStateRef.current;
@@ -326,7 +336,7 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
         for (const dec of t.decorators) {
           const fn = DECORATORS[dec];
           if (fn) { fn(ctx, w, h, groundY, time, dt, t, shootingStarsRef); }
-          else { const cd = findCustomDecorator(t, dec); if (cd) drawCustomDecorator(ctx, w, groundY, cd); }
+          else { const cd = findCustomDecorator(t, dec); if (cd) drawCustomDecorator(ctx, w, groundY, cd, svgImages); }
         }
       }
 
@@ -733,8 +743,23 @@ function drawCustomDecorator(
   w: number,
   groundY: number,
   def: CustomDecoratorDef,
+  svgImages: Map<string, HTMLImageElement>,
 ) {
-  for (const el of def.elements) {
+  // Draw file-based SVG image first (if provided and loaded)
+  const img = svgImages.get(def.name);
+  if (img && img.complete && img.naturalWidth > 0) {
+    ctx.save();
+    const fx = (def.fileX ?? 0.5) * w;
+    const fy = (def.fileY ?? 0.5) * groundY;
+    const fw = def.fileWidth ?? 100;
+    const fh = def.fileHeight ?? 100;
+    if (def.fileOpacity !== undefined && def.fileOpacity < 1) ctx.globalAlpha = def.fileOpacity;
+    ctx.drawImage(img, fx - fw / 2, fy - fh / 2, fw, fh);
+    ctx.restore();
+  }
+
+  // Draw inline path elements on top
+  for (const el of def.elements ?? []) {
     ctx.save();
     const px = el.x * w;
     const py = el.y * groundY;

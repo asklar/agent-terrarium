@@ -108,15 +108,36 @@ export type ParticleType = "leaf" | "star" | "sand" | "bubble";
 // ─── Custom Decorators (SVG-path based) ─────────────────────────────
 
 /**
- * A custom decorator defined entirely in JSON using SVG path data.
+ * A custom decorator defined in JSON using inline SVG path data
+ * and/or an external SVG file reference.
  * This allows external package authors to create rich theme visuals
  * (landmarks, structures, scenery) without modifying app code.
+ *
+ * Use `elements` for inline path data, `file` for an external SVG,
+ * or both (file is drawn first, then elements overlay on top).
  */
 export interface CustomDecoratorDef {
   /** Name referenced in the theme's `decorators` array */
   name: string;
-  /** Ordered list of SVG path elements drawn back-to-front */
-  elements: SvgElement[];
+  /** Ordered list of SVG path elements drawn back-to-front. At least one of `elements` or `file` must be provided. */
+  elements?: SvgElement[];
+  /**
+   * Relative path to an SVG file (e.g. "seattle/space-needle.svg").
+   * Resolved relative to the package's base URL (public/packages/ for
+   * built-in, ~/agent-terrarium/packages/ for user packages).
+   * When provided, the SVG is loaded as an image and drawn on the canvas.
+   */
+  file?: string;
+  /** X position of the file image as a fraction of canvas width (0–1, default: 0.5) */
+  fileX?: number;
+  /** Y position of the file image as a fraction from top to ground line (0–1, default: 0.5) */
+  fileY?: number;
+  /** Display width of the file image in px (default: 100) */
+  fileWidth?: number;
+  /** Display height of the file image in px (default: 100) */
+  fileHeight?: number;
+  /** Opacity of the file image 0–1 (default: 1) */
+  fileOpacity?: number;
 }
 
 /**
