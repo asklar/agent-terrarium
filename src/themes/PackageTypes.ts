@@ -115,6 +115,15 @@ export interface AgentDefinition {
 
   /** Default personality values (used when adding a new agent) */
   personality: AgentPersonalityDefaults;
+
+  /** Default backend configuration */
+  defaultBackend?: {
+    backend_id: string;
+    model?: string;
+    system_prompt?: string;
+    custom_agent?: string;
+    awareness_level?: number;
+  };
 }
 
 export interface AgentColors {

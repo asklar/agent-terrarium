@@ -38,6 +38,13 @@ export interface Agent {
   state_timer: number;
   interaction_cooldown: number;
   gear: string[];
+  backend_config?: {
+    backend_id: string;
+    model?: string;
+    system_prompt?: string;
+    custom_agent?: string;
+    awareness_level: number;
+  };
 }
 
 export interface Ball {

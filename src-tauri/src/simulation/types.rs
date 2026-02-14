@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::agents::backend::BackendConfig;
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub struct Vec2 {
     pub x: f64,
@@ -107,6 +109,9 @@ pub struct Agent {
     /// Equipped gear item ids
     #[serde(default)]
     pub gear: Vec<String>,
+    /// Backend configuration for this agent
+    #[serde(default)]
+    pub backend_config: BackendConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -174,6 +179,9 @@ pub struct AgentConfig {
     /// Equipped gear item ids
     #[serde(default)]
     pub gear: Vec<String>,
+    /// Backend configuration for this agent
+    #[serde(default)]
+    pub backend_config: BackendConfig,
 }
 
 /// Persisted app configuration

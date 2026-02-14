@@ -1,5 +1,7 @@
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
+use crate::agents::backend::BackendConfig;
+use crate::agents::registry::BackendRegistry;
 use crate::simulation::types::*;
 
 const TICK_RATE: f64 = 1.0 / 20.0; // 20 ticks/sec
@@ -13,10 +15,11 @@ const WANDER_TARGET_MARGIN: f64 = 10.0;
 
 pub struct World {
     pub state: Mutex<WorldState>,
+    pub backend_registry: Arc<BackendRegistry>,
 }
 
 impl World {
-    pub fn new(bounds: Vec2) -> Self {
+    pub fn new(bounds: Vec2, backend_registry: Arc<BackendRegistry>) -> Self {
         World {
             state: Mutex::new(WorldState {
                 agents: Vec::new(),
@@ -31,6 +34,7 @@ impl World {
                 ball_kick_on_capture: true,
                 attention_interval_secs: 5.0,
             }),
+            backend_registry,
         }
     }
 
@@ -360,6 +364,52 @@ impl World {
         }
     }
 
+    /// Add user message to session and return the agent's backend config.
+    /// The actual response generation happens async in the command handler.
+    pub fn add_user_message(&self, agent_id: &str, text: &str) -> Option<BackendConfig> {
+        let mut state = self.state.lock().unwrap();
+        let backend_config = state
+            .agents
+            .iter()
+            .find(|a| a.id == agent_id)
+            .map(|a| a.backend_config.clone());
+
+        if let Some(session) = state.chat_sessions.iter_mut().find(|s| s.agent_id == agent_id) {
+            session.messages.push(ChatMessage {
+                from_user: true,
+                text: text.to_string(),
+            });
+        }
+
+        backend_config
+    }
+
+    /// Append an assistant response to the chat session.
+    pub fn complete_response(&self, agent_id: &str, response: &str) {
+        let mut state = self.state.lock().unwrap();
+        if let Some(session) = state.chat_sessions.iter_mut().find(|s| s.agent_id == agent_id) {
+            session.messages.push(ChatMessage {
+                from_user: false,
+                text: response.to_string(),
+            });
+        }
+    }
+
+    /// Get a snapshot of chat messages for an agent (for building backend context).
+    pub fn get_chat_messages(&self, agent_id: &str) -> Vec<ChatMessage> {
+        let state = self.state.lock().unwrap();
+        state
+            .chat_sessions
+            .iter()
+            .find(|s| s.agent_id == agent_id)
+            .map(|s| s.messages.clone())
+            .unwrap_or_default()
+    }
+
+    pub fn get_backend_registry(&self) -> Arc<BackendRegistry> {
+        self.backend_registry.clone()
+    }
+
     pub fn send_message(&self, agent_id: &str, text: &str) -> String {
         let mut state = self.state.lock().unwrap();
         if let Some(session) = state.chat_sessions.iter_mut().find(|s| s.agent_id == agent_id) {
@@ -457,6 +507,7 @@ impl World {
             avatar: a.avatar.clone(),
             personality: a.personality.clone(),
             gear: a.gear.clone(),
+            backend_config: a.backend_config.clone(),
         }).collect()
     }
 
@@ -474,6 +525,7 @@ impl World {
             let mut agent = create_agent(&ac.id, &ac.name, &ac.avatar, &bounds, ground_y);
             agent.personality = ac.personality.clone();
             agent.gear = ac.gear.clone();
+            agent.backend_config = ac.backend_config.clone();
             state.agents.push(agent);
         }
     }
@@ -563,6 +615,7 @@ fn create_agent(id: &str, name: &str, avatar: &str, bounds: &Vec2, ground_y: f64
         state_timer: 0.0,
         interaction_cooldown: 0.0,
         gear: Vec::new(),
+        backend_config: BackendConfig::default(),
     }
 }
 

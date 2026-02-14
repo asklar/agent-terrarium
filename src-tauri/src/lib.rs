@@ -1,6 +1,9 @@
 mod agents;
 mod simulation;
 
+use agents::backend::{BackendMessage, MessageRole};
+use agents::echo::EchoBackend;
+use agents::registry::BackendRegistry;
 use simulation::types::{AppConfig, Vec2};
 use simulation::world::World;
 use std::sync::Arc;
@@ -22,8 +25,47 @@ fn click_agent(world: tauri::State<'_, Arc<World>>, agent_id: String) -> bool {
 }
 
 #[tauri::command]
-fn send_message(world: tauri::State<'_, Arc<World>>, agent_id: String, text: String) -> String {
-    world.send_message(&agent_id, &text)
+async fn send_message(world: tauri::State<'_, Arc<World>>, agent_id: String, text: String) -> Result<String, String> {
+    // Add user message and get backend config
+    let backend_config = world.add_user_message(&agent_id, &text);
+
+    let backend_config = match backend_config {
+        Some(cfg) => cfg,
+        None => return Err("Agent not found".to_string()),
+    };
+
+    // Build conversation history for the backend
+    let chat_messages = world.get_chat_messages(&agent_id);
+    let messages: Vec<BackendMessage> = chat_messages
+        .iter()
+        .map(|m| BackendMessage {
+            role: if m.from_user {
+                MessageRole::User
+            } else {
+                MessageRole::Assistant
+            },
+            content: m.text.clone(),
+        })
+        .collect();
+
+    // Look up backend and generate response
+    let registry = world.get_backend_registry();
+    let backend = registry
+        .get(&backend_config.backend_id)
+        .unwrap_or_else(|| registry.get("echo").expect("echo backend must be registered"));
+
+    let response = backend
+        .respond(&backend_config, &messages)
+        .await
+        .unwrap_or_else(|e| agents::backend::BackendResponse {
+            content: format!("Error: {}", e),
+            needs_attention: false,
+        });
+
+    // Append the response to the chat session
+    world.complete_response(&agent_id, &response.content);
+
+    Ok(response.content)
 }
 
 #[tauri::command]
@@ -142,7 +184,12 @@ fn get_splash_wait(state: tauri::State<'_, SplashWait>) -> bool {
 pub fn run() {
     let splash_wait = std::env::args().any(|a| a == "--splash-wait");
 
-    let world = Arc::new(World::new(Vec2::new(800.0, 400.0)));
+    // Create backend registry with echo backend
+    let mut registry = BackendRegistry::new();
+    registry.register(Arc::new(EchoBackend));
+    let registry = Arc::new(registry);
+
+    let world = Arc::new(World::new(Vec2::new(800.0, 400.0), registry));
 
     // Restore agents/settings from saved config
     let path = config_path();
