@@ -49,7 +49,7 @@ pub fn create_handlers(
                 text.clone()
             };
             log::info!("[tool] {} says: \"{}\"", aname_say, display);
-            world_say.push_bubble(&aid_say, display, false, 4.5);
+            world_say.push_bubble(&aid_say, display, false, 10.0);
             ToolResultObject::text(format!("You said: \"{}\"", text))
         });
 
