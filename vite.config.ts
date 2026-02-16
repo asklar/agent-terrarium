@@ -39,12 +39,14 @@ function serveRootPackages(): Plugin {
       const dest = path.join(outDir, "packages");
       for (const entry of fs.readdirSync(packagesDir, { withFileTypes: true })) {
         if (!entry.isDirectory()) continue;
+        // Skip npm workspace packages (e.g. packages/claude/)
         if (fs.existsSync(path.join(packagesDir, entry.name, "package.json"))) continue;
         const src = path.join(packagesDir, entry.name);
         const target = path.join(dest, entry.name);
         fs.mkdirSync(target, { recursive: true });
-        for (const f of fs.readdirSync(src)) {
-          fs.copyFileSync(path.join(src, f), path.join(target, f));
+        for (const f of fs.readdirSync(src, { withFileTypes: true })) {
+          if (!f.isFile()) continue;
+          fs.copyFileSync(path.join(src, f.name), path.join(target, f.name));
         }
       }
     },
