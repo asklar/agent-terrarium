@@ -2,6 +2,8 @@ export type {
   Package,
   ThemeDefinition,
   ThemeMusic,
+  CustomDecoratorDef,
+  SvgElement,
   AgentDefinition,
   VoiceProfile,
   AgentPersonalityDefaults,

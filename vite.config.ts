@@ -1,12 +1,59 @@
-import { defineConfig } from "vite";
+import { defineConfig, Plugin } from "vite";
 import react from "@vitejs/plugin-react";
+import path from "path";
+import fs from "fs";
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
 
+/**
+ * Vite plugin that serves root-level packages/ directory at /packages/ URL,
+ * as a fallback after public/packages/. This lets theme packages (e.g.
+ * packages/seattle/) live outside public/ while still being accessible via
+ * the same URL namespace.
+ */
+function serveRootPackages(): Plugin {
+  const packagesDir = path.resolve(__dirname, "packages");
+  return {
+    name: "serve-root-packages",
+    configureServer(server) {
+      return () => {
+        server.middlewares.use((req, res, next) => {
+          if (!req.url?.startsWith("/packages/")) return next();
+          const rel = decodeURIComponent(req.url.slice("/packages/".length));
+          const file = path.join(packagesDir, rel);
+          if (!file.startsWith(packagesDir)) return next();
+          if (!fs.existsSync(file) || !fs.statSync(file).isFile()) return next();
+          const ext = path.extname(file);
+          const mime: Record<string, string> = {
+            ".json": "application/json",
+            ".svg": "image/svg+xml",
+          };
+          res.setHeader("Content-Type", mime[ext] || "application/octet-stream");
+          fs.createReadStream(file).pipe(res);
+        });
+      };
+    },
+    writeBundle(options) {
+      const outDir = options.dir || "dist";
+      const dest = path.join(outDir, "packages");
+      for (const entry of fs.readdirSync(packagesDir, { withFileTypes: true })) {
+        if (!entry.isDirectory()) continue;
+        if (fs.existsSync(path.join(packagesDir, entry.name, "package.json"))) continue;
+        const src = path.join(packagesDir, entry.name);
+        const target = path.join(dest, entry.name);
+        fs.mkdirSync(target, { recursive: true });
+        for (const f of fs.readdirSync(src)) {
+          fs.copyFileSync(path.join(src, f), path.join(target, f));
+        }
+      }
+    },
+  };
+}
+
 // https://vite.dev/config/
 export default defineConfig(async () => ({
-  plugins: [react()],
+  plugins: [react(), serveRootPackages()],
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
