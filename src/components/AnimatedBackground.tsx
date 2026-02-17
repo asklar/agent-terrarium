@@ -751,8 +751,10 @@ function drawCustomDecorator(
     ctx.save();
     const fx = (def.fileX ?? 0.5) * w;
     const fy = (def.fileY ?? 0.5) * groundY;
-    const fw = def.fileWidth ?? 100;
-    const fh = def.fileHeight ?? 100;
+    // Scale decorator dimensions proportionally to canvas width
+    const sizeScale = w / 1280;
+    const fw = (def.fileWidth ?? 100) * sizeScale;
+    const fh = (def.fileHeight ?? 100) * sizeScale;
     if (def.fileOpacity !== undefined && def.fileOpacity < 1) ctx.globalAlpha = def.fileOpacity;
     ctx.drawImage(img, fx - fw / 2, fy - fh / 2, fw, fh);
     ctx.restore();
