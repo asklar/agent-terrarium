@@ -13,7 +13,10 @@ interface TerrariumCanvasProps {
   thinkingAgentIds?: ReadonlySet<string>;
 }
 
-const AGENT_SIZE = 128;
+const AGENT_SIZE = 64;
+
+// Baseline size the pixel-art draw specs were designed for
+const AGENT_BASELINE = 32;
 const BALL_SIZE = 10;
 
 /** Perspective scale: 0.6 at horizon (groundY) → 1.0 at bottom (boundsY) */
@@ -549,8 +552,9 @@ function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent, isThinking?: boo
 
   ctx.save();
   ctx.translate(x, y);
-  // Apply perspective scaling
-  ctx.scale(pScale, pScale);
+  // Apply perspective scaling and artwork size ratio
+  const artScale = AGENT_SIZE / AGENT_BASELINE;
+  ctx.scale(pScale * artScale, pScale * artScale);
   if (flip) ctx.scale(-1, 1);
 
   // Shadow — stretches when running
