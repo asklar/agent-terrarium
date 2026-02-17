@@ -362,23 +362,40 @@ impl World {
         log::info!("Ball thrown at ({:.0}, {:.0}) vel ({:.0}, {:.0})", x, y, vx, vy);
         let mut state = self.state.lock().unwrap();
         let ground_y = state.bounds.y * state.ground_y_ratio;
-        // Depth = where on the ground plane the ball lands (clamp to ground plane)
-        let depth_y = y.max(ground_y);
-        // If thrown above the horizon, that becomes initial height
-        let initial_height = (ground_y - y).max(0.0);
-        // vy is in screen coords (negative = dragging up, positive = dragging down)
-        // Upward drag → ball goes up (positive height_velocity)
-        // Downward drag → ball moves toward viewer (positive depth velocity)
-        let height_vel = (-vy).max(0.0);
-        let depth_vel = vy.max(0.0);
-        state.ball = Some(Ball {
-            position: Vec2::new(x, depth_y),
-            velocity: Vec2::new(vx, depth_vel),
-            active: true,
-            captures: 0,
-            height: initial_height + 10.0,
-            height_velocity: height_vel,
-        });
+        let bounds_y = state.bounds.y;
+
+        if y >= ground_y {
+            // Thrown from on the ground plane — ball starts on ground with height
+            state.ball = Some(Ball {
+                position: Vec2::new(x, y.min(bounds_y - 8.0)),
+                velocity: Vec2::new(vx, vy),
+                active: true,
+                captures: 0,
+                height: 10.0,
+                height_velocity: 0.0,
+            });
+        } else {
+            // Thrown from above the horizon — pick a landing depth on the ground plane
+            // vy > 0 means dragging down (toward ground), which maps to depth
+            let depth_y = if vy > 0.0 {
+                // The further they drag down, the further into the ground plane
+                let ground_range = bounds_y - ground_y;
+                let depth_fraction = (vy / 500.0).min(1.0); // normalize drag
+                ground_y + depth_fraction * ground_range * 0.8
+            } else {
+                // Dragging up from above horizon — land near the horizon
+                ground_y + 20.0
+            };
+            let initial_height = ground_y - y;
+            state.ball = Some(Ball {
+                position: Vec2::new(x, depth_y.min(bounds_y - 8.0)),
+                velocity: Vec2::new(vx, 0.0),
+                active: true,
+                captures: 0,
+                height: initial_height + 10.0,
+                height_velocity: 0.0,
+            });
+        }
         state.events.push(TerrariumEvent::BallThrown);
     }
 

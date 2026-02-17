@@ -16,10 +16,10 @@ interface TerrariumCanvasProps {
 const AGENT_SIZE = 32;
 const BALL_SIZE = 10;
 
-/** Perspective scale: 0.4 at horizon (groundY) → 1.0 at bottom (boundsY) */
+/** Perspective scale: 0.6 at horizon (groundY) → 1.0 at bottom (boundsY) */
 function perspectiveScale(y: number, groundY: number, boundsY: number): number {
   const t = Math.max(0, Math.min(1, (y - groundY) / (boundsY - groundY)));
-  return 0.4 + 0.6 * t;
+  return 0.6 + 0.4 * t;
 }
 
 /** Fallback drawSpec for avatars without one */
@@ -231,13 +231,23 @@ export function TerrariumCanvas({
       const sx = 1 + squash * 0.35 + velStretch * 0.3;
       const sy = 1 - squash * 0.35 - velStretch * 0.3;
 
-      // Draw shadow on ground at ball's depth position
+      // Draw shadow: sun is far away and high, so parallel rays project the ball
+      // onto the ground plane. Shadow offsets slightly toward viewer (positive Y)
+      // and to the right (matching a top-left sun).
       ctx.save();
-      const shadowAlpha = Math.max(0.05, 0.2 - ballHeight * 0.001);
-      const shadowSize = BALL_SIZE * ballScale * Math.max(0.5, 1 - ballHeight * 0.002);
+      const shadowOffsetX = ballHeight * 0.15 * ballScale;
+      const shadowOffsetY = ballHeight * 0.1 * ballScale;
+      const shadowAlpha = Math.max(0.05, 0.25 - ballHeight * 0.0008);
+      const shadowRadius = BALL_SIZE * ballScale;
       ctx.fillStyle = `rgba(0,0,0,${shadowAlpha})`;
       ctx.beginPath();
-      ctx.ellipse(ball.position.x, ball.position.y, shadowSize, shadowSize * 0.4, 0, 0, Math.PI * 2);
+      ctx.ellipse(
+        ball.position.x + shadowOffsetX,
+        ball.position.y + shadowOffsetY,
+        shadowRadius,
+        shadowRadius * 0.4,
+        0, 0, Math.PI * 2,
+      );
       ctx.fill();
       ctx.restore();
 
