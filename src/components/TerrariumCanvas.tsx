@@ -13,7 +13,7 @@ interface TerrariumCanvasProps {
   thinkingAgentIds?: ReadonlySet<string>;
 }
 
-const AGENT_SIZE = 32;
+const AGENT_SIZE = 38;
 const BALL_SIZE = 10;
 
 /** Perspective scale: 0.6 at horizon (groundY) → 1.0 at bottom (boundsY) */
