@@ -231,25 +231,26 @@ export function TerrariumCanvas({
       const sx = 1 + squash * 0.35 + velStretch * 0.3;
       const sy = 1 - squash * 0.35 - velStretch * 0.3;
 
-      // Draw shadow: sun is far away and high, so parallel rays project the ball
-      // onto the ground plane. Shadow offsets slightly toward viewer (positive Y)
-      // and to the right (matching a top-left sun).
-      ctx.save();
-      const shadowOffsetX = ballHeight * 0.15 * ballScale;
-      const shadowOffsetY = ballHeight * 0.1 * ballScale;
-      const shadowAlpha = Math.max(0.05, 0.25 - ballHeight * 0.0008);
-      const shadowRadius = BALL_SIZE * ballScale;
-      ctx.fillStyle = `rgba(0,0,0,${shadowAlpha})`;
-      ctx.beginPath();
-      ctx.ellipse(
-        ball.position.x + shadowOffsetX,
-        ball.position.y + shadowOffsetY,
-        shadowRadius,
-        shadowRadius * 0.4,
-        0, 0, Math.PI * 2,
-      );
-      ctx.fill();
-      ctx.restore();
+      // Draw shadow: parallel sun-ray projection onto the ground plane.
+      // Only draw a separate ground shadow when the ball is airborne.
+      if (ballHeight > 2) {
+        ctx.save();
+        const shadowOffsetX = ballHeight * 0.15 * ballScale;
+        const shadowOffsetY = ballHeight * 0.1 * ballScale;
+        const shadowAlpha = Math.max(0.05, 0.25 - ballHeight * 0.0008);
+        const shadowRadius = BALL_SIZE * ballScale;
+        ctx.fillStyle = `rgba(0,0,0,${shadowAlpha})`;
+        ctx.beginPath();
+        ctx.ellipse(
+          ball.position.x + shadowOffsetX,
+          ball.position.y + shadowOffsetY,
+          shadowRadius,
+          shadowRadius * 0.4,
+          0, 0, Math.PI * 2,
+        );
+        ctx.fill();
+        ctx.restore();
+      }
 
       // Draw ball elevated above its ground position
       const screenY = ball.position.y - ballHeight * ballScale;
