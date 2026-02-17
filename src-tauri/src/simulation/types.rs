@@ -122,6 +122,12 @@ pub struct Ball {
     /// Number of times an agent has captured/kicked this ball
     #[serde(default)]
     pub captures: u32,
+    /// Height above the ground plane (0 = on ground, positive = in air)
+    #[serde(default)]
+    pub height: f64,
+    /// Vertical velocity for bouncing (positive = upward)
+    #[serde(default)]
+    pub height_velocity: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -166,7 +166,8 @@ impl World {
                 state.agents[i].velocity.x = -state.agents[i].velocity.x.abs();
                 state.agents[i].direction = Direction::Left;
             }
-            // Ghost can float above ground, others stay on ground
+            // Agents walk on the ground plane (ground_y to bounds.y)
+            // Ghost can float above ground, others stay on ground plane
             let min_y = if state.agents[i].personality.movement_style == MovementStyle::Float {
                 ground_y * 0.3
             } else {
@@ -263,9 +264,11 @@ impl World {
                         let kick_speed = 200.0 + (tick % 5) as f64 * 30.0;
                         ball.velocity = Vec2::new(
                             kick_dir_x * kick_speed * (1.0 + variation),
-                            -150.0 - (tick % 4) as f64 * 25.0,
+                            0.0,
                         );
-                        ball.position = agent_pos + Vec2::new(kick_dir_x * 20.0, -10.0);
+                        ball.position = agent_pos + Vec2::new(kick_dir_x * 20.0, 0.0);
+                        ball.height = 10.0;
+                        ball.height_velocity = 150.0 + (tick % 4) as f64 * 25.0;
                     }
                 }
             }
@@ -293,33 +296,45 @@ impl World {
         // Update ball physics
         if let Some(ref mut ball) = state.ball {
             if ball.active {
-                // Apply gravity
-                ball.velocity.y += BALL_GRAVITY * TICK_RATE;
+                // Apply gravity to height (not position.y)
+                ball.height_velocity -= BALL_GRAVITY * TICK_RATE;
+                ball.height += ball.height_velocity * TICK_RATE;
 
-                ball.position = ball.position + ball.velocity * TICK_RATE;
+                // Horizontal movement
+                ball.position.x += ball.velocity.x * TICK_RATE;
                 ball.velocity.x *= BALL_FRICTION;
+
+                // Depth movement (along ground plane)
+                ball.position.y += ball.velocity.y * TICK_RATE;
+                ball.velocity.y *= BALL_FRICTION;
 
                 // Bounce off left/right walls
                 if ball.position.x < 8.0 || ball.position.x > bounds.x - 8.0 {
                     ball.velocity.x = -ball.velocity.x * BALL_BOUNCE_DAMPING;
                     ball.position.x = ball.position.x.clamp(8.0, bounds.x - 8.0);
                 }
-                // Bounce off ceiling
-                if ball.position.y < 8.0 {
-                    ball.velocity.y = -ball.velocity.y * BALL_BOUNCE_DAMPING;
-                    ball.position.y = 8.0;
-                }
-                // Bounce off ground
-                if ball.position.y > ground_y {
-                    ball.velocity.y = -ball.velocity.y * BALL_BOUNCE_DAMPING;
+                // Clamp depth to ground plane
+                if ball.position.y < ground_y {
                     ball.position.y = ground_y;
-                    // Extra horizontal friction on ground
+                    ball.velocity.y = ball.velocity.y.abs() * BALL_BOUNCE_DAMPING;
+                }
+                if ball.position.y > bounds.y - 8.0 {
+                    ball.position.y = bounds.y - 8.0;
+                    ball.velocity.y = -ball.velocity.y.abs() * BALL_BOUNCE_DAMPING;
+                }
+                // Bounce off ground (height < 0 while falling)
+                if ball.height < 0.0 {
+                    ball.height_velocity = ball.height_velocity.abs() * BALL_BOUNCE_DAMPING;
+                    ball.height = 0.0;
+                    // Extra horizontal friction on ground contact
                     ball.velocity.x *= 0.92;
+                    ball.velocity.y *= 0.92;
                 }
 
-                if ball.velocity.magnitude() < BALL_MIN_SPEED && (ball.position.y - ground_y).abs() < 2.0 {
+                let total_speed = (ball.velocity.x.powi(2) + ball.velocity.y.powi(2)).sqrt();
+                if total_speed <= BALL_MIN_SPEED && ball.height < 2.0 && ball.height_velocity.abs() <= BALL_MIN_SPEED {
                     ball.active = false;
-                    ball.position.y = ground_y;
+                    ball.height = 0.0;
                 }
             }
         }
@@ -346,11 +361,23 @@ impl World {
     pub fn throw_ball(&self, x: f64, y: f64, vx: f64, vy: f64) {
         log::info!("Ball thrown at ({:.0}, {:.0}) vel ({:.0}, {:.0})", x, y, vx, vy);
         let mut state = self.state.lock().unwrap();
+        let ground_y = state.bounds.y * state.ground_y_ratio;
+        // Depth = where on the ground plane the ball lands (clamp to ground plane)
+        let depth_y = y.max(ground_y);
+        // If thrown above the horizon, that becomes initial height
+        let initial_height = (ground_y - y).max(0.0);
+        // vy is in screen coords (negative = dragging up, positive = dragging down)
+        // Upward drag → ball goes up (positive height_velocity)
+        // Downward drag → ball moves toward viewer (positive depth velocity)
+        let height_vel = (-vy).max(0.0);
+        let depth_vel = vy.max(0.0);
         state.ball = Some(Ball {
-            position: Vec2::new(x, y),
-            velocity: Vec2::new(vx, vy),
+            position: Vec2::new(x, depth_y),
+            velocity: Vec2::new(vx, depth_vel),
             active: true,
             captures: 0,
+            height: initial_height + 10.0,
+            height_velocity: height_vel,
         });
         state.events.push(TerrariumEvent::BallThrown);
     }
@@ -695,6 +722,8 @@ impl World {
 }
 
 fn create_agent(id: &str, name: &str, avatar: &str, bounds: &Vec2, ground_y: f64) -> Agent {
+    // Ground plane ranges from ground_y (horizon) to bounds.y (near viewer)
+    let ground_mid = ground_y + (bounds.y - ground_y) * 0.5;
     let (personality, y_pos) = match avatar {
         "cat" => (
             Personality {
@@ -705,7 +734,7 @@ fn create_agent(id: &str, name: &str, avatar: &str, bounds: &Vec2, ground_y: f64
                 ball_interest: 0.9,
                 chat_emojis: vec!["😺".into(), "😻".into(), "🐱".into(), "✨".into(), "💕".into()],
             },
-            ground_y + 20.0,
+            ground_mid + rand_f64() * (bounds.y - ground_mid - 32.0),
         ),
         "copilot" => (
             Personality {
@@ -716,7 +745,7 @@ fn create_agent(id: &str, name: &str, avatar: &str, bounds: &Vec2, ground_y: f64
                 ball_interest: 0.5,
                 chat_emojis: vec!["✨".into(), "💡".into(), "🚀".into(), "💻".into(), "🤝".into()],
             },
-            ground_y + 20.0,
+            ground_mid + rand_f64() * (bounds.y - ground_mid - 32.0),
         ),
         "squirrel" => (
             Personality {
@@ -727,7 +756,7 @@ fn create_agent(id: &str, name: &str, avatar: &str, bounds: &Vec2, ground_y: f64
                 ball_interest: 0.8,
                 chat_emojis: vec!["🐿️".into(), "🌰".into(), "🍂".into(), "😆".into(), "💨".into()],
             },
-            ground_y + 20.0,
+            ground_mid + rand_f64() * (bounds.y - ground_mid - 32.0),
         ),
         "penguin" => (
             Personality {
@@ -738,7 +767,7 @@ fn create_agent(id: &str, name: &str, avatar: &str, bounds: &Vec2, ground_y: f64
                 ball_interest: 0.4,
                 chat_emojis: vec!["🐧".into(), "❄️".into(), "🧊".into(), "😊".into(), "🐟".into()],
             },
-            ground_y + 20.0,
+            ground_mid + rand_f64() * (bounds.y - ground_mid - 32.0),
         ),
         "ghost" => (
             Personality {
@@ -760,7 +789,7 @@ fn create_agent(id: &str, name: &str, avatar: &str, bounds: &Vec2, ground_y: f64
                 ball_interest: 0.5,
                 chat_emojis: vec!["😊".into(), "👋".into(), "✨".into()],
             },
-            ground_y + 20.0,
+            ground_mid + rand_f64() * (bounds.y - ground_mid - 32.0),
         ),
     };
 
@@ -791,7 +820,7 @@ fn create_agent(id: &str, name: &str, avatar: &str, bounds: &Vec2, ground_y: f64
 
 fn pick_new_target(agent: &mut Agent, bounds: &Vec2, ground_y: f64) {
     let margin = 32.0;
-    // Float-style agents can go above ground, others stay on ground
+    // Float-style agents can go above ground, others walk on the ground plane
     let min_y = if agent.personality.movement_style == MovementStyle::Float {
         ground_y * 0.3
     } else {

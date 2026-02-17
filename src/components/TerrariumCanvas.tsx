@@ -16,6 +16,12 @@ interface TerrariumCanvasProps {
 const AGENT_SIZE = 32;
 const BALL_SIZE = 10;
 
+/** Perspective scale: 0.4 at horizon (groundY) → 1.0 at bottom (boundsY) */
+function perspectiveScale(y: number, groundY: number, boundsY: number): number {
+  const t = Math.max(0, Math.min(1, (y - groundY) / (boundsY - groundY)));
+  return 0.4 + 0.6 * t;
+}
+
 /** Fallback drawSpec for avatars without one */
 const DEFAULT_DRAW_SPEC: import("../themes/PackageTypes").DrawSpec = {
   layers: [
@@ -65,7 +71,7 @@ export function TerrariumCanvas({
     duration: number;
   } | null>(null);
   const attentionSoundTimers = useRef<Map<string, number>>(new Map());
-  const prevBallRef = useRef<{ vx: number; vy: number; captures: number; active: boolean } | null>(null);
+  const prevBallRef = useRef<{ vx: number; vy: number; hv: number; captures: number; active: boolean } | null>(null);
   const ballSquashRef = useRef(0);
   const spokenBubblesRef = useRef(new Set<string>());// -1 = squashed (wide+short), +1 = stretched (tall+narrow), decays to 0
 
@@ -177,14 +183,18 @@ export function TerrariumCanvas({
     // Clear with transparency
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Sort agents by Y position for z-ordering
+    const groundY = canvas.height * worldState.ground_y_ratio;
+    const boundsY = canvas.height;
+
+    // Sort agents by Y position for z-ordering (far → near)
     const sortedAgents = [...worldState.agents].sort(
       (a, b) => a.position.y - b.position.y,
     );
 
-    // Draw agents
+    // Draw agents with perspective scaling
     for (const agent of sortedAgents) {
-      drawAgent(ctx, agent, thinkingAgentIds?.has(agent.id));
+      const scale = perspectiveScale(agent.position.y, groundY, boundsY);
+      drawAgent(ctx, agent, thinkingAgentIds?.has(agent.id), scale);
     }
 
     // Play attention sounds periodically
@@ -202,33 +212,45 @@ export function TerrariumCanvas({
       }
     }
 
-    // Draw ball
+    // Draw ball with perspective
     if (worldState.ball) {
       const ball = worldState.ball;
+      const ballScale = perspectiveScale(ball.position.y, groundY, boundsY);
+      const ballHeight = ball.height ?? 0;
 
       // Update squash spring (decay toward 0)
       ballSquashRef.current *= 0.85;
       if (Math.abs(ballSquashRef.current) < 0.01) ballSquashRef.current = 0;
 
-      // Velocity-based stretch: falling fast → stretch vertically
-      const speed = Math.sqrt(ball.velocity.x ** 2 + ball.velocity.y ** 2);
-      const velStretch = Math.min(speed / 400, 0.3); // max 30% stretch
-      const velAngle = Math.atan2(ball.velocity.y, ball.velocity.x);
+      // Velocity-based stretch
+      const speed = Math.sqrt(ball.velocity.x ** 2 + (ball.height_velocity ?? 0) ** 2);
+      const velStretch = Math.min(speed / 400, 0.3);
+      const velAngle = Math.atan2(-(ball.height_velocity ?? 0), ball.velocity.x);
 
-      // Combine spring squash + velocity stretch
       const squash = ballSquashRef.current;
-      const sx = 1 + squash * 0.35 + velStretch * 0.3; // wider when squashed
-      const sy = 1 - squash * 0.35 - velStretch * 0.3; // shorter when squashed
+      const sx = 1 + squash * 0.35 + velStretch * 0.3;
+      const sy = 1 - squash * 0.35 - velStretch * 0.3;
 
+      // Draw shadow on ground at ball's depth position
       ctx.save();
-      ctx.translate(ball.position.x, ball.position.y);
+      const shadowAlpha = Math.max(0.05, 0.2 - ballHeight * 0.001);
+      const shadowSize = BALL_SIZE * ballScale * Math.max(0.5, 1 - ballHeight * 0.002);
+      ctx.fillStyle = `rgba(0,0,0,${shadowAlpha})`;
+      ctx.beginPath();
+      ctx.ellipse(ball.position.x, ball.position.y, shadowSize, shadowSize * 0.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
 
-      // Rotate to velocity direction for stretch, but only when moving fast
+      // Draw ball elevated above its ground position
+      const screenY = ball.position.y - ballHeight * ballScale;
+      ctx.save();
+      ctx.translate(ball.position.x, screenY);
+
       if (speed > 50 && Math.abs(squash) < 0.1) {
         ctx.rotate(velAngle);
       }
 
-      ctx.scale(sx, sy);
+      ctx.scale(sx * ballScale, sy * ballScale);
 
       ctx.fillStyle = "#FF5722";
       ctx.shadowColor = "rgba(0,0,0,0.3)";
@@ -265,20 +287,22 @@ export function TerrariumCanvas({
             if (capAgent) playCaptureAgentSound(capAgent.avatar);
           }
         }
-        // Bounce: velocity.y sign flipped (ground or ceiling bounce)
-        if (prev.vy > 5 && curBall.velocity.y < -5) {
+        // Bounce: height_velocity sign flipped (ground bounce)
+        const curHV = curBall.height_velocity ?? 0;
+        const prevHV = prev.hv ?? 0;
+        if (prevHV < -5 && curHV > 5) {
           playBounceSound();
-          // Trigger squash animation (negative = flatten)
-          ballSquashRef.current = -Math.min(prev.vy / 200, 1);
+          ballSquashRef.current = -Math.min(Math.abs(prevHV) / 200, 1);
         }
         // Wall bounce: velocity.x sign flipped
-        if (Math.abs(prev.vy) < 50 && Math.sign(curBall.velocity.x) !== Math.sign(prev.vx ?? curBall.velocity.x) && Math.abs(curBall.velocity.x) > 10) {
+        if (Math.abs(prevHV) < 50 && Math.sign(curBall.velocity.x) !== Math.sign(prev.vx ?? curBall.velocity.x) && Math.abs(curBall.velocity.x) > 10) {
           ballSquashRef.current = -0.5;
         }
       }
       prevBallRef.current = {
         vx: curBall.velocity.x,
         vy: curBall.velocity.y,
+        hv: curBall.height_velocity ?? 0,
         captures: curBall.captures,
         active: curBall.active,
       };
@@ -290,10 +314,11 @@ export function TerrariumCanvas({
     for (const bubble of worldState.bubbles) {
       const agent = worldState.agents.find((a) => a.id === bubble.agent_id);
       if (agent) {
+        const aScale = perspectiveScale(agent.position.y, groundY, boundsY);
         drawBubble(
           ctx,
           agent.position.x,
-          agent.position.y - AGENT_SIZE - 10,
+          agent.position.y - AGENT_SIZE * aScale - 10,
           bubble.content,
           bubble.is_event ? "thought" : "chat",
         );
@@ -330,12 +355,13 @@ export function TerrariumCanvas({
           // Float upward slightly
           const floatY = -elapsed * 8;
 
+          const hScale = perspectiveScale(agent.position.y, groundY, boundsY);
           ctx.save();
           ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
           drawBubble(
             ctx,
             agent.position.x,
-            agent.position.y - AGENT_SIZE - 16 + floatY,
+            agent.position.y - AGENT_SIZE * hScale - 16 + floatY,
             hb.emoji,
           );
           ctx.restore();
@@ -388,13 +414,14 @@ export function TerrariumCanvas({
   const findAgentAt = useCallback(
     (x: number, y: number): Agent | null => {
       if (!worldState) return null;
+      const gY = (worldState.bounds.y || 600) * worldState.ground_y_ratio;
+      const bY = worldState.bounds.y || 600;
       for (const agent of worldState.agents) {
+        const scale = perspectiveScale(agent.position.y, gY, bY);
+        const halfSize = (AGENT_SIZE * scale) / 2;
         const dx = x - agent.position.x;
         const dy = y - agent.position.y;
-        if (
-          Math.abs(dx) < AGENT_SIZE / 2 &&
-          Math.abs(dy) < AGENT_SIZE / 2
-        ) {
+        if (Math.abs(dx) < halfSize && Math.abs(dy) < halfSize) {
           return agent;
         }
       }
@@ -498,7 +525,7 @@ export function TerrariumCanvas({
   );
 }
 
-function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent, isThinking?: boolean) {
+function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent, isThinking?: boolean, pScale = 1) {
   const { x, y } = agent.position;
   const agentDef = registry.getAgent(agent.avatar);
   const isMoving =
@@ -511,6 +538,8 @@ function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent, isThinking?: boo
 
   ctx.save();
   ctx.translate(x, y);
+  // Apply perspective scaling
+  ctx.scale(pScale, pScale);
   if (flip) ctx.scale(-1, 1);
 
   // Shadow — stretches when running
