@@ -647,15 +647,15 @@ function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent, isThinking?: boo
 
   // Name tag with background
   if (flip) ctx.scale(-1, 1);
-  ctx.font = "bold 8px 'Segoe UI', sans-serif";
+  ctx.font = "bold 16px 'Segoe UI', sans-serif";
   ctx.textAlign = "center";
-  const nameW = ctx.measureText(agent.name).width + 6;
+  const nameW = ctx.measureText(agent.name).width + 10;
   ctx.fillStyle = "rgba(255,255,255,0.7)";
   ctx.beginPath();
-  ctx.roundRect(-nameW / 2, AGENT_SIZE / 2 + 4, nameW, 12, 4);
+  ctx.roundRect(-nameW / 2, AGENT_SIZE / 2 + 4, nameW, 22, 6);
   ctx.fill();
   ctx.fillStyle = "rgba(0,0,0,0.6)";
-  ctx.fillText(agent.name, 0, AGENT_SIZE / 2 + 13);
+  ctx.fillText(agent.name, 0, AGENT_SIZE / 2 + 21);
 
   ctx.restore();
 }
