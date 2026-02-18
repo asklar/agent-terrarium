@@ -272,7 +272,7 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
           if (dec === "clouds" || dec === "stars" || dec === "moon" || dec === "shooting_stars") continue;
           const fn = DECORATORS[dec];
           if (fn) { fn(ctx, w, h, groundY, time, dt, t, shootingStarsRef); }
-          else { const cd = findCustomDecorator(t, dec); if (cd) drawCustomDecorator(ctx, w, groundY, cd, svgImages); }
+          else { const cd = findCustomDecorator(t, dec); if (cd) drawCustomDecorator(ctx, w, h, cd, svgImages); }
         }
         // Draw clouds with dynamic opacity and color based on weather
         const sky = skyStateRef.current;
@@ -336,7 +336,7 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
         for (const dec of t.decorators) {
           const fn = DECORATORS[dec];
           if (fn) { fn(ctx, w, h, groundY, time, dt, t, shootingStarsRef); }
-          else { const cd = findCustomDecorator(t, dec); if (cd) drawCustomDecorator(ctx, w, groundY, cd, svgImages); }
+          else { const cd = findCustomDecorator(t, dec); if (cd) drawCustomDecorator(ctx, w, h, cd, svgImages); }
         }
       }
 
@@ -741,7 +741,7 @@ function drawGalaxy(
 function drawCustomDecorator(
   ctx: CanvasRenderingContext2D,
   w: number,
-  groundY: number,
+  h: number,
   def: CustomDecoratorDef,
   svgImages: Map<string, HTMLImageElement>,
 ) {
@@ -750,8 +750,8 @@ function drawCustomDecorator(
   if (img && img.complete && img.naturalWidth > 0) {
     ctx.save();
     const fx = (def.fileX ?? 0.5) * w;
-    const fy = (def.fileY ?? 0.5) * groundY;
-    // Scale decorator dimensions proportionally to canvas width
+    const fy = (def.fileY ?? 0.5) * h;
+    // Scale decorator dimensions proportionally to canvas size
     const sizeScale = w / 1280;
     const fw = (def.fileWidth ?? 100) * sizeScale;
     const fh = (def.fileHeight ?? 100) * sizeScale;
@@ -764,7 +764,7 @@ function drawCustomDecorator(
   for (const el of def.elements ?? []) {
     ctx.save();
     const px = el.x * w;
-    const py = el.y * groundY;
+    const py = el.y * h;
     ctx.translate(px, py);
     const s = el.scale ?? 1;
     ctx.scale(s, s);
