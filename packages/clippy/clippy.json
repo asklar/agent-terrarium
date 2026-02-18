@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "name": "Clippy Agent",
+  "author": "Agent Terrarium",
+  "agents": [
+    {
+      "id": "clippy",
+      "name": "Clippy",
+      "icon": "📎",
+      "shape": "clippy",
+      "voice": {
+        "basePitch": 600,
+        "pitchVar": 100,
+        "wave": "sine",
+        "syllables": 4,
+        "speed": 0.06,
+        "volume": 0.1,
+        "ttsRate": 2,
+        "ttsPitchShift": 1.2
+      },
+      "personality": {
+        "speedMin": 20,
+        "speedMax": 60,
+        "movementStyle": "wander",
+        "interactionChance": 0.95,
+        "ballInterest": 0.3,
+        "chatEmojis": ["📎", "💡", "❓", "✨", "👀"]
+      },
+      "drawSpec": {
+        "waddleAmount": 3,
+        "svgFile": "clippy/clippy.svg",
+        "svgWidth": 24,
+        "svgHeight": 44,
+        "layers": []
+      }
+    }
+  ]
+}

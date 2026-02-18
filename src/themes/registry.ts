@@ -12,6 +12,7 @@ const BUILTIN_PACKAGE_URLS = [
   "/packages/agents.json",
   "/packages/gear.json",
   "/packages/seattle/seattle.json",
+  "/packages/clippy/clippy.json",
 ];
 
 /**

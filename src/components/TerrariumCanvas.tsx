@@ -1137,6 +1137,18 @@ function drawFromSpec(
   t: number,
   spec: DrawSpec,
 ) {
+  // SVG file-based avatar
+  if (spec.svgFile) {
+    const img = getOrLoadImage(`/packages/${spec.svgFile}?v=${registry.version}`);
+    if (img) {
+      const sw = spec.svgWidth ?? 24;
+      const sh = spec.svgHeight ?? 32;
+      ctx.drawImage(img, -sw / 2, -sh / 2 + bob, sw, sh);
+    }
+    // Still draw any layers on top (e.g. eyes, mouth overlays)
+    if (spec.layers.length === 0) return;
+  }
+
   const headY = -10 + bob;
   const waddleAmt = spec.waddleAmount ?? 0;
   const waddle = waddleAmt && isMoving ? Math.sin(t / 150) * waddleAmt : 0;

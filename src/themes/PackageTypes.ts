@@ -266,7 +266,18 @@ export interface DrawSpec {
   movement?: "walk" | "float";
   /** Body rotation angle (degrees) when walking (penguin waddle = 4) */
   waddleAmount?: number;
-  /** Ordered list of visual layers drawn back-to-front */
+  /**
+   * SVG file for the avatar body (e.g. "clippy/clippy.svg").
+   * Resolved relative to the package's base URL.
+   * When provided, the SVG is drawn instead of layer-based rendering.
+   * The SVG is centered on the agent position and scaled to fit.
+   */
+  svgFile?: string;
+  /** Display width of the SVG in px (default: 24) */
+  svgWidth?: number;
+  /** Display height of the SVG in px (default: 32) */
+  svgHeight?: number;
+  /** Ordered list of visual layers drawn back-to-front (used when svgFile is not set) */
   layers: DrawLayer[];
 }
 
