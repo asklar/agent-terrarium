@@ -39,7 +39,7 @@
           "fileWidth": 18,
           "fileHeight": 16,
           "animation": {
-            "waypoints": [[0.2, 0.715], [0.4, 0.71], [0.6, 0.71], [0.8, 0.715]],
+            "waypoints": [[0.3, 0.715], [0.45, 0.71], [0.55, 0.71], [0.7, 0.715]],
             "duration": 30,
             "pingPong": true
           }

@@ -61,7 +61,7 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
     for (const cd of t.customDecorators ?? []) {
       if (cd.file) {
         const img = new Image();
-        img.src = `/packages/${cd.file}`;
+        img.src = `/packages/${cd.file}?v=${registry.version}`;
         svgImages.set(cd.name, img);
       }
     }
