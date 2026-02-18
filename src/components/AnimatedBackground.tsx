@@ -265,9 +265,27 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
         }
       }
 
-      // Draw decorators (order from theme definition)
+      // Ground
+      if (!t.hideGround) {
+      const waveAmp = t.groundWave ?? 4;
+      const groundGrad = ctx.createLinearGradient(0, groundY, 0, h);
+      groundGrad.addColorStop(0, t.ground);
+      groundGrad.addColorStop(1, t.groundAccent);
+      ctx.fillStyle = groundGrad;
+      ctx.beginPath();
+      ctx.moveTo(0, groundY);
+      for (let x = 0; x <= w; x += 20) {
+        const wave = Math.sin(x * 0.02 + time * 0.0005) * waveAmp;
+        ctx.lineTo(x, groundY + wave);
+      }
+      ctx.lineTo(w, h);
+      ctx.lineTo(0, h);
+      ctx.closePath();
+      ctx.fill();
+      }
+
+      // Draw decorators AFTER ground so ground-level assets aren't covered
       if (isDynamic) {
-        // For living meadow, skip static clouds/stars/moon decorators (we draw our own)
         for (const dec of t.decorators) {
           if (dec === "clouds" || dec === "stars" || dec === "moon" || dec === "shooting_stars") continue;
           const fn = DECORATORS[dec];
@@ -338,25 +356,6 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
           if (fn) { fn(ctx, w, h, groundY, time, dt, t, shootingStarsRef); }
           else { const cd = findCustomDecorator(t, dec); if (cd) drawCustomDecorator(ctx, w, h, cd, svgImages); }
         }
-      }
-
-      // Ground
-      if (!t.hideGround) {
-      const waveAmp = t.groundWave ?? 4;
-      const groundGrad = ctx.createLinearGradient(0, groundY, 0, h);
-      groundGrad.addColorStop(0, t.ground);
-      groundGrad.addColorStop(1, t.groundAccent);
-      ctx.fillStyle = groundGrad;
-      ctx.beginPath();
-      ctx.moveTo(0, groundY);
-      for (let x = 0; x <= w; x += 20) {
-        const wave = Math.sin(x * 0.02 + time * 0.0005) * waveAmp;
-        ctx.lineTo(x, groundY + wave);
-      }
-      ctx.lineTo(w, h);
-      ctx.lineTo(0, h);
-      ctx.closePath();
-      ctx.fill();
       }
 
       // Living meadow: ground tint + weather particles
