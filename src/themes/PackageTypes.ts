@@ -138,6 +138,8 @@ export interface CustomDecoratorDef {
   fileHeight?: number;
   /** Opacity of the file image 0–1 (default: 1) */
   fileOpacity?: number;
+  /** Anchor point for vertical positioning: "center" (default) or "bottom" (bottom edge at fileY) */
+  fileAnchor?: "center" | "bottom";
 }
 
 /**

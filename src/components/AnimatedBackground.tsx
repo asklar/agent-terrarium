@@ -755,7 +755,8 @@ function drawCustomDecorator(
     const fw = (def.fileWidth ?? 100) * sizeScale;
     const fh = (def.fileHeight ?? 100) * sizeScale;
     if (def.fileOpacity !== undefined && def.fileOpacity < 1) ctx.globalAlpha = def.fileOpacity;
-    ctx.drawImage(img, fx - fw / 2, fy - fh / 2, fw, fh);
+    const dy = def.fileAnchor === "bottom" ? fy - fh : fy - fh / 2;
+    ctx.drawImage(img, fx - fw / 2, dy, fw, fh);
     ctx.restore();
   }
 
