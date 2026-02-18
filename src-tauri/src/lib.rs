@@ -3,6 +3,7 @@ mod simulation;
 mod tts;
 
 use tauri::Manager;
+use tauri::{Emitter};
 use tauri_plugin_store::StoreExt;
 
 use agents::backend::{BackendConfig, BackendMessage, MessageRole};
@@ -188,6 +189,64 @@ fn user_packages_dir() -> std::path::PathBuf {
     path.push("agent-terrarium");
     path.push("packages");
     path
+}
+
+/// Watch package directories for changes and emit "packages-changed" to the frontend.
+fn start_package_watcher(app_handle: tauri::AppHandle) {
+    use notify::{RecursiveMode, Watcher, Config};
+    use std::sync::mpsc;
+
+    let (tx, rx) = mpsc::channel();
+    let mut watcher = match notify::RecommendedWatcher::new(tx, Config::default()) {
+        Ok(w) => w,
+        Err(e) => {
+            log::warn!("Failed to create package watcher: {}", e);
+            return;
+        }
+    };
+
+    // Watch user packages dir
+    let user_dir = user_packages_dir();
+    if user_dir.exists() {
+        let _ = watcher.watch(&user_dir, RecursiveMode::Recursive);
+        log::info!("Watching user packages: {:?}", user_dir);
+    }
+
+    // Watch built-in packages dir (repo root packages/ in dev)
+    if let Ok(resource_dir) = app_handle.path().resource_dir() {
+        let builtin_dir = resource_dir.join("packages");
+        if builtin_dir.exists() {
+            let _ = watcher.watch(&builtin_dir, RecursiveMode::Recursive);
+            log::info!("Watching built-in packages: {:?}", builtin_dir);
+        }
+    }
+    // Also try CWD-based packages/ for dev mode
+    let cwd_packages = std::env::current_dir()
+        .map(|d| d.join("packages"))
+        .unwrap_or_default();
+    if cwd_packages.exists() {
+        let _ = watcher.watch(&cwd_packages, RecursiveMode::Recursive);
+        log::info!("Watching dev packages: {:?}", cwd_packages);
+    }
+
+    std::thread::spawn(move || {
+        let _watcher = watcher; // prevent drop
+        let mut last_emit = std::time::Instant::now();
+        loop {
+            match rx.recv() {
+                Ok(_event) => {
+                    // Debounce: only emit once per 500ms
+                    let now = std::time::Instant::now();
+                    if now.duration_since(last_emit) > Duration::from_millis(500) {
+                        last_emit = now;
+                        log::info!("Package files changed, notifying frontend");
+                        let _ = app_handle.emit("packages-changed", ());
+                    }
+                }
+                Err(_) => break,
+            }
+        }
+    });
 }
 
 #[tauri::command]
@@ -574,6 +633,7 @@ pub fn run() {
                     }
                 }
             }
+            start_package_watcher(app.handle().clone());
             Ok(())
         })
         .on_window_event(|window, event| {

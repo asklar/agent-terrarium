@@ -85,6 +85,15 @@ class PackageRegistry {
     }
   }
 
+  /** Reload all packages (called when files change on disk) */
+  async reload() {
+    this.themes.clear();
+    this.agents.clear();
+    this.gear.clear();
+    await this.loadBuiltins();
+    console.info("Packages reloaded");
+  }
+
   getTheme(id: string): ThemeDefinition | undefined {
     return this.themes.get(id);
   }

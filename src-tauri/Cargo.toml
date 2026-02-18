@@ -32,4 +32,5 @@ copilot-sdk = { git = "https://github.com/copilot-community-sdk/copilot-sdk-rust
 log = "0.4"
 env_logger = "0.11"
 windows = { version = "0.61", features = ["Win32_Media_Speech", "Win32_System_Com", "Win32_System_Com_StructuredStorage", "Win32_Media_Audio"] }
+notify = { version = "8.2.0", features = ["macos_kqueue"] }
 

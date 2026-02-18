@@ -70,6 +70,7 @@ function App() {
   } = useWorldState();
 
   const [theme, setTheme] = useState("meadow");
+  const [themeVersion, setThemeVersion] = useState(0);
   const [dynamicSky, setDynamicSky] = useState(false);
   const [debugTime, setDebugTime] = useState<number | null>(null);
   const [debugWeather, setDebugWeather] = useState<string | null>(null);
@@ -334,6 +335,12 @@ function App() {
         log.debug("Config changed from pop-out window");
         saveConfig(themeRef.current, undefined, musicMutedRef.current, dynamicSkyRef.current);
       }).then((fn) => { unlisteners.push(fn); });
+
+      // Reload packages when theme files change on disk
+      listen("packages-changed", () => {
+        log.info("Package files changed, reloading themes");
+        registry.reload().then(() => setThemeVersion((v) => v + 1));
+      }).then((fn) => { unlisteners.push(fn); });
     });
     return () => { unlisteners.forEach((fn) => fn()); };
   }, [clickAgent, saveConfig]);
@@ -388,7 +395,7 @@ function App() {
   return (
     <div className="terrarium-container" onContextMenu={handleContextMenu}>
       <WindowFrame />
-      <AnimatedBackground theme={theme} dynamicSky={dynamicSky} debugTime={debugTime} debugWeather={debugWeather as import("./weather/types").WeatherOverlay | null} />
+      <AnimatedBackground key={themeVersion} theme={theme} dynamicSky={dynamicSky} debugTime={debugTime} debugWeather={debugWeather as import("./weather/types").WeatherOverlay | null} />
       <ThemeMusic theme={theme} muted={musicMuted} onToggleMute={() => {
         setMusicMuted((m) => {
           const next = !m;
