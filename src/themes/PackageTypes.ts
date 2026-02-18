@@ -151,6 +151,10 @@ export interface CustomDecoratorDef {
     duration?: number;
     /** If true, reverse direction at the end instead of looping (default: true) */
     pingPong?: boolean;
+    /** Seconds between appearances; the decorator is hidden during the gap (default: 0 = always visible) */
+    interval?: number;
+    /** How long the decorator is visible each appearance in seconds (default: duration) */
+    visibleDuration?: number;
   };
 }
 

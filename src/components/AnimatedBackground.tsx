@@ -748,13 +748,20 @@ function drawCustomDecorator(
   // Compute animated position if animation is defined
   let animX: number | undefined;
   let animY: number | undefined;
+  let hidden = false;
   if (def.animation) {
-    const { waypoints, duration = 30, pingPong = true } = def.animation;
-    if (waypoints.length >= 2) {
-      const totalSec = (time / 1000) % (pingPong ? duration * 2 : duration);
-      let t = totalSec / duration; // 0-1 (or 0-2 for pingPong)
-      if (pingPong && t > 1) t = 2 - t; // reverse
-      // Interpolate along waypoint segments
+    const { waypoints, duration = 30, pingPong = true, interval, visibleDuration } = def.animation;
+    // Intermittent visibility: hide during gap between appearances
+    if (interval && interval > 0) {
+      const visDur = visibleDuration ?? duration;
+      const cycleTime = (time / 1000) % interval;
+      if (cycleTime > visDur) hidden = true;
+    }
+    if (!hidden && waypoints.length >= 2) {
+      const moveDur = visibleDuration ?? duration;
+      const totalSec = (time / 1000) % (pingPong ? moveDur * 2 : moveDur);
+      let t = totalSec / moveDur;
+      if (pingPong && t > 1) t = 2 - t;
       const segCount = waypoints.length - 1;
       const segFloat = t * segCount;
       const segIdx = Math.min(Math.floor(segFloat), segCount - 1);
@@ -765,6 +772,7 @@ function drawCustomDecorator(
       animY = (y0 + (y1 - y0) * segT) * h;
     }
   }
+  if (hidden) return;
   // Draw file-based SVG image first (if provided and loaded)
   const img = svgImages.get(def.name);
   if (img && img.complete && img.naturalWidth > 0) {

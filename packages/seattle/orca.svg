@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 16">
+  <!-- Orca body arcing out of water -->
+  <path d="M 2,12 Q 4,4 8,2 Q 12,0 16,2 Q 20,4 22,8" stroke="#1a1a2e" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- White belly patch -->
+  <path d="M 6,8 Q 10,5 14,6" stroke="white" stroke-width="1.5" fill="none"/>
+  <!-- Dorsal fin -->
+  <path d="M 11,3 L 12,0 L 13.5,3 Z" fill="#1a1a2e"/>
+  <!-- Tail fluke -->
+  <path d="M 1,13 L 0,11 L 3,12 Z" fill="#1a1a2e"/>
+  <!-- Eye -->
+  <circle cx="17" cy="4" r="0.6" fill="white"/>
+  <!-- Water splash -->
+  <path d="M 4,13 Q 6,11 8,13 Q 10,11 12,13 Q 14,11 16,13" stroke="#5A8DB0" stroke-width="0.5" fill="none" opacity="0.6"/>
+  <circle cx="6" cy="12" r="0.4" fill="#7EB5D6" opacity="0.5"/>
+  <circle cx="14" cy="12" r="0.3" fill="#7EB5D6" opacity="0.4"/>
+</svg>

@@ -13,7 +13,7 @@
       "groundWave": 2,
       "grass": { "color": "#6B8C5A", "accent": "#5A7A4A" },
       "particles": { "type": "leaf", "color": "#90A4AE", "count": 10 },
-      "decorators": ["clouds", "mt_rainier", "lake_union", "sailboat", "space_needle", "fremont_troll", "mist", "grass"],
+      "decorators": ["clouds", "mt_rainier", "puget_sound", "sailboat", "sailboat_orange", "orca", "space_needle", "fremont_troll", "mist", "grass"],
       "customDecorators": [
         {
           "name": "mt_rainier",
@@ -26,8 +26,8 @@
           "fileAnchor": "bottom"
         },
         {
-          "name": "lake_union",
-          "file": "seattle/lake-union.svg",
+          "name": "puget_sound",
+          "file": "seattle/puget-sound.svg",
           "fileX": 0.5,
           "fileY": 0.72,
           "fileWidth": 600,
@@ -36,12 +36,37 @@
         {
           "name": "sailboat",
           "file": "seattle/sailboat.svg",
-          "fileWidth": 18,
-          "fileHeight": 16,
+          "fileWidth": 24,
+          "fileHeight": 21,
           "animation": {
             "waypoints": [[0.3, 0.715], [0.45, 0.71], [0.55, 0.71], [0.7, 0.715]],
-            "duration": 30,
+            "duration": 150,
             "pingPong": true
+          }
+        },
+        {
+          "name": "sailboat_orange",
+          "file": "seattle/sailboat-orange.svg",
+          "fileWidth": 15,
+          "fileHeight": 13,
+          "fileOpacity": 0.6,
+          "animation": {
+            "waypoints": [[0.62, 0.708], [0.5, 0.705], [0.38, 0.708]],
+            "duration": 120,
+            "pingPong": true
+          }
+        },
+        {
+          "name": "orca",
+          "file": "seattle/orca.svg",
+          "fileWidth": 30,
+          "fileHeight": 20,
+          "animation": {
+            "waypoints": [[0.35, 0.715], [0.45, 0.71], [0.55, 0.715]],
+            "duration": 3,
+            "pingPong": false,
+            "interval": 45,
+            "visibleDuration": 3
           }
         },
         {
