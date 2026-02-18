@@ -90,6 +90,7 @@ function App() {
   musicMutedRef.current = musicMuted;
   const dynamicSkyRef = useRef(dynamicSky);
   dynamicSkyRef.current = dynamicSky;
+  const configLoadedRef = useRef(false);
 
   // Load config on mount and restore window position
   useEffect(() => {
@@ -122,6 +123,7 @@ function App() {
         await win.setPosition(new (await import("@tauri-apps/api/dpi")).LogicalPosition(x, y));
         await win.setSize(new (await import("@tauri-apps/api/dpi")).LogicalSize(width, height));
       }
+      configLoadedRef.current = true;
     });
   }, [loadConfig]);
 
@@ -129,6 +131,7 @@ function App() {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     const saveWindowBounds = async () => {
+      if (!configLoadedRef.current) return;
       clearTimeout(timer);
       timer = setTimeout(async () => {
         try {
