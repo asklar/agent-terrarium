@@ -76,15 +76,15 @@
           "file": "seattle/splash.svg",
           "fileX": 0.48,
           "fileY": 0.715,
-          "fileWidth": 35,
-          "fileHeight": 25,
+          "fileWidth": 40,
+          "fileHeight": 30,
           "fileAnchor": "bottom",
           "animation": {
-            "waypoints": [[0.48, 0.715], [0.48, 0.715]],
-            "duration": 1,
+            "waypoints": [[0.48, 0.715], [0.48, 0.695], [0.48, 0.715]],
+            "duration": 1.2,
             "interval": 45,
-            "visibleDuration": 1,
-            "delay": 1.8
+            "visibleDuration": 1.2,
+            "delay": 1.7
           }
         },
         {
