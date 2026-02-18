@@ -155,6 +155,8 @@ export interface CustomDecoratorDef {
     interval?: number;
     /** How long the decorator is visible each appearance in seconds (default: duration) */
     visibleDuration?: number;
+    /** Delay in seconds from the start of the interval before the decorator appears (default: 0) */
+    delay?: number;
   } | {
     /** Jump animation: parabolic arc with gravity from a surface point */
     type: "jump";

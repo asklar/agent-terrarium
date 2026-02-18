@@ -772,11 +772,11 @@ function drawCustomDecorator(
         }
       }
     } else if ("waypoints" in anim) {
-      const { waypoints, duration = 30, pingPong = true, interval, visibleDuration } = anim;
+      const { waypoints, duration = 30, pingPong = true, interval, visibleDuration, delay = 0 } = anim;
       if (interval && interval > 0) {
         const visDur = visibleDuration ?? duration;
         const cycleTime = (time / 1000) % interval;
-        if (cycleTime > visDur) hidden = true;
+        if (cycleTime < delay || cycleTime > delay + visDur) hidden = true;
       }
       if (!hidden && waypoints.length >= 2) {
         const moveDur = visibleDuration ?? duration;

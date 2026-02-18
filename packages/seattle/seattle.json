@@ -13,7 +13,7 @@
       "groundWave": 2,
       "grass": { "color": "#6B8C5A", "accent": "#5A7A4A" },
       "particles": { "type": "leaf", "color": "#90A4AE", "count": 10 },
-      "decorators": ["clouds", "mt_rainier", "puget_sound", "sailboat", "sailboat_orange", "orca", "space_needle", "fremont_troll", "mist", "grass"],
+      "decorators": ["clouds", "mt_rainier", "puget_sound", "sailboat", "sailboat_orange", "orca", "orca_splash", "space_needle", "fremont_troll", "mist", "grass"],
       "customDecorators": [
         {
           "name": "mt_rainier",
@@ -69,6 +69,22 @@
             "duration": 2,
             "interval": 45,
             "rotate": true
+          }
+        },
+        {
+          "name": "orca_splash",
+          "file": "seattle/splash.svg",
+          "fileX": 0.48,
+          "fileY": 0.715,
+          "fileWidth": 35,
+          "fileHeight": 25,
+          "fileAnchor": "bottom",
+          "animation": {
+            "waypoints": [[0.48, 0.715], [0.48, 0.715]],
+            "duration": 1,
+            "interval": 45,
+            "visibleDuration": 1,
+            "delay": 1.8
           }
         },
         {
