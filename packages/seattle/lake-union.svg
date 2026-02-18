@@ -8,11 +8,4 @@
   <!-- Light glints on water -->
   <path d="M 80 13 Q 100 11 120 13 L 118 15 Q 98 13 82 15 Z" fill="#7EB5D6" opacity="0.25"/>
   <path d="M 220 11 Q 250 9 270 11 L 268 13 Q 248 11 222 13 Z" fill="#7EB5D6" opacity="0.25"/>
-  <!-- Animated sailboat -->
-  <g>
-    <animateMotion dur="60s" repeatCount="indefinite"
-      path="M 80,8 Q 150,4 200,6 Q 280,4 320,8 Q 280,4 200,6 Q 150,4 80,8" />
-    <path d="M 0,0 L 0,-8 L 6,-3 Z" fill="#CC3333" opacity="0.7"/>
-    <rect x="-5" y="0" width="10" height="1.5" fill="#90A8B8" opacity="0.45"/>
-  </g>
 </svg>

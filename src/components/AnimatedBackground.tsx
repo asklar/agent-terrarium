@@ -290,7 +290,7 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
           if (dec === "clouds" || dec === "stars" || dec === "moon" || dec === "shooting_stars") continue;
           const fn = DECORATORS[dec];
           if (fn) { fn(ctx, w, h, groundY, time, dt, t, shootingStarsRef); }
-          else { const cd = findCustomDecorator(t, dec); if (cd) drawCustomDecorator(ctx, w, h, cd, svgImages); }
+          else { const cd = findCustomDecorator(t, dec); if (cd) drawCustomDecorator(ctx, w, h, cd, svgImages, time); }
         }
         // Draw clouds with dynamic opacity and color based on weather
         const sky = skyStateRef.current;
@@ -354,7 +354,7 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
         for (const dec of t.decorators) {
           const fn = DECORATORS[dec];
           if (fn) { fn(ctx, w, h, groundY, time, dt, t, shootingStarsRef); }
-          else { const cd = findCustomDecorator(t, dec); if (cd) drawCustomDecorator(ctx, w, h, cd, svgImages); }
+          else { const cd = findCustomDecorator(t, dec); if (cd) drawCustomDecorator(ctx, w, h, cd, svgImages, time); }
         }
       }
 
@@ -743,13 +743,34 @@ function drawCustomDecorator(
   h: number,
   def: CustomDecoratorDef,
   svgImages: Map<string, HTMLImageElement>,
+  time: number,
 ) {
+  // Compute animated position if animation is defined
+  let animX: number | undefined;
+  let animY: number | undefined;
+  if (def.animation) {
+    const { waypoints, duration = 30, pingPong = true } = def.animation;
+    if (waypoints.length >= 2) {
+      const totalSec = (time / 1000) % (pingPong ? duration * 2 : duration);
+      let t = totalSec / duration; // 0-1 (or 0-2 for pingPong)
+      if (pingPong && t > 1) t = 2 - t; // reverse
+      // Interpolate along waypoint segments
+      const segCount = waypoints.length - 1;
+      const segFloat = t * segCount;
+      const segIdx = Math.min(Math.floor(segFloat), segCount - 1);
+      const segT = segFloat - segIdx;
+      const [x0, y0] = waypoints[segIdx];
+      const [x1, y1] = waypoints[segIdx + 1];
+      animX = (x0 + (x1 - x0) * segT) * w;
+      animY = (y0 + (y1 - y0) * segT) * h;
+    }
+  }
   // Draw file-based SVG image first (if provided and loaded)
   const img = svgImages.get(def.name);
   if (img && img.complete && img.naturalWidth > 0) {
     ctx.save();
-    const fx = (def.fileX ?? 0.5) * w;
-    const fy = (def.fileY ?? 0.5) * h;
+    const fx = animX ?? (def.fileX ?? 0.5) * w;
+    const fy = animY ?? (def.fileY ?? 0.5) * h;
     // Scale decorator dimensions proportionally to canvas size
     const sizeScale = w / 1280;
     const fw = (def.fileWidth ?? 100) * sizeScale;

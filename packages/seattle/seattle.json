@@ -13,7 +13,7 @@
       "groundWave": 2,
       "grass": { "color": "#6B8C5A", "accent": "#5A7A4A" },
       "particles": { "type": "leaf", "color": "#90A4AE", "count": 10 },
-      "decorators": ["clouds", "mt_rainier", "lake_union", "space_needle", "fremont_troll", "mist", "grass"],
+      "decorators": ["clouds", "mt_rainier", "lake_union", "sailboat", "space_needle", "fremont_troll", "mist", "grass"],
       "customDecorators": [
         {
           "name": "mt_rainier",
@@ -32,6 +32,17 @@
           "fileY": 0.72,
           "fileWidth": 600,
           "fileHeight": 45
+        },
+        {
+          "name": "sailboat",
+          "file": "seattle/sailboat.svg",
+          "fileWidth": 18,
+          "fileHeight": 16,
+          "animation": {
+            "waypoints": [[0.2, 0.715], [0.4, 0.71], [0.6, 0.71], [0.8, 0.715]],
+            "duration": 30,
+            "pingPong": true
+          }
         },
         {
           "name": "space_needle",

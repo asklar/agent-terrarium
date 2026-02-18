@@ -140,6 +140,18 @@ export interface CustomDecoratorDef {
   fileOpacity?: number;
   /** Anchor point for vertical positioning: "center" (default) or "bottom" (bottom edge at fileY) */
   fileAnchor?: "center" | "bottom";
+  /**
+   * Animate the decorator along a path over time.
+   * Coordinates are fractions of canvas width (x) and height (y).
+   */
+  animation?: {
+    /** Waypoints as [x, y] pairs (fractions 0–1 of canvas width/height) */
+    waypoints: [number, number][];
+    /** Duration of one full loop in seconds (default: 30) */
+    duration?: number;
+    /** If true, reverse direction at the end instead of looping (default: true) */
+    pingPong?: boolean;
+  };
 }
 
 /**
