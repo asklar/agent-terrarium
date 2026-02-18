@@ -748,28 +748,50 @@ function drawCustomDecorator(
   // Compute animated position if animation is defined
   let animX: number | undefined;
   let animY: number | undefined;
+  let animRotation: number | undefined;
   let hidden = false;
   if (def.animation) {
-    const { waypoints, duration = 30, pingPong = true, interval, visibleDuration } = def.animation;
-    // Intermittent visibility: hide during gap between appearances
-    if (interval && interval > 0) {
-      const visDur = visibleDuration ?? duration;
-      const cycleTime = (time / 1000) % interval;
-      if (cycleTime > visDur) hidden = true;
-    }
-    if (!hidden && waypoints.length >= 2) {
-      const moveDur = visibleDuration ?? duration;
-      const totalSec = (time / 1000) % (pingPong ? moveDur * 2 : moveDur);
-      let t = totalSec / moveDur;
-      if (pingPong && t > 1) t = 2 - t;
-      const segCount = waypoints.length - 1;
-      const segFloat = t * segCount;
-      const segIdx = Math.min(Math.floor(segFloat), segCount - 1);
-      const segT = segFloat - segIdx;
-      const [x0, y0] = waypoints[segIdx];
-      const [x1, y1] = waypoints[segIdx + 1];
-      animX = (x0 + (x1 - x0) * segT) * w;
-      animY = (y0 + (y1 - y0) * segT) * h;
+    const anim = def.animation;
+    if ("type" in anim && anim.type === "jump") {
+      // Parabolic jump with gravity
+      const { origin, dx, height: jumpH, duration: dur = 2, interval: intv = 30, rotate } = anim;
+      const cycleTime = (time / 1000) % intv;
+      if (cycleTime > dur) {
+        hidden = true;
+      } else {
+        const t = cycleTime / dur; // 0-1
+        // Parabolic arc: y = -4h*t*(t-1) peaks at t=0.5
+        const arcY = -4 * jumpH * t * (t - 1);
+        animX = (origin[0] + dx * t) * w;
+        animY = (origin[1] - arcY) * h;
+        if (rotate) {
+          // Tangent angle: dy/dt = -4h*(2t-1), dx/dt = dx/dur
+          const dydt = -4 * jumpH * (2 * t - 1);
+          const dxdt = dx;
+          animRotation = Math.atan2(-dydt, dxdt);
+        }
+      }
+    } else if ("waypoints" in anim) {
+      const { waypoints, duration = 30, pingPong = true, interval, visibleDuration } = anim;
+      if (interval && interval > 0) {
+        const visDur = visibleDuration ?? duration;
+        const cycleTime = (time / 1000) % interval;
+        if (cycleTime > visDur) hidden = true;
+      }
+      if (!hidden && waypoints.length >= 2) {
+        const moveDur = visibleDuration ?? duration;
+        const totalSec = (time / 1000) % (pingPong ? moveDur * 2 : moveDur);
+        let t = totalSec / moveDur;
+        if (pingPong && t > 1) t = 2 - t;
+        const segCount = waypoints.length - 1;
+        const segFloat = t * segCount;
+        const segIdx = Math.min(Math.floor(segFloat), segCount - 1);
+        const segT = segFloat - segIdx;
+        const [x0, y0] = waypoints[segIdx];
+        const [x1, y1] = waypoints[segIdx + 1];
+        animX = (x0 + (x1 - x0) * segT) * w;
+        animY = (y0 + (y1 - y0) * segT) * h;
+      }
     }
   }
   if (hidden) return;
@@ -784,8 +806,14 @@ function drawCustomDecorator(
     const fw = (def.fileWidth ?? 100) * sizeScale;
     const fh = (def.fileHeight ?? 100) * sizeScale;
     if (def.fileOpacity !== undefined && def.fileOpacity < 1) ctx.globalAlpha = def.fileOpacity;
-    const dy = def.fileAnchor === "bottom" ? fy - fh : fy - fh / 2;
-    ctx.drawImage(img, fx - fw / 2, dy, fw, fh);
+    if (animRotation !== undefined) {
+      ctx.translate(fx, fy);
+      ctx.rotate(animRotation);
+      ctx.drawImage(img, -fw / 2, -fh / 2, fw, fh);
+    } else {
+      const dy = def.fileAnchor === "bottom" ? fy - fh : fy - fh / 2;
+      ctx.drawImage(img, fx - fw / 2, dy, fw, fh);
+    }
     ctx.restore();
   }
 

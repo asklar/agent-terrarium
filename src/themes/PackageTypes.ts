@@ -155,6 +155,21 @@ export interface CustomDecoratorDef {
     interval?: number;
     /** How long the decorator is visible each appearance in seconds (default: duration) */
     visibleDuration?: number;
+  } | {
+    /** Jump animation: parabolic arc with gravity from a surface point */
+    type: "jump";
+    /** Launch position as [x, y] fraction of canvas (y = water/ground line) */
+    origin: [number, number];
+    /** Horizontal distance to travel (fraction of canvas width, can be negative) */
+    dx: number;
+    /** Peak height of the jump (fraction of canvas height, positive = upward) */
+    height: number;
+    /** Duration of the jump in seconds */
+    duration?: number;
+    /** Seconds between jumps (default: 30) */
+    interval?: number;
+    /** Rotate the sprite to follow the arc trajectory */
+    rotate?: boolean;
   };
 }
 

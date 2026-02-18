@@ -62,11 +62,13 @@
           "fileWidth": 30,
           "fileHeight": 20,
           "animation": {
-            "waypoints": [[0.35, 0.715], [0.45, 0.71], [0.55, 0.715]],
-            "duration": 3,
-            "pingPong": false,
+            "type": "jump",
+            "origin": [0.4, 0.715],
+            "dx": 0.08,
+            "height": 0.06,
+            "duration": 2,
             "interval": 45,
-            "visibleDuration": 3
+            "rotate": true
           }
         },
         {
