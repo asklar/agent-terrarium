@@ -315,8 +315,22 @@ html, body, #root {
   padding: 4px;
   font-family: 'Segoe UI', system-ui, sans-serif;
   font-size: 12px;
-  overflow: hidden;
+  max-height: calc(100vh - 20px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
   animation: contextMenuIn 0.12s ease-out;
+}
+
+.context-menu::-webkit-scrollbar {
+  width: 4px;
+}
+.context-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+.context-menu::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
 }
 
 @keyframes contextMenuIn {
@@ -347,8 +361,13 @@ html, body, #root {
   transition: background 0.1s;
 }
 
-.context-menu-item:hover:not(.disabled) {
+.context-menu-item:hover:not(.disabled),
+.context-menu-item.focused:not(.disabled) {
   background: rgba(139, 195, 74, 0.15);
+}
+
+.context-menu-item.focused:not(.disabled) {
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .context-menu-item.active {

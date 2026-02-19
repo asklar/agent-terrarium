@@ -37,10 +37,10 @@
         {
           "name": "ski_jump",
           "file": "winter-olympics/ski-jump.svg",
-          "fileX": 0.2,
+          "fileX": 0.15,
           "fileY": 0.72,
-          "fileWidth": 80,
-          "fileHeight": 120,
+          "fileWidth": 70,
+          "fileHeight": 100,
           "fileAnchor": "bottom"
         },
         {
@@ -49,7 +49,7 @@
           "fileWidth": 30,
           "fileHeight": 25,
           "animation": {
-            "waypoints": [[0.6, 0.62], [0.75, 0.55], [0.85, 0.50]],
+            "waypoints": [[0.65, 0.70], [0.75, 0.67], [0.82, 0.64]],
             "duration": 30,
             "pingPong": true
           }

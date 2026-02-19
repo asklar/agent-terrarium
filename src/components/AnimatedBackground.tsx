@@ -295,29 +295,50 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
       if (accum > 0.01) {
         const isSnowAccum = skyStateRef.current.weatherOverlay === "snow" || accum > 0.3;
 
-        if (isSnowAccum && accum > 0.05) {
-          const snowDepth = accum * 20;
+        if (isSnowAccum && accum > 0.02) {
           ctx.save();
-          ctx.beginPath();
-          ctx.moveTo(0, groundY);
-          for (let sx = 0; sx <= w; sx += 15) {
-            const lump = Math.sin(sx * 0.03 + 1.5) * 3 + Math.sin(sx * 0.07) * 2;
-            ctx.lineTo(sx, groundY - snowDepth + lump * accum);
+          const patchCount = 12;
+          for (let i = 0; i < patchCount; i++) {
+            const cx = w * ((i * 0.618 + 0.1) % 1);
+            const cy = groundY + 3 + Math.sin(i * 2.3) * 8;
+            const threshold = (Math.sin(i * 1.7 + 0.5) * 0.5 + 0.5) * 0.5;
+            const patchAccum = Math.max(0, (accum - threshold) / (1 - threshold));
+            if (patchAccum <= 0) continue;
+
+            const baseWidth = 40 + Math.sin(i * 3.1) * 25;
+            const pw = baseWidth * Math.min(1, patchAccum * 2);
+            const ph = 4 + patchAccum * 14;
+
+            ctx.beginPath();
+            ctx.moveTo(cx - pw, cy);
+            const steps = 8;
+            for (let s = 0; s <= steps; s++) {
+              const t = s / steps;
+              const sx = cx - pw + t * pw * 2;
+              const lump = Math.sin(t * Math.PI) * ph + Math.sin(t * 5 + i) * 2 * patchAccum;
+              ctx.lineTo(sx, cy - lump);
+            }
+            ctx.lineTo(cx + pw, cy + 2);
+            ctx.lineTo(cx - pw, cy + 2);
+            ctx.closePath();
+            ctx.fillStyle = `rgba(240, 248, 255, ${Math.min(0.85, patchAccum * 1.1)})`;
+            ctx.fill();
           }
-          ctx.lineTo(w, h);
-          ctx.lineTo(0, h);
-          ctx.closePath();
-          ctx.fillStyle = `rgba(240, 245, 255, ${Math.min(0.9, accum * 1.2)})`;
-          ctx.fill();
-          ctx.beginPath();
-          for (let sx = 0; sx <= w; sx += 15) {
-            const lump = Math.sin(sx * 0.03 + 1.5) * 3 + Math.sin(sx * 0.07) * 2;
-            if (sx === 0) ctx.moveTo(sx, groundY - snowDepth + lump * accum);
-            else ctx.lineTo(sx, groundY - snowDepth + lump * accum);
+
+          if (accum > 0.7) {
+            const connectAlpha = (accum - 0.7) / 0.3 * 0.5;
+            ctx.beginPath();
+            ctx.moveTo(0, groundY + 2);
+            for (let sx = 0; sx <= w; sx += 20) {
+              const lump = Math.sin(sx * 0.025 + 1.5) * 3 + Math.sin(sx * 0.06) * 2;
+              ctx.lineTo(sx, groundY - accum * 8 + lump);
+            }
+            ctx.lineTo(w, h);
+            ctx.lineTo(0, h);
+            ctx.closePath();
+            ctx.fillStyle = `rgba(240, 248, 255, ${connectAlpha})`;
+            ctx.fill();
           }
-          ctx.strokeStyle = `rgba(255, 255, 255, ${accum * 0.5})`;
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
           ctx.restore();
         } else if (accum > 0.02) {
           ctx.save();

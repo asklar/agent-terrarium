@@ -42,6 +42,7 @@ export function ContextMenu({
   const [subMenu, setSubMenu] = useState<SubMenu>(null);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<GearSlot | null>(null);
+  const [focusIndex, setFocusIndex] = useState(-1);
   const readyRef = useRef(false);
 
   // Ignore clicks for a brief moment after menu appears
@@ -65,17 +66,57 @@ export function ContextMenu({
     return () => document.removeEventListener("mousedown", handle);
   }, [onClose]);
 
-  // Close on Escape
+  // Keyboard navigation
   useEffect(() => {
     const handle = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         if (subMenu) setSubMenu(null);
         else onClose();
+        return;
+      }
+
+      const items = menuRef.current?.querySelectorAll<HTMLButtonElement>(
+        ".context-menu-item:not(.disabled)"
+      );
+      if (!items || items.length === 0) return;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setFocusIndex((prev) => {
+          const next = Math.min(prev + 1, items.length - 1);
+          items[next]?.scrollIntoView({ block: "nearest" });
+          return next;
+        });
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setFocusIndex((prev) => {
+          const next = Math.max(prev - 1, 0);
+          items[next]?.scrollIntoView({ block: "nearest" });
+          return next;
+        });
+      } else if (e.key === "Enter" && focusIndex >= 0 && focusIndex < items.length) {
+        e.preventDefault();
+        items[focusIndex]?.click();
       }
     };
     document.addEventListener("keydown", handle);
     return () => document.removeEventListener("keydown", handle);
-  }, [onClose, subMenu]);
+  }, [onClose, subMenu, focusIndex]);
+
+  // Reset focus when submenu changes
+  useEffect(() => {
+    setFocusIndex(-1);
+  }, [subMenu]);
+
+  // Apply focused class to the active item
+  useEffect(() => {
+    const items = menuRef.current?.querySelectorAll<HTMLElement>(
+      ".context-menu-item:not(.disabled)"
+    );
+    items?.forEach((item, i) => {
+      item.classList.toggle("focused", i === focusIndex);
+    });
+  }, [focusIndex, subMenu, selectedAgentId, selectedSlot]);
 
   const guardedClick = useCallback(
     <T extends unknown[]>(fn: (...args: T) => void) =>
@@ -145,9 +186,17 @@ export function ContextMenu({
   const menuStyle: React.CSSProperties = {
     position: "fixed",
     left: Math.min(x, window.innerWidth - 200),
-    top: Math.min(y, window.innerHeight - 260),
+    top: y,
+    maxHeight: `calc(100vh - ${Math.min(y, 10)}px - 10px)`,
     zIndex: 1000,
   };
+
+  // If menu would go below viewport, anchor from bottom instead
+  if (y > window.innerHeight - 100) {
+    menuStyle.top = undefined as unknown as number;
+    menuStyle.bottom = Math.max(10, window.innerHeight - y);
+    menuStyle.maxHeight = `calc(100vh - 20px)`;
+  }
 
   return (
     <div className="context-menu" style={menuStyle} ref={menuRef}>
