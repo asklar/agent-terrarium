@@ -5,6 +5,7 @@ import { ChatOverlay } from "./components/ChatOverlay";
 import { AnimatedBackground } from "./components/AnimatedBackground";
 import { WindowFrame } from "./components/WindowFrame";
 import { ThemeMusic } from "./components/ThemeMusic";
+import { WeatherWidget } from "./components/WeatherWidget";
 import { ContextMenu } from "./components/ContextMenu";
 import { AgentConfigDialog } from "./components/AgentConfigDialog";
 import { AboutDialog } from "./components/AboutDialog";
@@ -406,6 +407,7 @@ function App() {
           return next;
         });
       }} />
+      <WeatherWidget dynamicSky={dynamicSky} />
       <TerrariumCanvas
         worldState={worldState}
         onAgentClick={handleAgentClick}
