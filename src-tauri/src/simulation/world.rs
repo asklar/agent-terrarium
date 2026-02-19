@@ -800,10 +800,10 @@ fn create_agent(id: &str, name: &str, avatar: &str, bounds: &Vec2, ground_y: f64
         "clippy" => (
             Personality {
                 speed_min: 20.0,
-                speed_max: 60.0,
+                speed_max: 100.0,
                 movement_style: MovementStyle::Wander,
                 interaction_chance: 0.95,
-                ball_interest: 0.3,
+                ball_interest: 0.8,
                 chat_emojis: vec!["📎".into(), "💡".into(), "❓".into(), "✨".into(), "👀".into()],
             },
             ground_mid + rand_f64() * (bounds.y - ground_mid - 32.0),

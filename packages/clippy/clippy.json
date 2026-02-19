@@ -20,10 +20,10 @@
       },
       "personality": {
         "speedMin": 20,
-        "speedMax": 60,
+        "speedMax": 100,
         "movementStyle": "wander",
         "interactionChance": 0.95,
-        "ballInterest": 0.3,
+        "ballInterest": 0.8,
         "chatEmojis": ["📎", "💡", "❓", "✨", "👀"]
       },
       "drawSpec": {

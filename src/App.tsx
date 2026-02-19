@@ -407,7 +407,7 @@ function App() {
           return next;
         });
       }} />
-      <WeatherWidget dynamicSky={dynamicSky} />
+      <WeatherWidget />
       <TerrariumCanvas
         worldState={worldState}
         onAgentClick={handleAgentClick}

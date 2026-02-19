@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { getCachedWeather, getLocation, weatherCodeToOverlay } from "../weather/weatherService";
+import { getCachedWeather, getLocation, fetchLocation, fetchWeather, weatherCodeToOverlay } from "../weather/weatherService";
 import type { WeatherData } from "../weather/types";
 import "./WeatherWidget.css";
 
@@ -53,20 +53,23 @@ function celsiusToFahrenheit(c: number): number {
   return c * 9 / 5 + 32;
 }
 
-interface WeatherWidgetProps {
-  dynamicSky: boolean;
-}
-
-export function WeatherWidget({ dynamicSky }: WeatherWidgetProps) {
+export function WeatherWidget() {
   const [open, setOpen] = useState(false);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [city, setCity] = useState<string | undefined>();
   const [now, setNow] = useState(new Date());
   const [useFahrenheit, setUseFahrenheit] = useState(true);
 
+  // Fetch weather on mount and poll every 30s
   useEffect(() => {
-    const update = () => {
-      setWeather(getCachedWeather());
+    const update = async () => {
+      // Try cached first
+      let w = getCachedWeather();
+      if (!w) {
+        const loc = getLocation() ?? await fetchLocation();
+        if (loc) w = await fetchWeather(loc);
+      }
+      setWeather(w);
       setCity(getLocation()?.city);
       setNow(new Date());
     };
@@ -82,9 +85,7 @@ export function WeatherWidget({ dynamicSky }: WeatherWidgetProps) {
 
   const toggleUnit = useCallback(() => setUseFahrenheit((f) => !f), []);
 
-  if (!dynamicSky || !weather) return null;
-
-  const isNight = (() => {
+  const isNight = weather ? (() => {
     try {
       const sunrise = new Date(weather.sunrise);
       const sunset = new Date(weather.sunset);
@@ -92,12 +93,12 @@ export function WeatherWidget({ dynamicSky }: WeatherWidgetProps) {
     } catch {
       return false;
     }
-  })();
+  })() : false;
 
-  const icon = weatherIcon(weather.weatherCode, isNight);
-  const temp = useFahrenheit
+  const icon = weather ? weatherIcon(weather.weatherCode, isNight) : "\u2600\ufe0f";
+  const temp = weather ? (useFahrenheit
     ? `${Math.round(celsiusToFahrenheit(weather.temperature))}\u00b0F`
-    : `${Math.round(weather.temperature)}\u00b0C`;
+    : `${Math.round(weather.temperature)}\u00b0C`) : "--";
 
   return (
     <>
@@ -116,33 +117,39 @@ export function WeatherWidget({ dynamicSky }: WeatherWidgetProps) {
               {now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
             </span>
           </div>
-          <div className="weather-panel-main">
-            <span className="weather-panel-icon">{icon}</span>
-            <span className="weather-panel-temp" onClick={toggleUnit} title="Click to toggle \u00b0F/\u00b0C">
-              {temp}
-            </span>
-          </div>
-          <div className="weather-panel-desc">
-            {weatherDescription(weather.weatherCode)}
-          </div>
-          <div className="weather-panel-details">
-            <div className="weather-detail">
-              <span className="weather-detail-icon">{"\ud83c\udf05"}</span>
-              <span>{formatTime(weather.sunrise)}</span>
-            </div>
-            <div className="weather-detail">
-              <span className="weather-detail-icon">{"\ud83c\udf07"}</span>
-              <span>{formatTime(weather.sunset)}</span>
-            </div>
-            <div className="weather-detail">
-              <span className="weather-detail-icon">{"\ud83d\udca7"}</span>
-              <span>{weather.precipitation > 0 ? `${weather.precipitation} mm/h` : "None"}</span>
-            </div>
-            <div className="weather-detail">
-              <span className="weather-detail-icon">{"\u2601\ufe0f"}</span>
-              <span>{weather.cloudCover}%</span>
-            </div>
-          </div>
+          {weather ? (
+            <>
+              <div className="weather-panel-main">
+                <span className="weather-panel-icon">{icon}</span>
+                <span className="weather-panel-temp" onClick={toggleUnit} title="Click to toggle \u00b0F/\u00b0C">
+                  {temp}
+                </span>
+              </div>
+              <div className="weather-panel-desc">
+                {weatherDescription(weather.weatherCode)}
+              </div>
+              <div className="weather-panel-details">
+                <div className="weather-detail">
+                  <span className="weather-detail-icon">{"\ud83c\udf05"}</span>
+                  <span>{formatTime(weather.sunrise)}</span>
+                </div>
+                <div className="weather-detail">
+                  <span className="weather-detail-icon">{"\ud83c\udf07"}</span>
+                  <span>{formatTime(weather.sunset)}</span>
+                </div>
+                <div className="weather-detail">
+                  <span className="weather-detail-icon">{"\ud83d\udca7"}</span>
+                  <span>{weather.precipitation > 0 ? `${weather.precipitation} mm/h` : "None"}</span>
+                </div>
+                <div className="weather-detail">
+                  <span className="weather-detail-icon">{"\u2601\ufe0f"}</span>
+                  <span>{weather.cloudCover}%</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="weather-panel-desc">Loading weather data...</div>
+          )}
         </div>
       )}
     </>
