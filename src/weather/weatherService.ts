@@ -10,13 +10,13 @@ let cachedWeather: WeatherData | null = null;
 export async function fetchLocation(): Promise<LocationConfig | null> {
   if (cachedLocation) return cachedLocation;
   try {
-    const res = await fetch("http://ip-api.com/json/?fields=lat,lon,city,status");
+    // Use HTTPS endpoint (plain HTTP is blocked as mixed content in Tauri's webview)
+    const res = await fetch("https://ipapi.co/json/");
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    if (data.status !== "success") throw new Error("IP geolocation failed");
     cachedLocation = {
-      lat: data.lat,
-      lon: data.lon,
+      lat: data.latitude,
+      lon: data.longitude,
       city: data.city,
       source: "ip",
     };
