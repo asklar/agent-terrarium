@@ -20,7 +20,7 @@ interface ContextMenuProps {
   onAbout: () => void;
 }
 
-type SubMenu = null | "theme" | "add" | "remove" | "gear" | "gear-agent" | "gear-slot";
+type SubMenu = null | "theme" | "add" | "add-npc" | "remove" | "gear" | "gear-agent" | "gear-slot";
 
 export function ContextMenu({
   x,
@@ -239,16 +239,54 @@ export function ContextMenu({
         </>
       )}
 
-      {subMenu === "add" && (
+      {subMenu === "add" && (() => {
+        const allAgents = registry.getAllAgents();
+        const liveAgents = allAgents.filter((a) => a.defaultBackend);
+        const hasNpcs = allAgents.some((a) => !a.defaultBackend);
+        return (
+          <>
+            <button
+              className="context-menu-item context-menu-back"
+              onClick={() => setSubMenu(null)}
+            >
+              ◂ Back
+            </button>
+            <div className="context-menu-divider" />
+            {liveAgents.map((a) => (
+              <button
+                key={a.id}
+                className="context-menu-item"
+                onClick={() => handleAdd(a.id, a.name)}
+              >
+                {a.icon} {a.name}
+              </button>
+            ))}
+            {hasNpcs && (
+              <>
+                <div className="context-menu-divider" />
+                <button
+                  className="context-menu-item"
+                  onClick={guardedClick(() => setSubMenu("add-npc"))}
+                >
+                  🤖 Add NPC
+                  <span className="context-menu-arrow">▸</span>
+                </button>
+              </>
+            )}
+          </>
+        );
+      })()}
+
+      {subMenu === "add-npc" && (
         <>
           <button
             className="context-menu-item context-menu-back"
-            onClick={() => setSubMenu(null)}
+            onClick={() => setSubMenu("add")}
           >
             ◂ Back
           </button>
           <div className="context-menu-divider" />
-          {registry.getAllAgents().map((a) => (
+          {registry.getAllAgents().filter((a) => !a.defaultBackend).map((a) => (
             <button
               key={a.id}
               className="context-menu-item"
