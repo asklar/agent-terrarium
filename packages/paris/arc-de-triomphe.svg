@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70">
+  <!-- Left pillar -->
+  <rect x="2" y="14" width="22" height="56" fill="#A1887F"/>
+  <!-- Right pillar -->
+  <rect x="56" y="14" width="22" height="56" fill="#A1887F"/>
+  <!-- Left pillar sculptural relief lines -->
+  <line x1="8" y1="20" x2="8" y2="65" stroke="#8D6E63" stroke-width="0.6" opacity="0.6"/>
+  <line x1="13" y1="20" x2="13" y2="65" stroke="#8D6E63" stroke-width="0.6" opacity="0.6"/>
+  <line x1="18" y1="20" x2="18" y2="65" stroke="#8D6E63" stroke-width="0.6" opacity="0.6"/>
+  <!-- Left pillar horizontal bands -->
+  <rect x="4" y="30" width="18" height="1" fill="#BCAAA4" opacity="0.4"/>
+  <rect x="4" y="45" width="18" height="1" fill="#BCAAA4" opacity="0.4"/>
+  <rect x="4" y="58" width="18" height="1" fill="#BCAAA4" opacity="0.4"/>
+  <!-- Right pillar sculptural relief lines -->
+  <line x1="62" y1="20" x2="62" y2="65" stroke="#8D6E63" stroke-width="0.6" opacity="0.6"/>
+  <line x1="67" y1="20" x2="67" y2="65" stroke="#8D6E63" stroke-width="0.6" opacity="0.6"/>
+  <line x1="72" y1="20" x2="72" y2="65" stroke="#8D6E63" stroke-width="0.6" opacity="0.6"/>
+  <!-- Right pillar horizontal bands -->
+  <rect x="58" y="30" width="18" height="1" fill="#BCAAA4" opacity="0.4"/>
+  <rect x="58" y="45" width="18" height="1" fill="#BCAAA4" opacity="0.4"/>
+  <rect x="58" y="58" width="18" height="1" fill="#BCAAA4" opacity="0.4"/>
+  <!-- Attic story / top entablature -->
+  <rect x="0" y="0" width="80" height="14" rx="1" fill="#8D6E63"/>
+  <!-- Frieze pattern on attic -->
+  <rect x="2" y="4" width="76" height="1" fill="#BCAAA4" opacity="0.5"/>
+  <rect x="2" y="7" width="76" height="1" fill="#BCAAA4" opacity="0.4"/>
+  <!-- Decorative frieze band -->
+  <rect x="2" y="10" width="76" height="4" fill="#BCAAA4"/>
+  <!-- Frieze relief tick marks -->
+  <line x1="6" y1="10.5" x2="6" y2="13.5" stroke="#8D6E63" stroke-width="0.5" opacity="0.5"/>
+  <line x1="12" y1="10.5" x2="12" y2="13.5" stroke="#8D6E63" stroke-width="0.5" opacity="0.5"/>
+  <line x1="18" y1="10.5" x2="18" y2="13.5" stroke="#8D6E63" stroke-width="0.5" opacity="0.5"/>
+  <line x1="30" y1="10.5" x2="30" y2="13.5" stroke="#8D6E63" stroke-width="0.5" opacity="0.5"/>
+  <line x1="40" y1="10.5" x2="40" y2="13.5" stroke="#8D6E63" stroke-width="0.5" opacity="0.5"/>
+  <line x1="50" y1="10.5" x2="50" y2="13.5" stroke="#8D6E63" stroke-width="0.5" opacity="0.5"/>
+  <line x1="62" y1="10.5" x2="62" y2="13.5" stroke="#8D6E63" stroke-width="0.5" opacity="0.5"/>
+  <line x1="68" y1="10.5" x2="68" y2="13.5" stroke="#8D6E63" stroke-width="0.5" opacity="0.5"/>
+  <line x1="74" y1="10.5" x2="74" y2="13.5" stroke="#8D6E63" stroke-width="0.5" opacity="0.5"/>
+  <!-- Central arch -->
+  <path d="M 24 70 L 24 38 Q 24 20 40 20 Q 56 20 56 38 L 56 70 Z" fill="#5D4037"/>
+  <!-- Inner arch highlight -->
+  <path d="M 27 70 L 27 40 Q 27 24 40 24 Q 53 24 53 40 L 53 70 Z" fill="#4E342E"/>
+  <!-- Keystone accent at arch top -->
+  <rect x="38" y="20" width="4" height="3" fill="#A1887F" opacity="0.5"/>
+  <!-- Pillar edge details -->
+  <rect x="2" y="14" width="3" height="56" fill="#8D6E63" opacity="0.5"/>
+  <rect x="75" y="14" width="3" height="56" fill="#8D6E63" opacity="0.5"/>
+  <!-- Top cornice -->
+  <rect x="-1" y="-1" width="82" height="3" rx="0.5" fill="#795548"/>
+  <!-- Flag on top -->
+  <rect x="39" y="-9" width="1" height="8" fill="#6D4C41"/>
+  <path d="M 40 -9 L 47 -7 L 40 -5 Z" fill="#1565C0"/>
+  <line x1="40" y1="-7.7" x2="47" y2="-7.7" stroke="#FFFFFF" stroke-width="0.8"/>
+  <path d="M 43.5 -9 L 47 -9 L 47 -7 L 43.5 -7 Z" fill="#E53935" opacity="0.9"/>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 80" width="60" height="80">
+  <!-- Ski jump ramp silhouette -->
+  <polygon points="5,80 15,80 55,20 55,10 50,10 10,75" fill="#546E7A"/>
+  <!-- Top platform -->
+  <rect x="45" y="8" width="14" height="6" rx="1" fill="#455A64"/>
+  <!-- Snow on ramp -->
+  <polyline points="10,75 50,12 55,12" stroke="#ECEFF1" stroke-width="2" fill="none" stroke-linecap="round"/>
+</svg>

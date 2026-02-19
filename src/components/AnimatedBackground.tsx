@@ -41,6 +41,7 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
   const animRef = useRef<number>(0);
   const skyStateRef = useRef<SkyState>({ ...DEFAULT_SKY });
   const weatherParticlesRef = useRef<Particle[]>([]);
+  const accumulationRef = useRef(0);
   const debugTimeRef = useRef(debugTime);
   debugTimeRef.current = debugTime;
   const debugWeatherRef = useRef(debugWeather);
@@ -248,6 +249,20 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
         }
       }
 
+      // Update precipitation accumulation
+      if (isDynamic) {
+        const sky = skyStateRef.current;
+        const isSnowing = sky.weatherOverlay === "snow";
+        const isRaining = sky.weatherOverlay === "rain" || sky.weatherOverlay === "storm" || sky.weatherOverlay === "drizzle";
+        if (isSnowing) {
+          accumulationRef.current = Math.min(1, accumulationRef.current + 0.0003 * sky.weatherIntensity);
+        } else if (isRaining) {
+          accumulationRef.current = Math.min(0.4, accumulationRef.current + 0.0002 * sky.weatherIntensity);
+        } else {
+          accumulationRef.current = Math.max(0, accumulationRef.current - 0.0001);
+        }
+      }
+
       // Ground
       if (!t.hideGround) {
       const waveAmp = t.groundWave ?? 4;
@@ -265,6 +280,52 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
       ctx.lineTo(0, h);
       ctx.closePath();
       ctx.fill();
+
+      // Draw precipitation accumulation on ground
+      const accum = accumulationRef.current;
+      if (accum > 0.01) {
+        const isSnowAccum = skyStateRef.current.weatherOverlay === "snow" || accum > 0.3;
+
+        if (isSnowAccum && accum > 0.05) {
+          const snowDepth = accum * 20;
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(0, groundY);
+          for (let sx = 0; sx <= w; sx += 15) {
+            const lump = Math.sin(sx * 0.03 + 1.5) * 3 + Math.sin(sx * 0.07) * 2;
+            ctx.lineTo(sx, groundY - snowDepth + lump * accum);
+          }
+          ctx.lineTo(w, h);
+          ctx.lineTo(0, h);
+          ctx.closePath();
+          ctx.fillStyle = `rgba(240, 245, 255, ${Math.min(0.9, accum * 1.2)})`;
+          ctx.fill();
+          ctx.beginPath();
+          for (let sx = 0; sx <= w; sx += 15) {
+            const lump = Math.sin(sx * 0.03 + 1.5) * 3 + Math.sin(sx * 0.07) * 2;
+            if (sx === 0) ctx.moveTo(sx, groundY - snowDepth + lump * accum);
+            else ctx.lineTo(sx, groundY - snowDepth + lump * accum);
+          }
+          ctx.strokeStyle = `rgba(255, 255, 255, ${accum * 0.5})`;
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.restore();
+        } else if (accum > 0.02) {
+          ctx.save();
+          const puddleAlpha = Math.min(0.3, accum * 0.6);
+          for (let i = 0; i < 8; i++) {
+            const px = w * (0.1 + 0.1 * i + Math.sin(i * 2.7) * 0.04);
+            const py = groundY + 5 + Math.sin(i * 3.1) * 10;
+            const pw = 30 + Math.sin(i * 1.9) * 15;
+            const ph = 6 + Math.sin(i * 2.3) * 3;
+            ctx.beginPath();
+            ctx.ellipse(px, py, pw * accum * 2, ph * accum * 2, 0, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(100, 140, 180, ${puddleAlpha})`;
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+      }
       }
 
       // Draw decorators AFTER ground so ground-level assets aren't covered

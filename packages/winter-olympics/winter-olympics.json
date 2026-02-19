@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "name": "Winter Olympics Theme",
+  "author": "Agent Terrarium",
+  "themes": [
+    {
+      "id": "winter-olympics",
+      "name": "Winter Olympics",
+      "icon": "🏅",
+      "sky": ["#1a237e", "#283593", "#5c6bc0", "#9fa8da"],
+      "ground": "#E8EAF6",
+      "groundAccent": "#C5CAE9",
+      "groundWave": 3,
+      "grass": { "color": "#ECEFF1", "accent": "#CFD8DC" },
+      "particles": { "type": "snow", "color": "#FFFFFF", "count": 25 },
+      "decorators": ["clouds", "snowy_mountains", "olympic_rings", "ski_jump", "ski_lift", "mist"],
+      "customDecorators": [
+        {
+          "name": "snowy_mountains",
+          "file": "winter-olympics/snowy-mountains.svg",
+          "fileX": 0.5,
+          "fileY": 0.72,
+          "fileWidth": 600,
+          "fileHeight": 200,
+          "fileOpacity": 0.8,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "olympic_rings",
+          "file": "winter-olympics/olympic-rings.svg",
+          "fileX": 0.5,
+          "fileY": 0.15,
+          "fileWidth": 120,
+          "fileHeight": 55,
+          "fileOpacity": 0.6
+        },
+        {
+          "name": "ski_jump",
+          "file": "winter-olympics/ski-jump.svg",
+          "fileX": 0.2,
+          "fileY": 0.72,
+          "fileWidth": 80,
+          "fileHeight": 120,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "ski_lift",
+          "file": "winter-olympics/ski-lift.svg",
+          "fileWidth": 30,
+          "fileHeight": 25,
+          "animation": {
+            "waypoints": [[0.6, 0.62], [0.75, 0.55], [0.85, 0.50]],
+            "duration": 30,
+            "pingPong": true
+          }
+        }
+      ],
+      "music": {
+        "bpm": 100,
+        "key": 64,
+        "scale": [0, 2, 4, 5, 7, 9, 11],
+        "wave": "square",
+        "bassWave": "triangle",
+        "volume": 0.12,
+        "chords": [[0, 4, 7], [5, 9, 12], [7, 11, 14], [0, 4, 7]]
+      }
+    }
+  ]
+}

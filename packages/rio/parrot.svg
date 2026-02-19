@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <!-- Body — aerodynamic flight shape -->
+  <path d="M6 8 Q5 10 6 13 Q8 16 11 16 Q14 16 15 13 Q16 10 14 8 Q12 6 10 7 Q8 6 6 8Z" fill="#F44336"/>
+  <!-- Wing -->
+  <path d="M7 9 Q3 11 2 15 Q5 13 8 12Z" fill="#1565C0"/>
+  <path d="M7.5 10 Q4 12 3 15 Q6 13 8 12Z" fill="#1976D2"/>
+  <!-- Tail feathers -->
+  <path d="M10 16 Q8 19 5.5 20" stroke="#FDD835" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+  <path d="M11 16 Q10.5 19 10 20" stroke="#1565C0" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+  <path d="M12 16 Q13 19 14 20" stroke="#F44336" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+  <!-- Head -->
+  <ellipse cx="12.5" cy="5.5" rx="3.5" ry="3" fill="#F44336"/>
+  <!-- Eye -->
+  <circle cx="14" cy="4.8" r="1" fill="white"/>
+  <circle cx="14.3" cy="4.6" r="0.5" fill="#212121"/>
+  <!-- Beak — sharper hooked shape -->
+  <path d="M15.5 5.5 L18.5 5 Q18 6.5 16 7.5 L15.5 7Z" fill="#FDD835"/>
+  <path d="M15.5 6.5 L17.5 6 Q17 7 16 7.5 L15.5 7Z" fill="#F9A825"/>
+  <!-- Green accent on head -->
+  <path d="M9.5 3.5 Q11 1.5 14 3.5" fill="#4CAF50"/>
+</svg>

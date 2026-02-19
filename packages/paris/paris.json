@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "name": "Paris Theme",
+  "author": "Agent Terrarium",
+  "themes": [
+    {
+      "id": "paris",
+      "name": "Paris",
+      "icon": "🗼",
+      "sky": ["#7986CB", "#9FA8DA", "#E8EAF6", "#FFF3E0"],
+      "ground": "#A1887F",
+      "groundAccent": "#8D6E63",
+      "groundWave": 2,
+      "grass": { "color": "#BCAAA4", "accent": "#A1887F" },
+      "particles": { "type": "leaf", "color": "#FFAB91", "count": 10 },
+      "decorators": ["clouds", "seine", "eiffel_tower", "arc_de_triomphe", "hot_air_balloon", "flowers"],
+      "customDecorators": [
+        {
+          "name": "seine",
+          "file": "paris/seine.svg",
+          "fileX": 0.5,
+          "fileY": 0.72,
+          "fileWidth": 550,
+          "fileHeight": 40,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "eiffel_tower",
+          "file": "paris/eiffel-tower.svg",
+          "fileX": 0.35,
+          "fileY": 0.72,
+          "fileWidth": 70,
+          "fileHeight": 200,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "arc_de_triomphe",
+          "file": "paris/arc-de-triomphe.svg",
+          "fileX": 0.7,
+          "fileY": 0.72,
+          "fileWidth": 90,
+          "fileHeight": 85,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "hot_air_balloon",
+          "file": "paris/hot-air-balloon.svg",
+          "fileWidth": 25,
+          "fileHeight": 32,
+          "animation": {
+            "waypoints": [[0.15, 0.2], [0.25, 0.15], [0.4, 0.18], [0.55, 0.12], [0.7, 0.17]],
+            "duration": 60,
+            "pingPong": true
+          }
+        }
+      ],
+      "music": {
+        "bpm": 84,
+        "key": 65,
+        "scale": [0, 2, 4, 5, 7, 9, 11],
+        "wave": "sine",
+        "bassWave": "triangle",
+        "volume": 0.1,
+        "chords": [[0, 4, 7], [5, 9, 12], [4, 7, 11], [0, 4, 7]]
+      }
+    }
+  ]
+}

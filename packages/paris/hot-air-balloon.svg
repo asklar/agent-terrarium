@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 25">
+  <!-- Balloon envelope -->
+  <path d="M 10 0 Q 0 0 0 8 Q 0 16 10 18 Q 20 16 20 8 Q 20 0 10 0 Z" fill="#E53935"/>
+  <!-- White stripe left -->
+  <path d="M 7 0.5 Q 3 2 2.5 8 Q 3 14 7 17 L 7.5 17 Q 3.5 14 3 8 Q 3.5 2 7.5 0.5 Z" fill="#FFFFFF"/>
+  <!-- White stripe right -->
+  <path d="M 13 0.5 Q 17 2 17.5 8 Q 17 14 13 17 L 12.5 17 Q 16.5 14 17 8 Q 16.5 2 12.5 0.5 Z" fill="#FFFFFF"/>
+  <!-- Blue center stripe -->
+  <path d="M 8.5 0.3 Q 7 2 6.5 8 Q 7 14.5 9 17.5 L 11 17.5 Q 13 14.5 13.5 8 Q 13 2 11.5 0.3 Z" fill="#1565C0"/>
+  <!-- Envelope panel seam lines -->
+  <path d="M 5 0.8 Q 1.5 3 1 8 Q 1.5 14 5 17.2" fill="none" stroke="#C62828" stroke-width="0.2" opacity="0.5"/>
+  <path d="M 15 0.8 Q 18.5 3 19 8 Q 18.5 14 15 17.2" fill="none" stroke="#C62828" stroke-width="0.2" opacity="0.5"/>
+  <!-- Balloon opening at bottom -->
+  <ellipse cx="10" cy="17.8" rx="1.5" ry="0.5" fill="#4E342E" opacity="0.4"/>
+  <!-- Ropes -->
+  <line x1="7" y1="18" x2="7.5" y2="21" stroke="#5D4037" stroke-width="0.4"/>
+  <line x1="13" y1="18" x2="12.5" y2="21" stroke="#5D4037" stroke-width="0.4"/>
+  <line x1="10" y1="18.3" x2="10" y2="21" stroke="#5D4037" stroke-width="0.3"/>
+  <!-- Basket -->
+  <rect x="7" y="21" width="6" height="3.5" rx="0.5" fill="#8D6E63"/>
+  <rect x="6.5" y="21" width="7" height="1" rx="0.3" fill="#A1887F"/>
+  <!-- Basket weave detail -->
+  <line x1="8.5" y1="22" x2="8.5" y2="24.5" stroke="#795548" stroke-width="0.3" opacity="0.5"/>
+  <line x1="10" y1="22" x2="10" y2="24.5" stroke="#795548" stroke-width="0.3" opacity="0.5"/>
+  <line x1="11.5" y1="22" x2="11.5" y2="24.5" stroke="#795548" stroke-width="0.3" opacity="0.5"/>
+  <line x1="7" y1="23" x2="13" y2="23" stroke="#795548" stroke-width="0.3" opacity="0.5"/>
+</svg>

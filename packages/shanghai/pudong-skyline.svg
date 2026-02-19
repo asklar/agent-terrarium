@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 120">
+  <!-- Shanghai Tower (tallest, twisted) -->
+  <path d="M200 120 L200 18 Q202 8 205 5 Q208 8 210 18 L210 120 Z" fill="#37474F"/>
+  <path d="M202 20 L208 20 L208 25 L202 25 Z" fill="#FFD54F" opacity="0.5"/>
+  <path d="M202 35 L208 35 L208 38 L202 38 Z" fill="#FFD54F" opacity="0.4"/>
+  <path d="M202 50 L208 50 L208 53 L202 53 Z" fill="#FFD54F" opacity="0.5"/>
+  <path d="M202 65 L208 65 L208 68 L202 68 Z" fill="#FFD54F" opacity="0.4"/>
+  <path d="M202 80 L208 80 L208 83 L202 83 Z" fill="#FFD54F" opacity="0.5"/>
+  <rect x="204" y="2" width="2" height="8" fill="#546E7A"/>
+  <!-- Jin Mao Tower (stepped/pagoda) -->
+  <path d="M240 120 L242 30 L248 25 L254 30 L256 120 Z" fill="#455A64"/>
+  <rect x="246" y="18" width="4" height="10" fill="#546E7A"/>
+  <rect x="247" y="10" width="2" height="10" fill="#607D8B"/>
+  <path d="M243 40 L253 40 L253 43 L243 43 Z" fill="#FFD54F" opacity="0.4"/>
+  <path d="M243 55 L253 55 L253 58 L243 58 Z" fill="#FFD54F" opacity="0.5"/>
+  <path d="M244 70 L252 70 L252 73 L244 73 Z" fill="#FFD54F" opacity="0.4"/>
+  <path d="M244 85 L252 85 L252 88 L244 88 Z" fill="#FFD54F" opacity="0.5"/>
+  <!-- SWFC (bottle opener) -->
+  <path d="M270 120 L272 28 L278 22 L284 28 L286 120 Z" fill="#37474F"/>
+  <rect x="276" y="25" width="4" height="6" rx="2" fill="#1a237e" opacity="0.6"/>
+  <path d="M273 40 L283 40 L283 43 L273 43 Z" fill="#FFD54F" opacity="0.4"/>
+  <path d="M273 60 L283 60 L283 63 L273 63 Z" fill="#FFD54F" opacity="0.5"/>
+  <path d="M274 80 L282 80 L282 83 L274 83 Z" fill="#FFD54F" opacity="0.4"/>
+  <!-- Medium building cluster left -->
+  <rect x="140" y="60" width="14" height="60" fill="#455A64"/>
+  <rect x="142" y="65" width="3" height="2" fill="#FFD54F" opacity="0.5"/>
+  <rect x="147" y="65" width="3" height="2" fill="#FFD54F" opacity="0.4"/>
+  <rect x="142" y="75" width="3" height="2" fill="#FFD54F" opacity="0.4"/>
+  <rect x="147" y="80" width="3" height="2" fill="#FFD54F" opacity="0.5"/>
+  <rect x="158" y="50" width="12" height="70" fill="#37474F"/>
+  <rect x="160" y="55" width="2" height="2" fill="#FFD54F" opacity="0.5"/>
+  <rect x="165" y="60" width="2" height="2" fill="#FFD54F" opacity="0.4"/>
+  <rect x="160" y="75" width="2" height="2" fill="#FFD54F" opacity="0.5"/>
+  <!-- Medium building cluster right -->
+  <rect x="300" y="55" width="15" height="65" fill="#455A64"/>
+  <rect x="302" y="60" width="3" height="2" fill="#FFD54F" opacity="0.5"/>
+  <rect x="308" y="65" width="3" height="2" fill="#FFD54F" opacity="0.4"/>
+  <rect x="302" y="80" width="3" height="2" fill="#FFD54F" opacity="0.4"/>
+  <rect x="320" y="65" width="12" height="55" fill="#37474F"/>
+  <rect x="322" y="70" width="2" height="2" fill="#FFD54F" opacity="0.5"/>
+  <rect x="326" y="75" width="2" height="2" fill="#FFD54F" opacity="0.4"/>
+  <!-- Small buildings far left -->
+  <rect x="80" y="80" width="10" height="40" fill="#455A64" opacity="0.6"/>
+  <rect x="95" y="75" width="8" height="45" fill="#37474F" opacity="0.6"/>
+  <rect x="108" y="85" width="10" height="35" fill="#455A64" opacity="0.5"/>
+  <!-- Small buildings far right -->
+  <rect x="350" y="78" width="10" height="42" fill="#455A64" opacity="0.6"/>
+  <rect x="365" y="82" width="12" height="38" fill="#37474F" opacity="0.5"/>
+  <rect x="382" y="88" width="8" height="32" fill="#455A64" opacity="0.5"/>
+</svg>

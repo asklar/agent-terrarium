@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 180">
+  <!-- Antenna spire -->
+  <rect x="24" y="0" width="2" height="40" fill="#B0BEC5"/>
+  <!-- Upper sphere -->
+  <circle cx="25" cy="48" r="10" fill="#E91E63"/>
+  <circle cx="25" cy="48" r="7" fill="#F06292" opacity="0.6"/>
+  <!-- Upper sphere glow -->
+  <circle cx="23" cy="46" r="3" fill="#F8BBD0" opacity="0.4"/>
+  <!-- Upper column -->
+  <rect x="23" y="58" width="4" height="22" fill="#B0BEC5"/>
+  <!-- Middle sphere (large) -->
+  <circle cx="25" cy="92" r="14" fill="#E91E63"/>
+  <circle cx="25" cy="92" r="10" fill="#F06292" opacity="0.6"/>
+  <circle cx="22" cy="89" r="4" fill="#F8BBD0" opacity="0.4"/>
+  <!-- Lower column -->
+  <rect x="23" y="106" width="4" height="18" fill="#B0BEC5"/>
+  <!-- Lower sphere (small) -->
+  <circle cx="25" cy="130" r="8" fill="#E91E63"/>
+  <circle cx="25" cy="130" r="5.5" fill="#F06292" opacity="0.6"/>
+  <!-- Support legs (tripod) -->
+  <path d="M23 106 L10 170 L14 170 L24 115 Z" fill="#90A4AE"/>
+  <path d="M27 106 L40 170 L36 170 L26 115 Z" fill="#90A4AE"/>
+  <rect x="24" y="115" width="2" height="55" fill="#90A4AE"/>
+  <!-- Base platform -->
+  <rect x="6" y="170" width="38" height="4" rx="1" fill="#78909C"/>
+  <!-- Window lights on columns -->
+  <rect x="24" y="62" width="2" height="1" fill="#FFD54F" opacity="0.8"/>
+  <rect x="24" y="66" width="2" height="1" fill="#FFD54F" opacity="0.8"/>
+  <rect x="24" y="70" width="2" height="1" fill="#FFD54F" opacity="0.8"/>
+</svg>

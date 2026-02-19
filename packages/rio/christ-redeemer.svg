@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 120">
+  <!-- Corcovado mountain — natural rounded peak -->
+  <path d="M0 120 Q5 100 12 85 Q18 70 25 58 Q28 50 30 46 Q32 50 35 58 Q42 70 48 85 Q55 100 60 120Z" fill="#4CAF50"/>
+  <path d="M8 120 Q14 95 20 78 Q25 65 28 55 Q30 50 32 55 Q35 65 40 78 Q48 95 55 120Z" fill="#388E3C"/>
+  <!-- Pedestal — tapered with architectural detail -->
+  <path d="M23 48 L25 36 L35 36 L37 48Z" fill="#BDBDBD"/>
+  <rect x="24" y="34" width="12" height="3" rx="0.5" fill="#CFD8DC"/>
+  <line x1="23.5" y1="42" x2="36.5" y2="42" stroke="#9E9E9E" stroke-width="0.4"/>
+  <!-- Body / flowing robes -->
+  <path d="M26 18 Q24 23 24 28 Q23 32 24 35 L36 35 Q37 32 36 28 Q36 23 34 18Z" fill="#F5F5F5"/>
+  <path d="M30 20 Q29 25 28.5 30 L31.5 30 Q31 25 30 20Z" fill="#E0E0E0" opacity="0.4"/>
+  <!-- Arms outstretched with drape -->
+  <path d="M26 17 Q18 14 10 13.5 Q5 13.5 2 15 L2 17.5 Q5 16 10 15.5 Q18 16 26 19Z" fill="#F5F5F5"/>
+  <path d="M34 17 Q42 14 50 13.5 Q55 13.5 58 15 L58 17.5 Q55 16 50 15.5 Q42 16 34 19Z" fill="#F5F5F5"/>
+  <!-- Arm shadow for depth -->
+  <path d="M26 18 Q18 15.5 10 15 Q5 15 2 16.5 L2 17.5 Q5 16 10 15.5 Q18 16 26 19Z" fill="#E0E0E0" opacity="0.35"/>
+  <path d="M34 18 Q42 15.5 50 15 Q55 15 58 16.5 L58 17.5 Q55 16 50 15.5 Q42 16 34 19Z" fill="#E0E0E0" opacity="0.35"/>
+  <!-- Hands -->
+  <path d="M1 15 Q0.5 16.5 2 17.5 Q3 17 2.5 15Z" fill="#EEEEEE"/>
+  <path d="M59 15 Q59.5 16.5 58 17.5 Q57 17 57.5 15Z" fill="#EEEEEE"/>
+  <!-- Head — shaped, not a circle -->
+  <path d="M27.5 9.5 Q27.5 5.5 30 4.5 Q32.5 5.5 32.5 9.5 Q32.5 12 30 13 Q27.5 12 27.5 9.5Z" fill="#F5F5F5"/>
+  <!-- Subtle crown / halo -->
+  <path d="M27 7 Q28.5 4 30 3.5 Q31.5 4 33 7" fill="none" stroke="#E0E0E0" stroke-width="0.7" opacity="0.6"/>
+</svg>

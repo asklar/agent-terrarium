@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 35">
+  <!-- River water -->
+  <path d="M0 5 Q60 0 125 4 Q190 0 250 3 Q310 0 375 4 Q440 0 500 5 L500 35 L0 35 Z" fill="#1a237e"/>
+  <!-- Deeper water -->
+  <path d="M20 10 Q125 5 250 8 Q375 5 480 10 L480 32 Q375 30 250 32 Q125 30 20 32 Z" fill="#1a2060" opacity="0.6"/>
+  <!-- Surface shimmer -->
+  <path d="M40 8 Q100 5 180 7 Q260 4 340 7 Q420 5 460 8 L458 12 Q418 9 338 11 Q258 8 178 11 Q98 9 42 12 Z" fill="#3949AB" opacity="0.3"/>
+  <!-- Light reflections -->
+  <path d="M100 9 Q130 7 160 9 L158 11 Q128 9 102 11 Z" fill="#5C6BC0" opacity="0.25"/>
+  <path d="M280 7 Q320 5 350 7 L348 9 Q318 7 282 9 Z" fill="#5C6BC0" opacity="0.25"/>
+  <!-- Small boat -->
+  <rect x="220" y="6" width="16" height="3" rx="1" fill="#546E7A"/>
+  <rect x="227" y="1" width="1.5" height="6" fill="#78909C"/>
+  <path d="M228.5 1.5 L228.5 5 L234 3.5 Z" fill="#EF5350" opacity="0.8"/>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 25" width="30" height="25">
+  <!-- Cable -->
+  <line x1="0" y1="2" x2="30" y2="2" stroke="#90A4AE" stroke-width="1"/>
+  <!-- Hanger -->
+  <line x1="15" y1="2" x2="15" y2="8" stroke="#78909C" stroke-width="1.5"/>
+  <!-- Gondola body -->
+  <rect x="8" y="8" width="14" height="12" rx="2" fill="#1565C0"/>
+  <!-- Window -->
+  <rect x="10" y="10" width="10" height="5" rx="1" fill="#BBDEFB"/>
+  <!-- Bottom edge -->
+  <rect x="8" y="18" width="14" height="2" rx="1" fill="#0D47A1"/>
+</svg>

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 40">
+  <!-- Far bank building silhouettes -->
+  <rect x="10" y="4" width="12" height="8" fill="#90A4AE" opacity="0.3"/>
+  <rect x="25" y="2" width="8" height="10" fill="#90A4AE" opacity="0.25"/>
+  <rect x="36" y="5" width="14" height="7" fill="#90A4AE" opacity="0.3"/>
+  <rect x="240" y="3" width="10" height="9" fill="#90A4AE" opacity="0.25"/>
+  <rect x="255" y="1" width="6" height="11" fill="#90A4AE" opacity="0.3"/>
+  <rect x="264" y="4" width="15" height="8" fill="#90A4AE" opacity="0.25"/>
+  <rect x="420" y="3" width="11" height="9" fill="#90A4AE" opacity="0.25"/>
+  <rect x="435" y="5" width="8" height="7" fill="#90A4AE" opacity="0.3"/>
+  <rect x="446" y="2" width="14" height="10" fill="#90A4AE" opacity="0.25"/>
+  <!-- River water -->
+  <path d="M 0 10 Q 60 4 125 8 Q 190 2 250 6 Q 310 2 375 8 Q 440 4 500 10 L 500 40 L 0 40 Z" fill="#5C8FB8"/>
+  <!-- Deeper water -->
+  <path d="M 20 16 Q 125 10 250 13 Q 375 10 480 16 L 480 36 Q 375 33 250 35 Q 125 33 20 36 Z" fill="#4A7FA8" opacity="0.6"/>
+  <!-- Stone bridge - first arch -->
+  <path d="M 140 10 Q 140 -4 162 -4 Q 184 -4 184 10" fill="none" stroke="#8D6E63" stroke-width="3"/>
+  <path d="M 138 10 L 138 5 Q 138 -6 162 -6 Q 186 -6 186 5 L 186 10" fill="none" stroke="#795548" stroke-width="1.5"/>
+  <!-- Stone bridge - second arch -->
+  <path d="M 186 10 Q 186 -4 206 -4 Q 226 -4 226 10" fill="none" stroke="#8D6E63" stroke-width="3"/>
+  <path d="M 184 10 L 184 5 Q 184 -6 206 -6 Q 228 -6 228 5 L 228 10" fill="none" stroke="#795548" stroke-width="1.5"/>
+  <!-- Bridge road surface -->
+  <rect x="130" y="-8" width="106" height="4" rx="1" fill="#A1887F"/>
+  <!-- Bridge pillars -->
+  <rect x="135" y="-4" width="6" height="16" fill="#8D6E63"/>
+  <rect x="181" y="-4" width="6" height="16" fill="#8D6E63"/>
+  <rect x="225" y="-4" width="6" height="16" fill="#8D6E63"/>
+  <!-- Near bank building silhouettes -->
+  <rect x="60" y="36" width="15" height="6" fill="#78909C" opacity="0.2"/>
+  <rect x="78" y="37" width="10" height="5" fill="#78909C" opacity="0.15"/>
+  <rect x="330" y="36" width="12" height="6" fill="#78909C" opacity="0.2"/>
+  <rect x="345" y="37" width="8" height="5" fill="#78909C" opacity="0.15"/>
+  <!-- Water shimmer -->
+  <path d="M 50 14 Q 80 11 120 14 L 118 16 Q 78 13 52 16 Z" fill="#7EB5D6" opacity="0.3"/>
+  <path d="M 260 12 Q 310 9 360 12 L 358 14 Q 308 11 262 14 Z" fill="#7EB5D6" opacity="0.3"/>
+  <path d="M 400 14 Q 430 11 470 14 L 468 16 Q 428 13 402 16 Z" fill="#7EB5D6" opacity="0.25"/>
+</svg>
