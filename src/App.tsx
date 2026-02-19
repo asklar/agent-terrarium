@@ -12,6 +12,7 @@ import { AboutDialog } from "./components/AboutDialog";
 import { DebugPanel } from "./components/DebugPanel";
 import { registry } from "./themes";
 import { playAgentSound } from "./audio/agentSounds";
+import { fetchLocation, fetchWeather, getLocation } from "./weather/weatherService";
 import { getCurrentWindow, currentMonitor } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import { log } from "./utils/log";
@@ -127,6 +128,21 @@ function App() {
       configLoadedRef.current = true;
     });
   }, [loadConfig]);
+
+  // Centralized weather fetching — single source for both dynamic sky and weather widget
+  useEffect(() => {
+    fetchLocation().then((loc) => {
+      if (loc) {
+        log.info("Fetching weather for", loc.city ?? `${loc.lat},${loc.lon}`);
+        fetchWeather(loc).catch(() => {});
+      }
+    }).catch(() => {});
+    const id = setInterval(() => {
+      const loc = getLocation();
+      if (loc) fetchWeather(loc).catch(() => {});
+    }, 6 * 60 * 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
 
   // Save window bounds on move/resize (debounced)
   useEffect(() => {

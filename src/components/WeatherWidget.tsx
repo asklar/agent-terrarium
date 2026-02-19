@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { getCachedWeather, getLocation, fetchLocation, fetchWeather, weatherCodeToOverlay } from "../weather/weatherService";
+import { getCachedWeather, getLocation, weatherCodeToOverlay } from "../weather/weatherService";
 import type { WeatherData } from "../weather/types";
 import "./WeatherWidget.css";
 
@@ -60,26 +60,16 @@ export function WeatherWidget() {
   const [now, setNow] = useState(new Date());
   const [useFahrenheit, setUseFahrenheit] = useState(true);
 
-  // Fetch weather on mount and poll every 30s
+  // Read cached weather data (fetched centrally by App)
   useEffect(() => {
-    let mounted = true;
-    const update = async () => {
-      let w = getCachedWeather();
-      if (!w) {
-        try {
-          const loc = getLocation() ?? await fetchLocation();
-          if (loc) w = await fetchWeather(loc);
-        } catch { /* retry next interval */ }
-      }
-      if (mounted) {
-        setWeather(w);
-        setCity(getLocation()?.city);
-        setNow(new Date());
-      }
+    const update = () => {
+      setWeather(getCachedWeather());
+      setCity(getLocation()?.city);
+      setNow(new Date());
     };
     update();
-    const id = setInterval(update, 10_000);
-    return () => { mounted = false; clearInterval(id); };
+    const id = setInterval(update, 5_000);
+    return () => clearInterval(id);
   }, []);
 
   useEffect(() => {

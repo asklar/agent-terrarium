@@ -1,7 +1,7 @@
 import { useRef, useEffect } from "react";
 import { registry } from "../themes";
 import type { ThemeDefinition, ParticleType, CustomDecoratorDef } from "../themes";
-import { fetchLocation, fetchWeather, getCachedWeather, getLocation } from "../weather/weatherService";
+import { getCachedWeather } from "../weather/weatherService";
 import { computeTargetSky, lerpSkyState } from "../weather/skyCalculator";
 import { DEFAULT_SKY } from "../weather/types";
 import type { SkyState, WeatherOverlay } from "../weather/types";
@@ -74,23 +74,6 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
       const initialTarget = computeTargetSky(Date.now(), getCachedWeather(), debugTimeRef.current ?? null, debugWeatherRef.current ?? null);
       skyStateRef.current = initialTarget;
       log.info("Dynamic sky initialized:", initialTarget.weatherOverlay, `brightness=${initialTarget.brightness.toFixed(2)}`);
-
-      fetchLocation().then((loc) => {
-        if (loc) {
-          log.info("Fetching weather for", loc.city ?? `${loc.lat},${loc.lon}`);
-          fetchWeather(loc).catch(() => {});
-        }
-      }).catch(() => {});
-      // Refresh weather periodically
-      const weatherInterval = setInterval(() => {
-        const loc = getLocation();
-        if (loc) {
-          log.info("Refreshing weather data");
-          fetchWeather(loc).catch(() => {});
-        }
-      }, 6 * 60 * 60 * 1000);
-      // Store cleanup ref
-      (canvas as unknown as Record<string, unknown>).__weatherInterval = weatherInterval;
     }
 
     // Initialize particles
@@ -534,8 +517,6 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
     return () => {
       cancelAnimationFrame(animRef.current);
       resizeObserver.disconnect();
-      const interval = (canvas as unknown as Record<string, unknown>).__weatherInterval;
-      if (interval) clearInterval(interval as number);
     };
   }, [theme, dynamicSky]);
 
