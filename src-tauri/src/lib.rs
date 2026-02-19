@@ -266,9 +266,71 @@ fn load_user_packages() -> Result<Vec<String>, String> {
         if path.extension().and_then(|e| e.to_str()) == Some("json") {
             let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
             packages.push(content);
+        } else if path.is_dir() {
+            // Scan subdirectories for .json package files
+            if let Ok(sub_entries) = std::fs::read_dir(&path) {
+                for sub in sub_entries.flatten() {
+                    let sp = sub.path();
+                    if sp.extension().and_then(|e| e.to_str()) == Some("json") {
+                        if let Ok(content) = std::fs::read_to_string(&sp) {
+                            packages.push(content);
+                        }
+                    }
+                }
+            }
         }
     }
     Ok(packages)
+}
+
+/// Read a file from user packages dir as a data URL.
+/// Path is relative to ~/agent-terrarium/packages/, e.g. "rio/christ-redeemer.svg"
+#[tauri::command]
+fn read_user_package_file(path: String) -> Result<String, String> {
+    let dir = user_packages_dir();
+    let file = dir.join(&path);
+    // Security: ensure resolved path is inside the packages dir
+    let canonical = file.canonicalize().map_err(|e| format!("File not found: {}", e))?;
+    let canonical_dir = dir.canonicalize().unwrap_or(dir);
+    if !canonical.starts_with(&canonical_dir) {
+        return Err("Access denied".to_string());
+    }
+    let data = std::fs::read(&canonical).map_err(|e| e.to_string())?;
+    let mime = match canonical.extension().and_then(|e| e.to_str()) {
+        Some("svg") => "image/svg+xml",
+        Some("png") => "image/png",
+        Some("jpg" | "jpeg") => "image/jpeg",
+        _ => "application/octet-stream",
+    };
+    // Encode as base64 data URL
+    use std::io::Write;
+    let mut b64 = String::new();
+    let mut encoder = std::io::Cursor::new(Vec::new());
+    write!(encoder, "data:{};base64,", mime).unwrap();
+    b64 = String::from_utf8(encoder.into_inner()).unwrap();
+    // Simple base64 encoding without external crate
+    const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut i = 0;
+    while i < data.len() {
+        let b0 = data[i] as u32;
+        let b1 = if i + 1 < data.len() { data[i + 1] as u32 } else { 0 };
+        let b2 = if i + 2 < data.len() { data[i + 2] as u32 } else { 0 };
+        let triple = (b0 << 16) | (b1 << 8) | b2;
+        b64.push(CHARS[((triple >> 18) & 0x3F) as usize] as char);
+        b64.push(CHARS[((triple >> 12) & 0x3F) as usize] as char);
+        if i + 1 < data.len() {
+            b64.push(CHARS[((triple >> 6) & 0x3F) as usize] as char);
+        } else {
+            b64.push('=');
+        }
+        if i + 2 < data.len() {
+            b64.push(CHARS[(triple & 0x3F) as usize] as char);
+        } else {
+            b64.push('=');
+        }
+        i += 3;
+    }
+    Ok(b64)
 }
 
 #[tauri::command]
@@ -610,6 +672,7 @@ pub fn run() {
             save_config,
             load_config,
             load_user_packages,
+            read_user_package_file,
             get_splash_wait,
             set_credential,
             get_credential,

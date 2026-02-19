@@ -5,6 +5,7 @@ import { getCachedWeather } from "../weather/weatherService";
 import { computeTargetSky, lerpSkyState } from "../weather/skyCalculator";
 import { DEFAULT_SKY } from "../weather/types";
 import type { SkyState, WeatherOverlay } from "../weather/types";
+import { invoke } from "@tauri-apps/api/core";
 import { log } from "../utils/log";
 
 interface AnimatedBackgroundProps {
@@ -62,7 +63,14 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
     for (const cd of t.customDecorators ?? []) {
       if (cd.file) {
         const img = new Image();
-        img.src = `/packages/${cd.file}?v=${registry.version}`;
+        const url = `/packages/${cd.file}?v=${registry.version}`;
+        img.src = url;
+        // If the built-in URL fails, try loading from user packages
+        img.onerror = () => {
+          invoke<string>("read_user_package_file", { path: cd.file })
+            .then((dataUrl) => { img.src = dataUrl; })
+            .catch(() => log.warn("Failed to load decorator SVG:", cd.file));
+        };
         svgImages.set(cd.name, img);
       }
     }
@@ -249,17 +257,18 @@ export function AnimatedBackground({ theme, dynamicSky, debugTime, debugWeather 
         }
       }
 
-      // Update precipitation accumulation
-      if (isDynamic) {
-        const sky = skyStateRef.current;
-        const isSnowing = sky.weatherOverlay === "snow";
-        const isRaining = sky.weatherOverlay === "rain" || sky.weatherOverlay === "storm" || sky.weatherOverlay === "drizzle";
+      // Update precipitation accumulation (works with dynamic sky or debug weather)
+      if (isDynamic || debugWeatherRef.current) {
+        const overlay = isDynamic ? skyStateRef.current.weatherOverlay : (debugWeatherRef.current ?? "none");
+        const intensity = isDynamic ? skyStateRef.current.weatherIntensity : 0.7;
+        const isSnowing = overlay === "snow";
+        const isRaining = overlay === "rain" || overlay === "storm" || overlay === "drizzle";
         if (isSnowing) {
-          accumulationRef.current = Math.min(1, accumulationRef.current + 0.0003 * sky.weatherIntensity);
+          accumulationRef.current = Math.min(1, accumulationRef.current + 0.002 * intensity);
         } else if (isRaining) {
-          accumulationRef.current = Math.min(0.4, accumulationRef.current + 0.0002 * sky.weatherIntensity);
+          accumulationRef.current = Math.min(0.4, accumulationRef.current + 0.001 * intensity);
         } else {
-          accumulationRef.current = Math.max(0, accumulationRef.current - 0.0001);
+          accumulationRef.current = Math.max(0, accumulationRef.current - 0.0005);
         }
       }
 
