@@ -62,20 +62,24 @@ export function WeatherWidget() {
 
   // Fetch weather on mount and poll every 30s
   useEffect(() => {
+    let mounted = true;
     const update = async () => {
-      // Try cached first
       let w = getCachedWeather();
       if (!w) {
-        const loc = getLocation() ?? await fetchLocation();
-        if (loc) w = await fetchWeather(loc);
+        try {
+          const loc = getLocation() ?? await fetchLocation();
+          if (loc) w = await fetchWeather(loc);
+        } catch { /* retry next interval */ }
       }
-      setWeather(w);
-      setCity(getLocation()?.city);
-      setNow(new Date());
+      if (mounted) {
+        setWeather(w);
+        setCity(getLocation()?.city);
+        setNow(new Date());
+      }
     };
     update();
-    const id = setInterval(update, 30_000);
-    return () => clearInterval(id);
+    const id = setInterval(update, 10_000);
+    return () => { mounted = false; clearInterval(id); };
   }, []);
 
   useEffect(() => {
