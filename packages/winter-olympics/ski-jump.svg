@@ -1,22 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 100">
-  <!-- Main hillside mass -->
-  <path d="M0 100 L0 55 Q12 38 35 28 Q55 20 70 28 Q80 34 85 45 L85 100Z" fill="#78909C"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 100">
+  <!-- Main hillside mass - tapers on both sides -->
+  <path d="M0 100 Q5 90 15 75 Q25 50 40 35 Q55 24 70 30 Q82 36 90 50 Q98 65 105 80 Q112 92 120 100Z" fill="#78909C"/>
   <!-- Hill shading layer -->
-  <path d="M5 100 L5 65 Q15 48 37 36 Q52 28 67 34 Q77 40 83 50 L83 100Z" fill="#90A4AE"/>
+  <path d="M10 100 Q18 80 28 62 Q38 42 50 34 Q62 28 72 34 Q82 42 88 55 Q95 72 100 100Z" fill="#90A4AE"/>
   <!-- Snow covering on hillside -->
-  <path d="M0 55 Q12 38 35 28 Q55 20 70 28 Q80 34 85 45 L83 50 Q77 40 67 34 Q52 28 37 36 Q15 48 5 65Z" fill="#ECEFF1" opacity="0.7"/>
+  <path d="M15 75 Q25 50 40 35 Q55 24 70 30 Q82 36 90 50 Q85 45 72 34 Q62 28 50 34 Q38 42 28 62Z" fill="#ECEFF1" opacity="0.7"/>
   <!-- Ramp track -->
-  <path d="M22 70 L38 48 Q43 42 48 40 L51 40 L51 44 Q46 45 43 48 L28 70Z" fill="#546E7A"/>
+  <path d="M32 75 L48 52 Q53 46 58 44 L61 44 L61 48 Q56 49 53 52 L38 75Z" fill="#546E7A"/>
   <!-- Ramp surface (icy) -->
-  <path d="M24 68 L39 49 Q43 44 47 42 L49 42 L49 45 Q45 46 42 49 L28 68Z" fill="#B0BEC5"/>
+  <path d="M34 73 L49 53 Q53 48 57 46 L59 46 L59 49 Q55 50 52 53 L38 73Z" fill="#B0BEC5"/>
   <!-- Takeoff lip -->
-  <path d="M22 72 Q20 68 24 68 L28 68 L26 72Z" fill="#455A64"/>
+  <path d="M32 77 Q30 73 34 73 L38 73 L36 77Z" fill="#455A64"/>
   <!-- Landing slope -->
-  <path d="M20 74 Q24 85 32 92 L38 100 L12 100 Q14 90 17 80Z" fill="#607D8B" opacity="0.5"/>
+  <path d="M30 79 Q34 88 42 94 L48 100 L22 100 Q24 92 27 84Z" fill="#607D8B" opacity="0.5"/>
   <!-- Snow patches -->
-  <path d="M55 33 Q60 28 65 32 Q60 36 55 38Z" fill="#ECEFF1" opacity="0.5"/>
-  <path d="M8 78 Q13 73 18 76 Q13 80 8 82Z" fill="#ECEFF1" opacity="0.4"/>
+  <path d="M65 37 Q70 32 75 36 Q70 40 65 42Z" fill="#ECEFF1" opacity="0.5"/>
+  <path d="M18 82 Q23 77 28 80 Q23 84 18 86Z" fill="#ECEFF1" opacity="0.4"/>
   <!-- Trees -->
-  <polygon points="65,55 68,42 71,55" fill="#2E7D32" opacity="0.6"/>
-  <polygon points="73,60 76,48 79,60" fill="#388E3C" opacity="0.5"/>
+  <polygon points="75,60 78,47 81,60" fill="#2E7D32" opacity="0.6"/>
+  <polygon points="83,65 86,53 89,65" fill="#388E3C" opacity="0.5"/>
 </svg>

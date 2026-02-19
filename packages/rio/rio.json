@@ -27,11 +27,11 @@
         {
           "name": "sugarloaf",
           "file": "rio/sugarloaf.svg",
-          "fileX": 0.78,
+          "fileX": 0.68,
           "fileY": 0.72,
           "fileWidth": 160,
           "fileHeight": 130,
-          "fileOpacity": 0.85,
+          "fileOpacity": 1,
           "fileAnchor": "bottom"
         },
         {
@@ -39,7 +39,7 @@
           "file": "rio/christ-redeemer.svg",
           "fileX": 0.3,
           "fileY": 0.72,
-          "fileWidth": 70,
+          "fileWidth": 130,
           "fileHeight": 160,
           "fileAnchor": "bottom"
         },

@@ -1,40 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90">
-  <!-- Guanabara Bay water -->
-  <rect x="0" y="75" width="120" height="15" fill="#0277BD" opacity="0.35"/>
-  <path d="M0 78 Q10 76 20 78 Q30 80 40 78 Q50 76 60 78 Q70 80 80 78 Q90 76 100 78 Q110 80 120 78" fill="none" stroke="#4FC3F7" stroke-width="0.5" opacity="0.5"/>
-  <!-- Water reflections -->
-  <path d="M0 82 Q15 80 30 82 Q45 84 60 82 Q75 80 90 82 Q105 84 120 82" fill="none" stroke="#4FC3F7" stroke-width="0.4" opacity="0.3"/>
-  <ellipse cx="75" cy="83" rx="8" ry="1" fill="#4FC3F7" opacity="0.15"/>
-  <ellipse cx="40" cy="81" rx="6" ry="0.8" fill="#4FC3F7" opacity="0.12"/>
-  <!-- Background hill with vegetation -->
-  <path d="M0 90 Q15 65 30 55 Q45 45 60 50 Q70 53 85 65 Q100 75 120 90Z" fill="#66BB6A"/>
-  <path d="M0 90 Q10 75 25 62 Q35 52 50 50 Q60 50 75 58 Q90 70 120 90Z" fill="#4CAF50" opacity="0.6"/>
-  <circle cx="25" cy="63" r="2" fill="#388E3C" opacity="0.5"/>
-  <circle cx="35" cy="57" r="1.5" fill="#2E7D32" opacity="0.4"/>
-  <circle cx="45" cy="53" r="2" fill="#388E3C" opacity="0.5"/>
-  <circle cx="15" cy="72" r="1.5" fill="#2E7D32" opacity="0.4"/>
-  <circle cx="85" cy="68" r="2" fill="#388E3C" opacity="0.5"/>
-  <!-- Sugarloaf peak — iconic egg-like dome shape -->
-  <path d="M56 90 Q56 60 62 38 Q66 24 71 16 Q74 11 75 9 Q76 11 79 16 Q84 24 88 38 Q94 60 94 90Z" fill="#616161"/>
-  <path d="M60 90 Q60 62 65 42 Q69 28 73 18 Q75 13 77 18 Q81 28 85 42 Q90 62 90 90Z" fill="#757575"/>
-  <!-- Rock highlight on dome -->
-  <path d="M72 16 Q75 12 78 16 Q80 24 82 36" fill="none" stroke="#9E9E9E" stroke-width="0.5" opacity="0.4"/>
-  <path d="M70 25 Q73 20 76 25" fill="none" stroke="#8E8E8E" stroke-width="0.4" opacity="0.3"/>
-  <!-- Urca hill -->
-  <path d="M0 90 Q8 75 18 65 Q28 58 40 55 Q50 55 58 65 Q62 72 65 90Z" fill="#81C784" opacity="0.7"/>
-  <circle cx="30" cy="60" r="1.5" fill="#388E3C" opacity="0.4"/>
-  <circle cx="40" cy="57" r="1" fill="#2E7D32" opacity="0.3"/>
-  <!-- Cable car wires (two parallel) -->
-  <line x1="32" y1="56" x2="75" y2="14" stroke="#424242" stroke-width="0.6"/>
-  <line x1="32" y1="57.8" x2="75" y2="15.8" stroke="#424242" stroke-width="0.4" opacity="0.6"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 110">
+  <!-- Background rolling hills — fade to nothing at edges -->
+  <path d="M20 110 Q35 95 55 82 Q75 72 100 70 Q125 72 145 82 Q165 95 180 110Z" fill="#66BB6A"/>
+  <path d="M25 110 Q40 97 60 85 Q75 77 95 74 Q110 74 130 82 Q150 92 175 110Z" fill="#4CAF50" opacity="0.6"/>
+  <ellipse cx="55" cy="84" rx="4" ry="2.5" fill="#388E3C" opacity="0.4"/>
+  <ellipse cx="80" cy="75" rx="3" ry="2" fill="#2E7D32" opacity="0.35"/>
+  <ellipse cx="140" cy="84" rx="4" ry="2.5" fill="#388E3C" opacity="0.4"/>
+
+  <!-- Sugarloaf peak — smooth dome -->
+  <path d="M90 110 Q90 80 96 60 Q100 48 104 38 Q107 30 110 26 Q112 24 114 26 Q117 30 120 38 Q124 48 128 60 Q134 80 134 110Z" fill="#616161"/>
+  <path d="M94 110 Q94 82 99 63 Q103 50 107 40 Q110 33 112 30 Q114 33 117 40 Q121 50 125 63 Q130 82 130 110Z" fill="#757575"/>
+  <!-- Dome highlight -->
+  <path d="M109 30 Q112 26 115 30 Q118 40 120 52" fill="none" stroke="#9E9E9E" stroke-width="0.6" opacity="0.4"/>
+
+  <!-- Urca hill — rounded mound -->
+  <path d="M28 110 Q38 90 53 80 Q66 72 80 70 Q93 72 103 82 Q110 90 116 110Z" fill="#81C784"/>
+  <ellipse cx="66" cy="74" rx="3" ry="2" fill="#388E3C" opacity="0.35"/>
+  <ellipse cx="80" cy="73" rx="2.5" ry="1.5" fill="#2E7D32" opacity="0.3"/>
+
+  <!-- Cable car wires -->
+  <line x1="70" y1="71" x2="112" y2="28" stroke="#424242" stroke-width="0.7"/>
+  <line x1="70" y1="72.8" x2="112" y2="29.8" stroke="#424242" stroke-width="0.5" opacity="0.6"/>
   <!-- Cable car gondola -->
-  <path d="M47 32 L45 37.5 L55 37.5 L53 32Z" fill="#F44336"/>
-  <rect x="45.5" y="37.5" width="9" height="1.2" rx="0.3" fill="#D32F2F"/>
-  <!-- Gondola windows -->
-  <rect x="47" y="33.5" width="1.5" height="2.5" rx="0.3" fill="#FFCDD2" opacity="0.6"/>
-  <rect x="49.5" y="33.5" width="1.5" height="2.5" rx="0.3" fill="#FFCDD2" opacity="0.6"/>
-  <!-- Cable attachment -->
-  <line x1="50" y1="32" x2="50" y2="28" stroke="#424242" stroke-width="0.7"/>
-  <circle cx="50" cy="28" r="1" fill="#424242"/>
-  <circle cx="50" cy="28" r="0.5" fill="#616161"/>
+  <path d="M84 46 L82 52 L92 52 L90 46Z" fill="#F44336"/>
+  <rect x="82.5" y="52" width="9" height="1.2" rx="0.3" fill="#D32F2F"/>
+  <rect x="84" y="47.5" width="1.5" height="2.5" rx="0.3" fill="#FFCDD2" opacity="0.6"/>
+  <rect x="86.5" y="47.5" width="1.5" height="2.5" rx="0.3" fill="#FFCDD2" opacity="0.6"/>
+  <line x1="87" y1="46" x2="87" y2="42" stroke="#424242" stroke-width="0.7"/>
+  <circle cx="87" cy="42" r="1" fill="#424242"/>
 </svg>

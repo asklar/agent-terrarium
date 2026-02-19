@@ -1,17 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 150" width="400" height="150">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 150" width="500" height="150">
   <!-- Back range (lighter) -->
-  <polygon points="0,150 30,70 70,90 110,50 150,80 200,30 250,70 290,55 330,75 370,45 400,80 400,150" fill="#78909C"/>
+  <polygon points="0,150 30,70 70,90 110,50 150,80 200,30 250,70 290,55 330,75 370,45 420,80 470,120 500,150" fill="#78909C"/>
   <!-- Snow caps on back range -->
   <polygon points="110,50 125,65 95,65" fill="#ECEFF1"/>
   <polygon points="200,30 220,50 180,50" fill="#ECEFF1"/>
   <polygon points="290,55 305,68 275,68" fill="#ECEFF1"/>
   <polygon points="370,45 385,60 355,60" fill="#ECEFF1"/>
   <!-- Front range (darker) -->
-  <polygon points="0,150 50,100 100,120 160,75 220,110 270,85 320,105 380,70 400,90 400,150" fill="#546E7A"/>
+  <polygon points="0,150 50,100 100,120 160,75 220,110 270,85 320,105 380,70 430,100 475,130 500,150" fill="#546E7A"/>
   <!-- Snow caps on front range -->
   <polygon points="160,75 180,95 140,95" fill="#E0E0E0"/>
   <polygon points="270,85 288,100 252,100" fill="#E0E0E0"/>
   <polygon points="380,70 395,88 365,88" fill="#E0E0E0"/>
   <!-- Foreground hills -->
-  <polygon points="0,150 60,120 130,135 200,115 280,130 350,118 400,130 400,150" fill="#455A64"/>
+  <polygon points="0,150 60,120 130,135 200,115 280,130 350,118 420,132 470,142 500,150" fill="#455A64"/>
 </svg>

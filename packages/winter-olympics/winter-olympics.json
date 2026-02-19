@@ -13,7 +13,7 @@
       "groundWave": 3,
       "grass": { "color": "#ECEFF1", "accent": "#CFD8DC" },
       "particles": { "type": "snow", "color": "#FFFFFF", "count": 25 },
-      "decorators": ["clouds", "snowy_mountains", "olympic_rings", "ski_jump", "ski_lift", "mist"],
+      "decorators": ["clouds", "snowy_mountains", "olympic_rings", "ski_lift_cable", "ski_jump", "ski_lift", "mist"],
       "customDecorators": [
         {
           "name": "snowy_mountains",
@@ -30,16 +30,25 @@
           "file": "winter-olympics/olympic-rings.svg",
           "fileX": 0.5,
           "fileY": 0.12,
-          "fileWidth": 100,
-          "fileHeight": 45,
+          "fileWidth": 200,
+          "fileHeight": 90,
           "fileOpacity": 0.5
+        },
+        {
+          "name": "ski_lift_cable",
+          "file": "winter-olympics/ski-lift-cable.svg",
+          "fileX": 0.54,
+          "fileY": 0.595,
+          "fileWidth": 160,
+          "fileHeight": 35,
+          "fileOpacity": 0.9
         },
         {
           "name": "ski_jump",
           "file": "winter-olympics/ski-jump.svg",
           "fileX": 0.18,
           "fileY": 0.72,
-          "fileWidth": 60,
+          "fileWidth": 75,
           "fileHeight": 80,
           "fileAnchor": "bottom"
         },
@@ -49,7 +58,7 @@
           "fileWidth": 25,
           "fileHeight": 20,
           "animation": {
-            "waypoints": [[0.55, 0.58], [0.65, 0.54], [0.72, 0.50]],
+            "waypoints": [[0.48, 0.62], [0.54, 0.60], [0.60, 0.58]],
             "duration": 35,
             "pingPong": true
           }
