@@ -187,15 +187,15 @@ export function ContextMenu({
     position: "fixed",
     left: Math.min(x, window.innerWidth - 200),
     top: y,
-    maxHeight: `calc(100vh - ${Math.min(y, 10)}px - 10px)`,
+    maxHeight: `${window.innerHeight - y - 10}px`,
     zIndex: 1000,
   };
 
-  // If menu would go below viewport, anchor from bottom instead
-  if (y > window.innerHeight - 100) {
+  // If menu would go below viewport, grow upward instead
+  if (y > window.innerHeight * 0.6) {
     menuStyle.top = undefined as unknown as number;
-    menuStyle.bottom = Math.max(10, window.innerHeight - y);
-    menuStyle.maxHeight = `calc(100vh - 20px)`;
+    menuStyle.bottom = window.innerHeight - y;
+    menuStyle.maxHeight = `${y - 10}px`;
   }
 
   return (
