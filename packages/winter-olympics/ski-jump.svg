@@ -1,22 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 100">
   <!-- Main hillside mass -->
-  <path d="M0 100 L0 55 Q10 40 30 30 Q50 22 65 28 Q75 32 80 40 L80 100Z" fill="#78909C"/>
+  <path d="M0 100 L0 55 Q12 38 35 28 Q55 20 70 28 Q80 34 85 45 L85 100Z" fill="#78909C"/>
   <!-- Hill shading layer -->
-  <path d="M0 100 L0 65 Q12 50 32 38 Q48 30 62 34 Q72 38 80 48 L80 100Z" fill="#90A4AE"/>
+  <path d="M5 100 L5 65 Q15 48 37 36 Q52 28 67 34 Q77 40 83 50 L83 100Z" fill="#90A4AE"/>
   <!-- Snow covering on hillside -->
-  <path d="M0 55 Q10 40 30 30 Q50 22 65 28 Q75 32 80 40 L80 45 Q72 36 62 32 Q48 26 30 34 Q12 44 0 60Z" fill="#ECEFF1" opacity="0.7"/>
-  <!-- Ramp track cut into hill -->
-  <path d="M20 70 L35 50 Q40 44 45 42 L48 42 L48 46 Q43 47 40 50 L25 70Z" fill="#546E7A"/>
+  <path d="M0 55 Q12 38 35 28 Q55 20 70 28 Q80 34 85 45 L83 50 Q77 40 67 34 Q52 28 37 36 Q15 48 5 65Z" fill="#ECEFF1" opacity="0.7"/>
+  <!-- Ramp track -->
+  <path d="M22 70 L38 48 Q43 42 48 40 L51 40 L51 44 Q46 45 43 48 L28 70Z" fill="#546E7A"/>
   <!-- Ramp surface (icy) -->
-  <path d="M22 68 L36 50 Q40 46 44 44 L46 44 L46 47 Q42 48 39 51 L26 68Z" fill="#B0BEC5"/>
+  <path d="M24 68 L39 49 Q43 44 47 42 L49 42 L49 45 Q45 46 42 49 L28 68Z" fill="#B0BEC5"/>
   <!-- Takeoff lip -->
-  <path d="M20 72 Q18 68 22 68 L26 68 L24 72Z" fill="#455A64"/>
-  <!-- Landing slope carved into hill -->
-  <path d="M18 74 Q22 85 30 92 Q35 96 40 100 L10 100 Q12 90 15 80Z" fill="#607D8B" opacity="0.5"/>
-  <!-- Snow patches on hill -->
-  <path d="M50 35 Q55 30 60 33 Q65 28 68 32 Q63 35 58 32Z" fill="#ECEFF1" opacity="0.5"/>
-  <path d="M5 75 Q10 70 15 73 Q10 78 5 80Z" fill="#ECEFF1" opacity="0.4"/>
-  <!-- Trees on hillside -->
-  <polygon points="62,55 65,40 68,55" fill="#2E7D32" opacity="0.6"/>
-  <polygon points="70,60 73,48 76,60" fill="#388E3C" opacity="0.5"/>
+  <path d="M22 72 Q20 68 24 68 L28 68 L26 72Z" fill="#455A64"/>
+  <!-- Landing slope -->
+  <path d="M20 74 Q24 85 32 92 L38 100 L12 100 Q14 90 17 80Z" fill="#607D8B" opacity="0.5"/>
+  <!-- Snow patches -->
+  <path d="M55 33 Q60 28 65 32 Q60 36 55 38Z" fill="#ECEFF1" opacity="0.5"/>
+  <path d="M8 78 Q13 73 18 76 Q13 80 8 82Z" fill="#ECEFF1" opacity="0.4"/>
+  <!-- Trees -->
+  <polygon points="65,55 68,42 71,55" fill="#2E7D32" opacity="0.6"/>
+  <polygon points="73,60 76,48 79,60" fill="#388E3C" opacity="0.5"/>
 </svg>
