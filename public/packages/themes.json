@@ -69,7 +69,24 @@
       "ground": "#0277BD",
       "groundAccent": "#01579B",
       "particles": { "type": "bubble", "color": "#B3E5FC", "count": 15 },
-      "decorators": ["waves", "seaweed"],
+      "decorators": ["waves", "seaweed", "swordfish"],
+      "customDecorators": [
+        {
+          "name": "swordfish",
+          "file": "swordfish.svg",
+          "fileWidth": 65,
+          "fileHeight": 20,
+          "animation": {
+            "type": "jump",
+            "origin": [0.25, 0.72],
+            "dx": 0.2,
+            "height": 0.15,
+            "duration": 1.8,
+            "interval": 25,
+            "rotate": true
+          }
+        }
+      ],
       "music": {
         "bpm": 76,
         "key": 55,

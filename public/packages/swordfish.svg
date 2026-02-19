@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 24">
+  <!-- Shadow/depth underneath -->
+  <path d="M20 14 Q30 18 42 18 Q52 17 58 14" fill="#0D47A1" opacity="0.2"/>
+
+  <!-- Tail fin — forked -->
+  <path d="M8 8 L2 2 L5 9 L0 7 L5 12 L0 17 L5 15 L2 22 L8 16 Z" fill="#1565C0"/>
+  <path d="M8 8 L4 5 L6 10" fill="none" stroke="#0D47A1" stroke-width="0.4" opacity="0.5"/>
+  <path d="M8 16 L4 19 L6 14" fill="none" stroke="#0D47A1" stroke-width="0.4" opacity="0.5"/>
+
+  <!-- Body — sleek torpedo shape -->
+  <path d="M8 12 Q14 5 24 3.5 Q36 2 48 4 Q58 6 64 10 L64 14 Q58 18 48 20 Q36 22 24 20.5 Q14 19 8 12Z" fill="#1976D2"/>
+  <!-- Upper body (darker dorsal) -->
+  <path d="M8 12 Q14 5 24 3.5 Q36 2 48 4 Q58 6 64 10 L64 12 Q56 9 46 7 Q34 5 22 7 Q14 9 8 12Z" fill="#1565C0"/>
+  <!-- Belly (lighter ventral) -->
+  <path d="M12 14 Q20 18 30 19.5 Q42 21 52 18 Q60 16 64 14 L64 13 Q58 16 48 17.5 Q36 19 24 17.5 Q16 16 12 14Z" fill="#64B5F6" opacity="0.6"/>
+  <!-- Lateral line -->
+  <path d="M14 12 Q28 10 44 11 Q56 12 62 12" fill="none" stroke="#1E88E5" stroke-width="0.6" opacity="0.5"/>
+
+  <!-- Dorsal fin — tall and pointed -->
+  <path d="M28 4 L22 0 L20 -1 L32 2 L38 3Z" fill="#0D47A1"/>
+  <path d="M24 2 L28 3" fill="none" stroke="#1565C0" stroke-width="0.3" opacity="0.4"/>
+
+  <!-- Pelvic fin -->
+  <path d="M36 19 L32 23 L40 20Z" fill="#1565C0" opacity="0.8"/>
+  <!-- Anal fin -->
+  <path d="M18 17 L14 21 L22 18Z" fill="#1565C0" opacity="0.7"/>
+
+  <!-- Sword/bill — long and tapered -->
+  <path d="M64 11.5 L80 11 L64 12.5Z" fill="#B0BEC5"/>
+  <path d="M64 11.8 L78 11.2" fill="none" stroke="#90A4AE" stroke-width="0.4"/>
+  <!-- Upper jaw -->
+  <path d="M62 10 Q66 10.5 68 11" fill="none" stroke="#1565C0" stroke-width="0.8"/>
+
+  <!-- Eye — prominent -->
+  <circle cx="60" cy="10.5" r="2" fill="#FFF"/>
+  <circle cx="60.5" cy="10.5" r="1.1" fill="#212121"/>
+  <circle cx="61" cy="10" r="0.35" fill="#FFF" opacity="0.8"/>
+
+  <!-- Gill plate -->
+  <path d="M56 8 Q55 11 56 15" fill="none" stroke="#1565C0" stroke-width="0.8" opacity="0.5"/>
+
+  <!-- Body highlights -->
+  <path d="M30 5 Q40 4 50 6" fill="none" stroke="#42A5F5" stroke-width="0.5" opacity="0.3"/>
+  <path d="M20 7 Q30 5.5 42 6" fill="none" stroke="#42A5F5" stroke-width="0.4" opacity="0.25"/>
+</svg>

@@ -18,10 +18,10 @@
   <rect x="444" y="4" width="12" height="8" fill="#90A4AE" opacity="0.28"/>
   <rect x="458" y="3" width="7" height="9" fill="#90A4AE" opacity="0.22"/>
 
-  <!-- River water -->
-  <path d="M 0 10 Q 60 4 125 8 Q 190 2 250 6 Q 310 2 375 8 Q 440 4 500 10 L 500 40 L 0 40 Z" fill="#5C8FB8"/>
+  <!-- River water — tapers down at edges -->
+  <path d="M 0 40 Q 30 35 60 20 Q 90 8 125 8 Q 190 2 250 6 Q 310 2 375 8 Q 410 8 440 20 Q 470 35 500 40 Z" fill="#5C8FB8"/>
   <!-- Deeper water -->
-  <path d="M 20 16 Q 125 10 250 13 Q 375 10 480 16 L 480 36 Q 375 33 250 35 Q 125 33 20 36 Z" fill="#4A7FA8" opacity="0.6"/>
+  <path d="M 60 24 Q 125 12 250 15 Q 375 12 440 24 L 438 36 Q 375 33 250 35 Q 125 33 62 36 Z" fill="#4A7FA8" opacity="0.6"/>
 
   <!-- Stone bridge - first arch -->
   <path d="M 140 10 Q 140 -4 162 -4 Q 184 -4 184 10" fill="none" stroke="#8D6E63" stroke-width="3"/>
