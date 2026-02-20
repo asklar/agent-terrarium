@@ -258,6 +258,8 @@ impl World {
                     did_capture = true;
                     if ball.captures >= max_captures {
                         ball.active = false;
+                        ball.height = 0.0;
+                        ball.height_velocity = 0.0;
                     } else if kick {
                         let kick_dir_x = if agent_dir == Direction::Right { 1.0 } else { -1.0 };
                         let variation = ((tick % 7) as f64 - 3.0) * 0.15;
