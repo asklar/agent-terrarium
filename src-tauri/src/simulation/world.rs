@@ -262,9 +262,11 @@ impl World {
                         let kick_dir_x = if agent_dir == Direction::Right { 1.0 } else { -1.0 };
                         let variation = ((tick % 7) as f64 - 3.0) * 0.15;
                         let kick_speed = 200.0 + (tick % 5) as f64 * 30.0;
+                        // Add some depth velocity so ball moves toward the viewer
+                        let kick_vy = 40.0 + (tick % 6) as f64 * 20.0;
                         ball.velocity = Vec2::new(
                             kick_dir_x * kick_speed * (1.0 + variation),
-                            0.0,
+                            kick_vy,
                         );
                         ball.position = agent_pos + Vec2::new(kick_dir_x * 20.0, 0.0);
                         ball.height = 10.0;
