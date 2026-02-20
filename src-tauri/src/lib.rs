@@ -107,9 +107,12 @@ async fn send_message(world: tauri::State<'_, Arc<World>>, app: tauri::AppHandle
     let updated_messages = world.get_chat_messages(&agent_id);
     save_chat_history(&agent_id, &updated_messages);
 
-    // Request attention so the user knows there's a reply
+    // Request attention only if no app window is currently focused
     if response.needs_attention || backend_config.backend_id != "echo" {
-        world.request_attention(&agent_id);
+        let any_focused = app.webview_windows().values().any(|w| w.is_focused().unwrap_or(false));
+        if !any_focused {
+            world.request_attention(&agent_id);
+        }
     }
 
     Ok(response.content)
