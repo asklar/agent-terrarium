@@ -40,7 +40,9 @@ async fn speak_sapi(text: String, voice_index: u32, rate: i32) -> Result<Vec<u8>
 
 #[tauri::command]
 fn click_agent(world: tauri::State<'_, Arc<World>>, agent_id: String) -> bool {
-    world.click_agent(&agent_id)
+    let restored = load_chat_history(&agent_id);
+    let msgs = if restored.is_empty() { None } else { Some(restored) };
+    world.click_agent(&agent_id, msgs)
 }
 
 #[tauri::command]
@@ -101,6 +103,10 @@ async fn send_message(world: tauri::State<'_, Arc<World>>, app: tauri::AppHandle
     // Append the response to the chat session
     world.complete_response(&agent_id, &response.content);
 
+    // Persist chat history to disk
+    let updated_messages = world.get_chat_messages(&agent_id);
+    save_chat_history(&agent_id, &updated_messages);
+
     // Request attention so the user knows there's a reply
     if response.needs_attention || backend_config.backend_id != "echo" {
         world.request_attention(&agent_id);
@@ -112,6 +118,14 @@ async fn send_message(world: tauri::State<'_, Arc<World>>, app: tauri::AppHandle
 #[tauri::command]
 fn dismiss_chat(world: tauri::State<'_, Arc<World>>, agent_id: String) {
     world.dismiss_chat(&agent_id);
+}
+
+#[tauri::command]
+fn clear_chat(world: tauri::State<'_, Arc<World>>, agent_id: String) {
+    world.clear_chat(&agent_id);
+    // Delete persisted history
+    let path = chat_history_path(&agent_id);
+    let _ = std::fs::remove_file(path);
 }
 
 #[tauri::command]
@@ -189,6 +203,36 @@ fn user_packages_dir() -> std::path::PathBuf {
     path.push("agent-terrarium");
     path.push("packages");
     path
+}
+
+fn chat_history_dir() -> std::path::PathBuf {
+    let mut path = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
+    path.push("agent-terrarium");
+    path.push("chat");
+    path
+}
+
+fn chat_history_path(agent_id: &str) -> std::path::PathBuf {
+    let safe_id = agent_id.replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], "_");
+    chat_history_dir().join(format!("{}.json", safe_id))
+}
+
+fn save_chat_history(agent_id: &str, messages: &[simulation::types::ChatMessage]) {
+    let dir = chat_history_dir();
+    if std::fs::create_dir_all(&dir).is_err() { return; }
+    let path = chat_history_path(agent_id);
+    if let Ok(json) = serde_json::to_string_pretty(messages) {
+        let _ = std::fs::write(path, json);
+    }
+}
+
+fn load_chat_history(agent_id: &str) -> Vec<simulation::types::ChatMessage> {
+    let path = chat_history_path(agent_id);
+    if !path.exists() { return Vec::new(); }
+    std::fs::read_to_string(path)
+        .ok()
+        .and_then(|json| serde_json::from_str(&json).ok())
+        .unwrap_or_default()
 }
 
 /// Watch package directories for changes and emit "packages-changed" to the frontend.
@@ -657,6 +701,7 @@ pub fn run() {
             click_agent,
             send_message,
             dismiss_chat,
+            clear_chat,
             resize_world,
             add_agent,
             remove_agent,

@@ -94,6 +94,11 @@ export function ChatWindow({ agentId }: ChatWindowProps) {
     [handleSend],
   );
 
+  const handleNewSession = useCallback(async () => {
+    log.info("New session for", agentId);
+    await invoke("clear_chat", { agentId });
+  }, [agentId]);
+
   const handlePopIn = useCallback(async () => {
     log.info("Pop-in chat for", agentId);
     // Emit event so main window knows to pop in
@@ -110,6 +115,9 @@ export function ChatWindow({ agentId }: ChatWindowProps) {
       <div className="chat-window-header">
         <span className="chat-window-avatar">{avatarEmoji}</span>
         <span className="chat-window-name">{agentName}</span>
+        <button className="chat-window-popin" onClick={handleNewSession} title="New session">
+          🔄
+        </button>
         <button className="chat-window-popin" onClick={() => { if (agentRef.current) setConfigAgent(agentRef.current); }} title="Configure agent">
           ⚙️
         </button>

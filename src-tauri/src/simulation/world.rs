@@ -399,7 +399,7 @@ impl World {
         state.events.push(TerrariumEvent::BallThrown);
     }
 
-    pub fn click_agent(&self, agent_id: &str) -> bool {
+    pub fn click_agent(&self, agent_id: &str, restored_messages: Option<Vec<ChatMessage>>) -> bool {
         log::info!("Agent clicked: {}", agent_id);
         let mut state = self.state.lock().unwrap();
         if let Some(agent) = state.agents.iter_mut().find(|a| a.id == agent_id) {
@@ -413,7 +413,7 @@ impl World {
             } else {
                 state.chat_sessions.push(ChatSession {
                     agent_id: agent_id.to_string(),
-                    messages: Vec::new(),
+                    messages: restored_messages.unwrap_or_default(),
                     active: true,
                 });
             }
@@ -433,6 +433,14 @@ impl World {
         }
         if let Some(session) = state.chat_sessions.iter_mut().find(|s| s.agent_id == agent_id) {
             session.active = false;
+        }
+    }
+
+    pub fn clear_chat(&self, agent_id: &str) {
+        log::info!("Chat cleared: {}", agent_id);
+        let mut state = self.state.lock().unwrap();
+        if let Some(session) = state.chat_sessions.iter_mut().find(|s| s.agent_id == agent_id) {
+            session.messages.clear();
         }
     }
 
