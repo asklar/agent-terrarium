@@ -264,9 +264,11 @@ export function TerrariumCanvas({
       ctx.scale(sx * ballScale, sy * ballScale);
 
       ctx.fillStyle = "#FF5722";
-      ctx.shadowColor = "rgba(0,0,0,0.3)";
-      ctx.shadowBlur = 4;
-      ctx.shadowOffsetY = 2;
+      if (ballHeight > 2) {
+        ctx.shadowColor = "rgba(0,0,0,0.3)";
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetY = 2;
+      }
       ctx.beginPath();
       ctx.arc(0, 0, BALL_SIZE, 0, Math.PI * 2);
       ctx.fill();
