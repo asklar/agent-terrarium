@@ -207,6 +207,14 @@ function App() {
     ) ?? [];
     const currentIds = new Set(needingAttention.map((a) => a.id));
 
+    // Auto-dismiss attention for agents whose chat is popped out
+    for (const id of currentIds) {
+      if (poppedOutAgents.has(id)) {
+        dismissAttention(id);
+        currentIds.delete(id);
+      }
+    }
+
     // New agents that just started needing attention
     for (const id of currentIds) {
       if (!prevAttentionRef.current.has(id)) {
@@ -228,7 +236,7 @@ function App() {
     }
 
     return () => {};
-  }, [worldState?.agents, worldState?.attention_interval_secs]);
+  }, [worldState?.agents, worldState?.attention_interval_secs, poppedOutAgents, dismissAttention]);
 
   // Clean up attention timer on unmount
   useEffect(() => {
