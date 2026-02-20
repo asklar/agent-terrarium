@@ -479,7 +479,20 @@ function App() {
             });
           }}
           onAddAgent={async (avatar, name) => {
-            await addAgent(avatar, name);
+            // Show folder picker for live agents
+            const agentDef = registry.getAllAgents().find((a) => a.id === avatar);
+            let cwd: string | undefined;
+            if (agentDef?.defaultBackend) {
+              const folder = await invoke<string | null>("pick_folder");
+              if (folder) cwd = folder;
+            }
+            const agentId = await addAgent(avatar, name);
+            if (cwd && agentDef?.defaultBackend) {
+              await setBackendConfig(agentId, {
+                ...agentDef.defaultBackend,
+                cwd,
+              });
+            }
             saveConfig(theme, undefined, musicMutedRef.current, dynamicSkyRef.current);
           }}
           onRemoveAgent={async (agentId) => {

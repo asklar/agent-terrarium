@@ -48,8 +48,8 @@ export function useWorldState() {
     await invoke("resize_world", { width, height });
   }, []);
 
-  const addAgent = useCallback(async (avatar: string, name: string) => {
-    await invoke("add_agent", { avatar, name });
+  const addAgent = useCallback(async (avatar: string, name: string): Promise<string> => {
+    return await invoke<string>("add_agent", { avatar, name });
   }, []);
 
   const removeAgent = useCallback(async (agentId: string) => {
@@ -64,7 +64,7 @@ export function useWorldState() {
     await invoke("request_attention", { agentId });
   }, []);
 
-  const setBackendConfig = useCallback(async (agentId: string, backendConfig: { backend_id: string; model?: string; system_prompt?: string; custom_agent?: string; awareness_level?: number }) => {
+  const setBackendConfig = useCallback(async (agentId: string, backendConfig: { backend_id: string; model?: string; system_prompt?: string; custom_agent?: string; awareness_level?: number; cwd?: string }) => {
     await invoke("set_backend_config", { agentId, backendConfig });
   }, []);
 

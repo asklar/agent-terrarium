@@ -146,8 +146,8 @@ fn resize_world(world: tauri::State<'_, Arc<World>>, width: f64, height: f64) {
 }
 
 #[tauri::command]
-fn add_agent(world: tauri::State<'_, Arc<World>>, avatar: String, name: String) {
-    world.add_agent(&avatar, &name);
+fn add_agent(world: tauri::State<'_, Arc<World>>, avatar: String, name: String) -> String {
+    world.add_agent(&avatar, &name)
 }
 
 #[tauri::command]

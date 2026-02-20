@@ -527,7 +527,7 @@ impl World {
         state.bounds = Vec2::new(width, height);
     }
 
-    pub fn add_agent(&self, avatar: &str, name: &str) {
+    pub fn add_agent(&self, avatar: &str, name: &str) -> String {
         log::info!("Adding agent: {} ({})", name, avatar);
         let mut state = self.state.lock().unwrap();
         let bounds = state.bounds;
@@ -536,6 +536,7 @@ impl World {
         let agent = create_agent(&id, name, avatar, &bounds, ground_y);
         state.events.push(TerrariumEvent::AgentArrived { agent_name: name.to_string() });
         state.agents.push(agent);
+        id
     }
 
     pub fn remove_agent(&self, agent_id: &str) {

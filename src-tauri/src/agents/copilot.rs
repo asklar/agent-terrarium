@@ -250,6 +250,7 @@ impl CopilotBackend {
     async fn create_new_session(&self, client: &Client, config: &BackendConfig) -> Result<Arc<Session>, String> {
         let mut session_config = SessionConfig {
             model: config.model.clone(),
+            working_directory: config.cwd.clone(),
             ..Default::default()
         };
 
@@ -315,6 +316,7 @@ impl AgentBackend for CopilotBackend {
                 log::info!("Resuming session {} for agent {}", saved_id, agent_id);
                 let resume_config = ResumeSessionConfig {
                     model: config.model.clone(),
+                    working_directory: config.cwd.clone(),
                     custom_agents: config.custom_agent.as_ref().map(|name| vec![CustomAgentConfig {
                         name: name.clone(),
                         prompt: config.system_prompt.clone().unwrap_or_default(),
