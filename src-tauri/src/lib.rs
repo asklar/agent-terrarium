@@ -107,10 +107,13 @@ async fn send_message(world: tauri::State<'_, Arc<World>>, app: tauri::AppHandle
     let updated_messages = world.get_chat_messages(&agent_id);
     save_chat_history(&agent_id, &updated_messages);
 
-    // Request attention only if no app window is currently focused
+    // Request attention unless the user is looking at this agent's chat
     if response.needs_attention || backend_config.backend_id != "echo" {
-        let any_focused = app.webview_windows().values().any(|w| w.is_focused().unwrap_or(false));
-        if !any_focused {
+        let chat_label = format!("chat-{}", agent_id.replace(|c: char| !c.is_alphanumeric() && c != '_' && c != '-', "_"));
+        let dominated = app.webview_windows().iter().any(|(label, w)| {
+            w.is_focused().unwrap_or(false) && (label == "main" || *label == chat_label)
+        });
+        if !dominated {
             world.request_attention(&agent_id);
         }
     }
