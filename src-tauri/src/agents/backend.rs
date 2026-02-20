@@ -75,12 +75,17 @@ pub trait AgentBackend: Send + Sync {
     /// Display name (e.g., "GitHub Copilot", "Claude")
     fn display_name(&self) -> &str;
 
-    /// Generate a response given conversation history and config
+    /// Generate a response given conversation history and config.
+    /// `agent_id` identifies the agent so backends can reuse sessions.
     async fn respond(
         &self,
+        agent_id: &str,
         config: &BackendConfig,
         messages: &[BackendMessage],
     ) -> Result<BackendResponse, String>;
+
+    /// Destroy a chat session for an agent (e.g. when user starts a new conversation).
+    async fn destroy_chat_session(&self, _agent_id: &str) {}
 
     /// Check if this backend is available/configured
     async fn is_available(&self) -> bool;

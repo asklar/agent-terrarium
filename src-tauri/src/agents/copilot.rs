@@ -14,8 +14,10 @@ struct AgentSession {
 
 pub struct CopilotBackend {
     client: Arc<RwLock<Option<Client>>>,
-    /// Persistent sessions keyed by agent_id
+    /// Persistent sessions for awareness events, keyed by agent_id
     awareness_sessions: Arc<RwLock<HashMap<String, AgentSession>>>,
+    /// Persistent sessions for user chat, keyed by agent_id
+    chat_sessions: Arc<RwLock<HashMap<String, AgentSession>>>,
 }
 
 impl CopilotBackend {
@@ -23,6 +25,7 @@ impl CopilotBackend {
         Self {
             client: Arc::new(RwLock::new(None)),
             awareness_sessions: Arc::new(RwLock::new(HashMap::new())),
+            chat_sessions: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -205,6 +208,13 @@ impl CopilotBackend {
             let _ = agent_session.session.destroy().await;
             log::info!("Destroyed awareness session for {}", agent_id);
         }
+        drop(sessions);
+
+        let mut chat_sessions = self.chat_sessions.write().await;
+        if let Some(agent_session) = chat_sessions.remove(agent_id) {
+            let _ = agent_session.session.destroy().await;
+            log::info!("Destroyed chat session for {}", agent_id);
+        }
     }
 }
 
@@ -220,44 +230,83 @@ impl AgentBackend for CopilotBackend {
 
     async fn respond(
         &self,
+        agent_id: &str,
         config: &BackendConfig,
         messages: &[BackendMessage],
     ) -> Result<BackendResponse, String> {
-        log::info!("Copilot respond: model={:?}, agent={:?}, {} messages",
-            config.model, config.custom_agent, messages.len());
-        self.ensure_client().await?;
-        let client_lock = self.client.read().await;
-        let client = client_lock.as_ref().unwrap();
+        log::info!("Copilot respond: agent={}, model={:?}, custom_agent={:?}, {} messages",
+            agent_id, config.model, config.custom_agent, messages.len());
 
-        let mut session_config = SessionConfig {
-            model: config.model.clone(),
-            ..Default::default()
+        // Get or create a persistent chat session for this agent
+        let need_create = {
+            let sessions = self.chat_sessions.read().await;
+            !sessions.contains_key(agent_id)
         };
 
-        if let Some(ref prompt) = config.system_prompt {
-            session_config.system_message = Some(SystemMessageConfig {
-                mode: Some(SystemMessageMode::Replace),
-                content: Some(prompt.clone()),
+        if need_create {
+            self.ensure_client().await?;
+            let client_lock = self.client.read().await;
+            let client = client_lock.as_ref().unwrap();
+
+            let mut session_config = SessionConfig {
+                model: config.model.clone(),
+                ..Default::default()
+            };
+
+            if let Some(ref prompt) = config.system_prompt {
+                session_config.system_message = Some(SystemMessageConfig {
+                    mode: Some(SystemMessageMode::Replace),
+                    content: Some(prompt.clone()),
+                });
+            }
+
+            if let Some(ref agent_name) = config.custom_agent {
+                session_config.custom_agents = Some(vec![CustomAgentConfig {
+                    name: agent_name.clone(),
+                    prompt: config.system_prompt.clone().unwrap_or_default(),
+                    display_name: None,
+                    description: None,
+                    tools: None,
+                    mcp_servers: None,
+                    infer: Some(true),
+                }]);
+            }
+
+            log::info!("Creating persistent chat session for agent {}", agent_id);
+            let session = client
+                .create_session(session_config)
+                .await
+                .map_err(|e| format!("Failed to create session: {}", e))?;
+
+            let idle_notify = Arc::new(tokio::sync::Notify::new());
+            let idle_clone = Arc::clone(&idle_notify);
+            let collected = Arc::new(std::sync::Mutex::new(String::new()));
+            let collected_clone = collected.clone();
+
+            let _unsub = session
+                .on(move |event| match &event.data {
+                    SessionEventData::AssistantMessage(msg) => {
+                        collected_clone.lock().unwrap().push_str(&msg.content);
+                    }
+                    SessionEventData::AssistantMessageDelta(delta) => {
+                        collected_clone.lock().unwrap().push_str(&delta.delta_content);
+                    }
+                    SessionEventData::SessionIdle(_) => {
+                        idle_clone.notify_one();
+                    }
+                    _ => {}
+                })
+                .await;
+
+            let mut sessions = self.chat_sessions.write().await;
+            sessions.insert(agent_id.to_string(), AgentSession {
+                session,
+                idle_notify,
+                collected,
             });
         }
 
-        if let Some(ref agent_name) = config.custom_agent {
-            session_config.custom_agents = Some(vec![CustomAgentConfig {
-                name: agent_name.clone(),
-                prompt: config.system_prompt.clone().unwrap_or_default(),
-                display_name: None,
-                description: None,
-                tools: None,
-                mcp_servers: None,
-                infer: Some(true),
-            }]);
-        }
-
-        let session = client
-            .create_session(session_config)
-            .await
-            .map_err(|e| format!("Failed to create session: {}", e))?;
-
+        // Send only the latest user message on the persistent session
         let last_user_msg = messages
             .iter()
             .rev()
@@ -265,14 +314,30 @@ impl AgentBackend for CopilotBackend {
             .map(|m| m.content.as_str())
             .unwrap_or("Hello");
 
-        let response = session
-            .send_and_collect(last_user_msg, None)
-            .await
-            .map_err(|e| {
-                log::error!("Copilot error: {}", e);
-                format!("Copilot error: {}", e)
-            })?;
+        let sessions = self.chat_sessions.read().await;
+        let agent_session = sessions.get(agent_id).ok_or("Chat session not found")?;
 
+        // Clear collected text from previous turn
+        agent_session.collected.lock().unwrap().clear();
+
+        agent_session.session.send(last_user_msg).await.map_err(|e| {
+            log::error!("Copilot chat send error for {}: {}", agent_id, e);
+            format!("Copilot error: {}", e)
+        })?;
+
+        // Wait for idle with timeout
+        let timeout_result = tokio::time::timeout(
+            std::time::Duration::from_secs(30),
+            agent_session.idle_notify.notified(),
+        ).await;
+
+        if timeout_result.is_err() {
+            drop(sessions);
+            self.chat_sessions.write().await.remove(agent_id);
+            return Err("Timed out waiting for response (30s)".to_string());
+        }
+
+        let response = agent_session.collected.lock().unwrap().clone();
         log::debug!("Copilot response: {}", &response[..response.len().min(100)]);
 
         Ok(BackendResponse {
@@ -286,6 +351,14 @@ impl AgentBackend for CopilotBackend {
         match Client::builder().use_stdio(true).build() {
             Ok(_) => true,
             Err(_) => false,
+        }
+    }
+
+    async fn destroy_chat_session(&self, agent_id: &str) {
+        let mut sessions = self.chat_sessions.write().await;
+        if let Some(agent_session) = sessions.remove(agent_id) {
+            let _ = agent_session.session.destroy().await;
+            log::info!("Destroyed chat session for agent {} (new session requested)", agent_id);
         }
     }
 

@@ -90,7 +90,7 @@ async fn send_message(world: tauri::State<'_, Arc<World>>, app: tauri::AppHandle
     }
 
     let response = backend
-        .respond(&backend_config, &messages)
+        .respond(&agent_id, &backend_config, &messages)
         .await
         .unwrap_or_else(|e| {
             log::error!("Backend respond error for {}: {}", agent_id, e);
@@ -121,11 +121,17 @@ fn dismiss_chat(world: tauri::State<'_, Arc<World>>, agent_id: String) {
 }
 
 #[tauri::command]
-fn clear_chat(world: tauri::State<'_, Arc<World>>, agent_id: String) {
+async fn clear_chat(world: tauri::State<'_, Arc<World>>, agent_id: String) -> Result<(), String> {
     world.clear_chat(&agent_id);
     // Delete persisted history
     let path = chat_history_path(&agent_id);
     let _ = std::fs::remove_file(path);
+    // Destroy the SDK chat session so next message creates a fresh one
+    let registry = world.get_backend_registry();
+    if let Some(backend) = registry.get("copilot") {
+        backend.destroy_chat_session(&agent_id).await;
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -580,6 +586,7 @@ pub fn run() {
                         let registry = world_events.backend_registry.clone();
                         let world_ref = world_events.clone();
                         let aid = agent_id.clone();
+                        let aid2 = agent_id.clone();
                         let aname = agent_name.clone();
 
                         if backend_id == "copilot" {
@@ -655,7 +662,7 @@ pub fn run() {
                                 if let Some(backend) = registry.get(&backend_id) {
                                     let result = tokio::time::timeout(
                                         Duration::from_secs(15),
-                                        backend.respond(&event_config, &messages),
+                                        backend.respond(&aid2, &event_config, &messages),
                                     ).await;
 
                                     match result {

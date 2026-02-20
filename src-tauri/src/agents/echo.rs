@@ -16,6 +16,7 @@ impl AgentBackend for EchoBackend {
 
     async fn respond(
         &self,
+        _agent_id: &str,
         config: &BackendConfig,
         messages: &[BackendMessage],
     ) -> Result<BackendResponse, String> {
