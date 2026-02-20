@@ -492,6 +492,7 @@ impl World {
         self.backend_registry.clone()
     }
 
+    #[allow(dead_code)]
     pub fn send_message(&self, agent_id: &str, text: &str) -> String {
         let mut state = self.state.lock().unwrap();
         if let Some(session) = state.chat_sessions.iter_mut().find(|s| s.agent_id == agent_id) {
@@ -540,6 +541,7 @@ impl World {
         state.bubbles.retain(|b| b.agent_id != agent_id);
     }
 
+    #[allow(dead_code)]
     pub fn list_agents(&self) -> Vec<(String, String, String)> {
         let state = self.state.lock().unwrap();
         state.agents.iter().map(|a| (a.id.clone(), a.name.clone(), a.avatar.clone())).collect()

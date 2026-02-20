@@ -354,7 +354,7 @@ fn read_user_package_file(path: String) -> Result<String, String> {
     };
     // Encode as base64 data URL
     use std::io::Write;
-    let mut b64 = String::new();
+    let mut b64;
     let mut encoder = std::io::Cursor::new(Vec::new());
     write!(encoder, "data:{};base64,", mime).unwrap();
     b64 = String::from_utf8(encoder.into_inner()).unwrap();

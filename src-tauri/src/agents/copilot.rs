@@ -202,6 +202,7 @@ impl CopilotBackend {
     }
 
     /// Remove a persistent session (e.g. when agent is removed)
+    #[allow(dead_code)]
     pub async fn remove_session(&self, agent_id: &str) {
         let mut sessions = self.awareness_sessions.write().await;
         if let Some(agent_session) = sessions.remove(agent_id) {

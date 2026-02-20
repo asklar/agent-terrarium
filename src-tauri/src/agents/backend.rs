@@ -53,6 +53,7 @@ pub struct BackendMessage {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum MessageRole {
+    #[allow(dead_code)]
     System,
     User,
     Assistant,

@@ -23,6 +23,7 @@ impl BackendRegistry {
         self.backends.get(id).cloned()
     }
 
+    #[allow(dead_code)]
     pub fn list(&self) -> Vec<(&str, &str)> {
         self.backends
             .values()
