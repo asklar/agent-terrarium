@@ -331,12 +331,17 @@ impl World {
                     // Extra horizontal friction on ground contact
                     ball.velocity.x *= 0.92;
                     ball.velocity.y *= 0.92;
+                    // Kill tiny bounces
+                    if ball.height_velocity < 5.0 {
+                        ball.height_velocity = 0.0;
+                    }
                 }
 
                 let total_speed = (ball.velocity.x.powi(2) + ball.velocity.y.powi(2)).sqrt();
-                if total_speed <= BALL_MIN_SPEED && ball.height < 2.0 && ball.height_velocity.abs() <= BALL_MIN_SPEED {
+                if total_speed <= BALL_MIN_SPEED && ball.height <= 0.0 && ball.height_velocity.abs() <= BALL_MIN_SPEED {
                     ball.active = false;
                     ball.height = 0.0;
+                    ball.height_velocity = 0.0;
                 }
             }
         }
