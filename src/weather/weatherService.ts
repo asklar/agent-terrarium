@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { log } from "../utils/log";
 import type { LocationConfig, WeatherData, WeatherOverlay } from "./types";
 
@@ -5,27 +6,31 @@ const WEATHER_CACHE_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 let cachedLocation: LocationConfig | null = null;
 let cachedWeather: WeatherData | null = null;
+let locationFetchInFlight: Promise<LocationConfig | null> | null = null;
 
-/** Fetch approximate location from IP geolocation */
+/** Fetch approximate location from IP geolocation (via Rust backend to avoid CSP issues) */
 export async function fetchLocation(): Promise<LocationConfig | null> {
   if (cachedLocation) return cachedLocation;
-  try {
-    // Use HTTPS endpoint (plain HTTP is blocked as mixed content in Tauri's webview)
-    const res = await fetch("https://ipapi.co/json/");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    cachedLocation = {
-      lat: data.latitude,
-      lon: data.longitude,
-      city: data.city,
-      source: "ip",
-    };
-    log.info("Location:", cachedLocation.city, cachedLocation.lat, cachedLocation.lon);
-    return cachedLocation;
-  } catch (e) {
-    log.error("Failed to fetch location:", e);
-    return null;
-  }
+  if (locationFetchInFlight) return locationFetchInFlight;
+  locationFetchInFlight = (async () => {
+    try {
+      const data = await invoke<Record<string, unknown>>("fetch_location");
+      cachedLocation = {
+        lat: data.latitude as number,
+        lon: data.longitude as number,
+        city: data.city as string | undefined,
+        source: "ip",
+      };
+      log.info("Location:", cachedLocation.city, cachedLocation.lat, cachedLocation.lon);
+      return cachedLocation;
+    } catch (e) {
+      log.error("Failed to fetch location:", e);
+      return null;
+    } finally {
+      locationFetchInFlight = null;
+    }
+  })();
+  return locationFetchInFlight;
 }
 
 /** Set manual location override */
@@ -38,7 +43,7 @@ export function getLocation(): LocationConfig | null {
   return cachedLocation;
 }
 
-/** Fetch weather data from Open-Meteo */
+/** Fetch weather data from Open-Meteo (via Rust backend to avoid CSP issues) */
 export async function fetchWeather(location: LocationConfig): Promise<WeatherData | null> {
   // Return cache if fresh
   if (cachedWeather && Date.now() - cachedWeather.fetchedAt < WEATHER_CACHE_MS) {
@@ -46,21 +51,24 @@ export async function fetchWeather(location: LocationConfig): Promise<WeatherDat
   }
 
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${location.lat}&longitude=${location.lon}&hourly=temperature_2m,cloudcover,precipitation,weathercode&daily=sunrise,sunset&timezone=auto&forecast_days=1`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const data = await invoke<Record<string, unknown>>("fetch_weather", {
+      lat: location.lat,
+      lon: location.lon,
+    });
 
     const now = new Date();
     const currentHour = now.getHours();
 
+    const hourly = data.hourly as Record<string, number[]> | undefined;
+    const daily = data.daily as Record<string, string[]> | undefined;
+
     const weather: WeatherData = {
-      weatherCode: data.hourly?.weathercode?.[currentHour] ?? 0,
-      cloudCover: data.hourly?.cloudcover?.[currentHour] ?? 0,
-      precipitation: data.hourly?.precipitation?.[currentHour] ?? 0,
-      temperature: data.hourly?.temperature_2m?.[currentHour] ?? 20,
-      sunrise: data.daily?.sunrise?.[0] ?? "",
-      sunset: data.daily?.sunset?.[0] ?? "",
+      weatherCode: hourly?.weathercode?.[currentHour] ?? 0,
+      cloudCover: hourly?.cloudcover?.[currentHour] ?? 0,
+      precipitation: hourly?.precipitation?.[currentHour] ?? 0,
+      temperature: hourly?.temperature_2m?.[currentHour] ?? 20,
+      sunrise: daily?.sunrise?.[0] ?? "",
+      sunset: daily?.sunset?.[0] ?? "",
       fetchedAt: Date.now(),
     };
 
