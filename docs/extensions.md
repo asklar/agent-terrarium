@@ -1,4 +1,4 @@
-# Creating Extension Packages for Agent Terrarium
+# Creating Extension Packages
 
 Agent Terrarium supports custom extension packages — declarative JSON files that add new **themes**, **avatars**, and/or **gear** to the terrarium. No source code or build tools needed.
 
@@ -8,7 +8,7 @@ Agent Terrarium supports custom extension packages — declarative JSON files th
    - **Windows:** `%USERPROFILE%\agent-terrarium\packages\`
    - **macOS/Linux:** `~/agent-terrarium/packages/`
 2. Use the package format described below
-3. Restart Agent Terrarium — your content appears automatically
+3. Restart Agent Terrarium — your content appears automatically (or it hot-reloads if the app is already running)
 
 Packages are forward-compatible: unknown layer types, decorator names, or gear shapes are silently skipped, so packages made for newer versions degrade gracefully on older ones.
 
@@ -274,6 +274,7 @@ Themes control the entire background scene: sky, ground, decorators, particles, 
 | `particles`       | object   | —        | `{ type, color, count }` ambient particles |
 | `music`           | object   | —        | Lofi 8-bit music configuration             |
 | `disableDynamicSky` | boolean | —       | Disable weather/time-of-day effects        |
+| `customDecorators` | array   | —        | Custom SVG decorators (see below)          |
 
 ### Available Decorators
 
@@ -302,6 +303,45 @@ Themes control the entire background scene: sky, ground, decorators, particles, 
 
 Decorators are drawn in the order listed. Unknown names are silently skipped.
 
+### Custom Decorators
+
+For themes that need unique visuals beyond the built-in decorators, you can define custom decorators with inline SVG paths or external SVG/PNG files:
+
+```json
+"customDecorators": [
+  {
+    "name": "my_mountain",
+    "file": "mountain.svg",
+    "fileX": 0.1,
+    "fileY": 0.5,
+    "fileWidth": 0.3,
+    "fileHeight": 0.25
+  },
+  {
+    "name": "my_bird",
+    "elements": [
+      { "type": "path", "d": "M0 5 Q5 0 10 5 Q15 0 20 5", "fill": "none", "stroke": "#333", "strokeWidth": 2 }
+    ],
+    "animation": {
+      "type": "waypoint",
+      "waypoints": [
+        { "x": 0.1, "y": 0.2 },
+        { "x": 0.9, "y": 0.3 }
+      ],
+      "speed": 30
+    }
+  }
+]
+```
+
+Custom decorators are referenced in the `decorators` array by their `name`, just like built-in ones. External files are resolved relative to the package directory.
+
+**Positioning**: `fileX`, `fileY` are fractions of canvas size (0–1). `fileY = 0.72` aligns with the ground line. `fileWidth`/`fileHeight` scale relative to a 1280px baseline.
+
+**Animation types**:
+- `waypoint` — moves along a list of waypoint positions in a loop
+- `jump` — parabolic arc between two points (with gravity)
+
 ### Particle Types
 
 | Type     | Description               |
@@ -312,6 +352,8 @@ Decorators are drawn in the order listed. Unknown names are silently skipped.
 | `bubble` | Rising bubbles (underwater)|
 
 ### Music Configuration
+
+Each theme can define procedural 8-bit lofi music, synthesized in real-time via the Web Audio API:
 
 ```json
 "music": {
@@ -408,6 +450,10 @@ Drop your `.json` package files into the user packages folder:
 - **macOS/Linux:** `~/agent-terrarium/packages/`
 
 Create the folder if it doesn't exist. You can have multiple package files — each is loaded independently. If your package defines an ID that conflicts with a built-in one, your version takes precedence.
+
+**Hot-reload**: The app watches the packages folder for changes. New or modified packages are picked up automatically without restarting.
+
+**Subdirectories**: Packages with custom assets (SVGs, PNGs) can be organized in subdirectories. Place the JSON file and its assets in a folder, and reference assets by relative path.
 
 ## Tips
 

@@ -28,7 +28,8 @@ tools:
     - "find src-tauri/src -type f -name '*.rs'"
     - "cat README.md"
     - "cat CONTRIBUTING.md"
-    - "cat EXTENSIONS.md"
+    - "cat docs/extensions.md"
+    - "cat docs/architecture.md"
 
 timeout-minutes: 30
 ---
@@ -68,14 +69,16 @@ Review the current documentation files:
 ```bash
 cat README.md
 cat CONTRIBUTING.md
-cat EXTENSIONS.md
+cat docs/extensions.md
+cat docs/architecture.md
 ```
 
 Focus on these documentation targets:
 
-1. **README.md** — features list, architecture diagram, project structure, controls table, theme/agent lists, getting started instructions, and package system docs
-2. **CONTRIBUTING.md** — development setup, build instructions, code style, how-to guides for adding themes/agents/gear
-3. **EXTENSIONS.md** — package format reference, available layer types, decorator names, gear shapes/slots
+1. **README.md** — features list, controls table, theme/agent lists, getting started instructions
+2. **CONTRIBUTING.md** — development setup, build instructions, code style, how-to guides for adding themes/agents/backends
+3. **docs/extensions.md** — package format reference, available layer types, decorator names, gear shapes/slots
+4. **docs/architecture.md** — simulation engine, IPC commands, backend system, rendering pipeline
 
 Check if recent changes are already documented or if updates are needed.
 

@@ -1,46 +1,58 @@
 # 🌿 Agent Terrarium
 
-A cute, persistent desktop companion app where AI agents live in a tiny animated world on your screen. Think Stardew Valley meets desktop pets — agents wander, interact with each other, and chat with you.
+A desktop companion app where AI agents live in a tiny animated world on your screen. Agents wander around, interact with each other, chase balls, wear gear, and chat with you — backed by real AI models or just vibing as NPCs.
 
 <p align="center">
   <img src="demo.gif" alt="Agent Terrarium Demo" width="480" />
 </p>
 
-Built with **Tauri v2** (Rust backend) + **React** (Canvas 2D frontend).
+Built with **Tauri v2** (Rust) + **React** (Canvas 2D). All simulation runs in Rust; the frontend is a pure renderer.
 
 ## ✨ Features
 
-- **Animated agents** — Cat, Copilot, Squirrel, Penguin, and Ghost with unique sprites, personalities, and movement styles
+### Agents
+- **10 built-in avatars** — Cat, Copilot, Squirrel, Penguin, Ghost, Clippy, Claude, Chicken Jockey, Fluffy Chicken, and Rubber Duck — each with unique sprites, personalities, and movement styles (wander, patrol, bounce, float)
 - **Agent interactions** — agents greet each other with emoji chat bubbles when they meet
-- **Chat with agents** — click an agent to open a chat bubble and talk to them (agent framework ready for LLM integration)
-- **Throw a ball** — click and drag to throw a ball; agents will chase it based on their personality
 - **Hover greetings** — hover over an agent to hear a synthesized "Animalese" voice and see a mood-based emoji
-- **Hover slowdown** — agents slow down as your cursor approaches them
-- **6 animated themes** — Meadow, Night (with shooting stars!), Desert, Ocean, Forest at Dawn, and Castle
-- **Context menu** — right-click to change themes, add/remove agents
-- **Config persistence** — theme and agent list saved to `~/agent-terrarium.json`
+- **Hover slowdown** — agents slow down as your cursor approaches
+
+### AI Chat
+- **Chat with agents** — click an agent to open an inline chat bubble; supports Markdown with syntax-highlighted code blocks
+- **Pop-out chat** — detach the chat into its own window
+- **AI backends** — connect agents to GitHub Copilot, OpenAI-compatible APIs (GPT, Claude, local models), or leave them as echo/NPC bots
+- **Per-agent configuration** — set model, system prompt, awareness level, and working directory per agent
+- **Text-to-speech** — agents can speak their responses aloud via Windows SAPI with per-avatar pitch shifting
+
+### Awareness System
+- **Event awareness** — agents observe terrarium events (balls thrown, other agents arriving, social interactions) and react autonomously with speech, emotes, or movement
+- **4 awareness levels** — from chat-only (level 0) to full world-state awareness (level 3)
+- **Tool use** — aware agents can `say`, `emote`, `move_to`, or `run_away` in response to events
+
+### Ball Physics
+- **Throw a ball** — click and drag to throw; realistic gravity, bounce, wall collision, and friction
+- **Agent chase** — agents chase the ball based on their `ballInterest` personality trait
+- **Capture & kick** — agents catch the ball and kick it to each other
+
+### Themes & Visuals
+- **10 animated themes** — Meadow, Night, Desert, Ocean, Forest, Castle, Outer Space, Seattle, Shanghai, and more — each with unique decorators, particles, and procedural lofi music
+- **Dynamic sky** — real-time day/night cycle with sun/moon positioning, dawn/dusk color transitions, and weather overlays (rain, snow, fog, storms) driven by your actual local weather
+- **Custom decorators** — themes can include inline SVG elements or external SVG/PNG files with waypoint or parabolic animation paths
+
+### Gear & Accessories
+- **10 built-in gear items** — hats, scarves, sunglasses, capes, and more across 5 equipment slots (hat, face, neck, body, back)
+- **Equip via context menu** — right-click an agent to dress them up; gear persists across sessions
+- **Custom gear** — add your own SVG/PNG accessories via extension packages
+
+### Window & System
 - **Always-on-top transparent window** — frameless, resizable, draggable overlay
+- **Config persistence** — theme, agents, gear, window position, music, and weather settings saved to `~/agent-terrarium.json`
+- **Splash screen** — animated startup screen with `--splash-wait` CLI flag
 
-## 🏗️ Architecture
-
-```
-┌──────────────────────────────────────┐
-│  React + Canvas 2D (renderer)        │
-│  - TerrariumCanvas (agents, ball)    │
-│  - AnimatedBackground (themes)       │
-│  - ChatOverlay, ContextMenu          │
-├──────────────────────────────────────┤
-│  Tauri IPC (JSON commands)           │
-├──────────────────────────────────────┤
-│  Rust Simulation Engine              │
-│  - World (tick loop @ 20Hz)          │
-│  - Agent movement, interactions      │
-│  - Ball physics, chat sessions       │
-│  - AgentResponder trait (echo/LLM)   │
-└──────────────────────────────────────┘
-```
-
-The architecture is **renderer-agnostic**: all simulation state lives in Rust. The React/Canvas frontend is just a view layer that polls state via IPC. A future WinUI3 + Win2D renderer can swap in without changing the backend.
+### Extension Packages
+- **Declarative JSON packages** — add themes, avatars, and gear without touching source code
+- **User packages** — drop `.json` files into `~/agent-terrarium/packages/` and they load automatically (hot-reload supported)
+- **Custom SVG decorators** — themes can reference external art assets
+- See the [Extension Authoring Guide](docs/extensions.md) for full details
 
 ## 🚀 Getting Started
 
@@ -49,31 +61,24 @@ The architecture is **renderer-agnostic**: all simulation state lives in Rust. T
 - [Node.js](https://nodejs.org/) ≥ 18
 - [pnpm](https://pnpm.io/) ≥ 8
 - [Rust](https://rustup.rs/) ≥ 1.70
-- Windows 10/11 (primary target), macOS/Linux may work with minor adjustments
+- Windows 10/11 (primary target)
 
-### Setup
+### Run in development
 
 ```bash
-git clone https://github.com/user/agent-terrarium.git
+git clone https://github.com/asklar/agent-terrarium.git
 cd agent-terrarium
 pnpm install
-```
-
-### Development
-
-```bash
 pnpm tauri dev
 ```
 
-This starts both the Vite dev server and the Tauri app with hot-reload.
-
-### Build
+### Build an installer
 
 ```bash
 pnpm tauri build
 ```
 
-Produces an installer in `src-tauri/target/release/bundle/`.
+Produces `.msi` and/or `.exe` installers in `src-tauri/target/release/bundle/`.
 
 ## 🎮 Controls
 
@@ -82,91 +87,40 @@ Produces an installer in `src-tauri/target/release/bundle/`.
 | Move window | Drag the title bar |
 | Resize window | Drag any edge or corner |
 | Chat with agent | Click on an agent |
+| Pop out chat | Click the pop-out button in the chat bubble |
 | Throw ball | Click and drag on the background |
 | Change theme | Right-click → Theme |
 | Add/remove agents | Right-click → Add/Remove Agent |
+| Equip gear | Right-click an agent → Gear |
+| Configure agent AI | Right-click an agent → Configure |
+| Toggle dynamic sky | Right-click → Dynamic Weather |
+| Debug panel | Right-click → Debug |
 | Native context menu | Shift + right-click |
+| Dismiss chat | Press Escape |
 | Close | Click ✕ in title bar |
 
-## 📁 Project Structure
+## 🎨 Built-in Themes
 
-```
-src/                          # React frontend
-  components/
-    TerrariumCanvas.tsx       # Main canvas renderer (agents, ball, bubbles)
-    AnimatedBackground.tsx    # Theme backgrounds (6 themes)
-    ChatOverlay.tsx           # Agent chat UI
-    ContextMenu.tsx           # Right-click menu
-    WindowFrame.tsx           # Drag region + resize handles
-    AgentSprites.ts           # Agent color palettes (legacy fallback)
-  themes/
-    PackageTypes.ts           # Package, ThemeDefinition, AgentDefinition types
-    builtins.ts               # Built-in theme and agent packages
-    registry.ts               # PackageRegistry singleton
-    index.ts                  # Barrel export
-  hooks/
-    useWorldState.ts          # Tauri IPC polling hook
-  types/
-    world.ts                  # TypeScript types mirroring Rust
-src-tauri/                    # Rust backend
-  src/
-    lib.rs                    # Tauri commands
-    simulation/
-      types.rs                # Vec2, Agent, WorldState, etc.
-      world.rs                # Simulation engine (tick loop, movement, physics)
-    agents/
-      responder.rs            # AgentResponder trait + EchoResponder
-```
-
-## 🎨 Themes
-
-| Theme | Description |
-|-------|-------------|
+| Theme | Highlights |
+|-------|------------|
 | 🌿 Meadow | Green hills, clouds, flowers, falling leaves |
 | 🌙 Night | Starry sky, moon, twinkling stars, shooting stars |
 | 🏜️ Desert | Orange sunset, cacti, blowing sand |
-| 🌊 Ocean | Deep blue, waves, bubbles, seaweed |
+| 🌊 Ocean | Deep blue, waves, seaweed, animated swordfish |
 | 🌅 Forest at Dawn | Misty sunrise, tall trees, fireflies |
 | 🏰 Castle | Stone walls, torches, banners, cobblestone |
+| 🚀 Outer Space | Nebula, planets, space dust, no ground |
+| 🌧️ Seattle | Mt. Rainier, Space Needle, Puget Sound, orcas |
+| 🏙️ Shanghai | Pudong skyline, Oriental Pearl Tower, lanterns |
+| + more | Paris, Rio, Winter Olympics… |
 
-## 📦 Package System
+## 📖 Documentation
 
-Themes and agent avatars are defined as **declarative packages** — pure data objects that reference built-in rendering primitives by name. This means:
-
-- **Themes** specify colors, gradients, particle settings, and a list of "decorator" names (e.g. `"clouds"`, `"torches"`, `"fireflies"`)
-- **Agent avatars** specify color palettes, voice profiles, body shape names, and default personality values
-- **External packages** can be loaded from JSON files to add new themes and agents without modifying the app
-
-See `src/themes/PackageTypes.ts` for the full type definitions. Example theme package:
-
-```json
-{
-  "version": 1,
-  "name": "My Custom Theme Pack",
-  "themes": [{
-    "id": "my-theme",
-    "name": "My Theme",
-    "icon": "🎪",
-    "sky": ["#1a1a2e", "#16213e"],
-    "ground": "#4a3c2a",
-    "groundAccent": "#3d3020",
-    "particles": { "type": "star", "color": "#FFD700", "count": 20 },
-    "decorators": ["stars", "moon"]
-  }]
-}
-```
-
-## 🤖 Agent Framework
-
-Agents use the `AgentResponder` trait (in `src-tauri/src/agents/responder.rs`):
-
-```rust
-pub trait AgentResponder: Send + Sync {
-    fn respond(&self, agent_id: &str, message: &str) -> String;
-}
-```
-
-Currently uses `EchoResponder` (echoes input). To integrate an LLM, implement this trait with your API calls.
+| Document | Description |
+|----------|-------------|
+| [Extension Authoring Guide](docs/extensions.md) | Create custom themes, avatars, and gear packages |
+| [Architecture](docs/architecture.md) | Technical deep-dive: simulation engine, IPC, rendering pipeline |
+| [Contributing](CONTRIBUTING.md) | Dev setup, code style, how to add themes/agents/backends, PR process |
 
 ## 📄 License
 
