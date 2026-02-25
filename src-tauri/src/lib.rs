@@ -204,6 +204,45 @@ async fn has_credential(app: tauri::AppHandle, backend_id: String) -> Result<boo
     Ok(store.get(&backend_id).is_some())
 }
 
+#[tauri::command]
+async fn fetch_location() -> Result<serde_json::Value, String> {
+    let resp = reqwest::get("https://ipwho.is/")
+        .await
+        .map_err(|e| format!("Location fetch failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(format!("Location HTTP {}", resp.status()));
+    }
+    let data = resp.json::<serde_json::Value>()
+        .await
+        .map_err(|e| format!("Location parse failed: {e}"))?;
+    if data.get("success").and_then(|s| s.as_bool()) == Some(false) {
+        let msg = data.get("message").and_then(|m| m.as_str()).unwrap_or("unknown");
+        return Err(format!("Location lookup failed: {msg}"));
+    }
+    let normalized = serde_json::json!({
+        "latitude": data.get("latitude"),
+        "longitude": data.get("longitude"),
+        "city": data.get("city"),
+    });
+    Ok(normalized)
+}
+
+#[tauri::command]
+async fn fetch_weather(lat: f64, lon: f64) -> Result<serde_json::Value, String> {
+    let url = format!(
+        "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=temperature_2m,cloudcover,precipitation,weathercode&daily=sunrise,sunset&timezone=auto&forecast_days=1"
+    );
+    let resp = reqwest::get(&url)
+        .await
+        .map_err(|e| format!("Weather fetch failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(format!("Weather HTTP {}", resp.status()));
+    }
+    resp.json::<serde_json::Value>()
+        .await
+        .map_err(|e| format!("Weather parse failed: {e}"))
+}
+
 fn config_path() -> std::path::PathBuf {
     let mut path = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
     path.push("agent-terrarium.json");
@@ -736,6 +775,8 @@ pub fn run() {
             get_credential,
             delete_credential,
             has_credential,
+            fetch_location,
+            fetch_weather,
         ])
         .setup(|app| {
             let win = app.get_webview_window("main").expect("main window");
