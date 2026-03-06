@@ -24,5 +24,12 @@
     "@vitejs/plugin-react": "^4.6.0",
     "typescript": "~5.8.3",
     "vite": "^7.0.4"
+  },
+  "author": "Alexander Sklar",
+  "license": "MIT",
+  "description": "A desktop companion app where AI agents live in a tiny animated world on your screen",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/asklar/agent-terrarium.git"
   }
 }
