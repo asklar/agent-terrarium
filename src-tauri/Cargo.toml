@@ -1,8 +1,9 @@
 [package]
 name = "agent-terrarium"
 version = "0.1.0"
-description = "A digital playground where agents live"
-authors = ["you"]
+description = "A desktop companion app where AI agents live in a tiny animated world on your screen"
+authors = ["Alexander Sklar"]
+license = "MIT"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
