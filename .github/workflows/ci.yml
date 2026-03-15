@@ -80,41 +80,8 @@ jobs:
       - name: Build Tauri app (generates MSI)
         run: pnpm tauri build
 
-      - name: Create MSIX package
-        shell: pwsh
-        run: |
-          $stagingDir = "msix-staging"
-          New-Item -ItemType Directory -Path $stagingDir -Force
-
-          # Copy built executable
-          Copy-Item "src-tauri\target\release\agent-terrarium.exe" $stagingDir\
-
-          # Copy any DLLs the executable depends on
-          Get-ChildItem "src-tauri\target\release\*.dll" | Copy-Item -Destination $stagingDir\
-
-          # Copy MSIX manifest and required icon assets
-          Copy-Item "AppxManifest.xml" $stagingDir\
-          Copy-Item "src-tauri\icons\Square150x150Logo.png" $stagingDir\
-          Copy-Item "src-tauri\icons\Square44x44Logo.png" $stagingDir\
-          Copy-Item "src-tauri\icons\StoreLogo.png" $stagingDir\
-
-          # Locate makeappx.exe from the Windows SDK
-          $makeAppx = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter "makeappx.exe" |
-            Where-Object { $_.FullName -like "*\x64\*" } |
-            Sort-Object { [version]($_.Directory.Parent.Name) } -Descending |
-            Select-Object -First 1
-          if (-not $makeAppx) {
-            Write-Error "makeappx.exe not found. Ensure the Windows 10 SDK is installed."
-            exit 1
-          }
-          Write-Host "Using: $($makeAppx.FullName)"
-
-          & $makeAppx.FullName pack /d $stagingDir /p "AgentTerrarium.msix" /nv
-          Write-Host "Created AgentTerrarium.msix"
-
-      - name: Publish GitHub Release
+      - name: Publish GitHub Release (MSI)
         uses: softprops/action-gh-release@v2
         with:
           files: |
             src-tauri/target/release/bundle/msi/*.msi
-            AgentTerrarium.msix
