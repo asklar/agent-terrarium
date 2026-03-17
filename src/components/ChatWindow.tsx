@@ -135,6 +135,11 @@ export function ChatWindow({ agentId }: ChatWindowProps) {
             {msg.from_user ? msg.text : <Markdown remarkPlugins={[remarkGfm]} components={mdComponents}>{msg.text}</Markdown>}
           </div>
         )) ?? <div className="chat-window-empty">No messages yet. Say hi!</div>}
+        {isLoading && (
+          <div className="chat-window-msg agent chat-typing">
+            <span className="typing-dots"><span>.</span><span>.</span><span>.</span></span>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
       {pendingFiles.length > 0 && (

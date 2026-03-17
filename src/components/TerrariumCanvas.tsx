@@ -311,11 +311,12 @@ export function TerrariumCanvas({
       const agentPending = worldState.pending_files[agent.id];
       if (agentPending && agentPending.length > 0) {
         const bob = Math.sin(worldState.tick * 0.15) * 1.5;
-        const ix = agent.position.x + AGENT_SIZE * scale * 0.4;
-        const iy = agent.position.y - AGENT_SIZE * scale * 1.1 + bob;
+        const ix = agent.position.x + AGENT_SIZE * scale * 0.45;
+        const iy = agent.position.y - AGENT_SIZE * scale * 1.2 + bob;
         ctx.save();
         ctx.translate(ix, iy);
-        ctx.scale(scale * 0.7, scale * 0.7);
+        const badgeScale = scale * 1.4;
+        ctx.scale(badgeScale, badgeScale);
         // Badge circle
         ctx.fillStyle = "rgba(139,195,74,0.85)";
         ctx.beginPath();

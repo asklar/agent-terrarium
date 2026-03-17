@@ -126,6 +126,11 @@ export function ChatOverlay({
             {msg.from_user ? msg.text : <Markdown remarkPlugins={[remarkGfm]} components={mdComponents}>{msg.text}</Markdown>}
           </div>
         ))}
+        {isLoading && (
+          <div className="chat-message agent chat-typing">
+            <span className="typing-dots"><span>.</span><span>.</span><span>.</span></span>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
       {pendingFiles && pendingFiles.length > 0 && (
