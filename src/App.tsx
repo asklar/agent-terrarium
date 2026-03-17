@@ -451,6 +451,25 @@ function App() {
       }
     }
     prevClaimedRef.current = currentClaimed;
+
+    // Sync: remove pendingFiles for agents whose files were detached in Rust
+    // (e.g. by the pop-out window sending a message)
+    const agentsWithClaimed = new Set(
+      worldState.dropped_files
+        .filter((f) => f.active && f.claimed_by)
+        .map((f) => f.claimed_by!),
+    );
+    setPendingFiles((prev) => {
+      let changed = false;
+      const next = new Map(prev);
+      for (const agentId of next.keys()) {
+        if (!agentsWithClaimed.has(agentId)) {
+          next.delete(agentId);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
   }, [worldState, clickAgent]);
 
   const handleCanvasClick = useCallback(() => {
