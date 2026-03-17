@@ -29,6 +29,13 @@ export function useWorldState() {
     [],
   );
 
+  const dropFile = useCallback(
+    async (fileName: string, filePath: string, x: number, y: number): Promise<string> => {
+      return await invoke<string>("drop_file", { fileName, filePath, x, y });
+    },
+    [],
+  );
+
   const clickAgent = useCallback(async (agentId: string) => {
     await invoke("click_agent", { agentId });
   }, []);
@@ -107,6 +114,7 @@ export function useWorldState() {
   return {
     worldState,
     throwBall,
+    dropFile,
     clickAgent,
     sendMessage,
     dismissChat,

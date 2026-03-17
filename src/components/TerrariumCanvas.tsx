@@ -45,6 +45,110 @@ function getOrLoadImage(url: string): HTMLImageElement | null {
   return null; // not ready yet
 }
 
+/** Draw an unclaimed file icon sitting on the ground */
+function drawDroppedFile(ctx: CanvasRenderingContext2D, x: number, y: number, fileName: string, scale: number) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scale, scale);
+
+  // Shadow
+  ctx.fillStyle = "rgba(0,0,0,0.15)";
+  ctx.beginPath();
+  ctx.ellipse(0, 4, 10, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Document body
+  const w = 14, h = 18;
+  const fold = 5;
+  ctx.fillStyle = "#F5F5F5";
+  ctx.strokeStyle = "#999";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(-w / 2, -h / 2);
+  ctx.lineTo(w / 2 - fold, -h / 2);
+  ctx.lineTo(w / 2, -h / 2 + fold);
+  ctx.lineTo(w / 2, h / 2);
+  ctx.lineTo(-w / 2, h / 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Folded corner
+  ctx.fillStyle = "#DDD";
+  ctx.beginPath();
+  ctx.moveTo(w / 2 - fold, -h / 2);
+  ctx.lineTo(w / 2 - fold, -h / 2 + fold);
+  ctx.lineTo(w / 2, -h / 2 + fold);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Lines on the document
+  ctx.strokeStyle = "#BBB";
+  ctx.lineWidth = 0.8;
+  for (let i = 0; i < 3; i++) {
+    const ly = -h / 2 + fold + 3 + i * 4;
+    ctx.beginPath();
+    ctx.moveTo(-w / 2 + 3, ly);
+    ctx.lineTo(w / 2 - 3, ly);
+    ctx.stroke();
+  }
+
+  // File name label below
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.font = "bold 7px sans-serif";
+  ctx.textAlign = "center";
+  const label = fileName.length > 12 ? fileName.slice(0, 10) + "…" : fileName;
+  ctx.fillText(label, 0, h / 2 + 9);
+
+  ctx.restore();
+}
+
+/** Draw a file icon floating near an agent that claimed it */
+function drawClaimedFile(ctx: CanvasRenderingContext2D, agentX: number, agentY: number, scale: number, tick: number) {
+  ctx.save();
+  // Float above and to the right of the agent's head with a gentle bob
+  const bob = Math.sin(tick * 0.15) * 2;
+  const offsetX = AGENT_SIZE * scale * 0.5;
+  const offsetY = -AGENT_SIZE * scale * 1.2 + bob;
+  ctx.translate(agentX + offsetX, agentY + offsetY);
+  ctx.scale(scale * 0.6, scale * 0.6);
+
+  // Glow
+  ctx.fillStyle = "rgba(255,200,50,0.25)";
+  ctx.beginPath();
+  ctx.arc(0, 0, 12, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Mini document
+  const w = 10, h = 13;
+  const fold = 3;
+  ctx.fillStyle = "#FFF8E1";
+  ctx.strokeStyle = "#F9A825";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(-w / 2, -h / 2);
+  ctx.lineTo(w / 2 - fold, -h / 2);
+  ctx.lineTo(w / 2, -h / 2 + fold);
+  ctx.lineTo(w / 2, h / 2);
+  ctx.lineTo(-w / 2, h / 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Folded corner
+  ctx.fillStyle = "#FFE082";
+  ctx.beginPath();
+  ctx.moveTo(w / 2 - fold, -h / 2);
+  ctx.lineTo(w / 2 - fold, -h / 2 + fold);
+  ctx.lineTo(w / 2, -h / 2 + fold);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.restore();
+}
+
 export function TerrariumCanvas({
   worldState,
   onAgentClick,
@@ -195,6 +299,23 @@ export function TerrariumCanvas({
     for (const agent of sortedAgents) {
       const scale = perspectiveScale(agent.position.y, groundY, boundsY);
       drawAgent(ctx, agent, thinkingAgentIds?.has(agent.id), scale);
+    }
+
+    // Draw dropped files
+    for (const file of worldState.dropped_files) {
+      if (!file.active) continue;
+      if (file.claimed_by) {
+        // Draw as small icon floating near the claiming agent
+        const agent = worldState.agents.find((a) => a.id === file.claimed_by);
+        if (agent) {
+          const scale = perspectiveScale(agent.position.y, groundY, boundsY);
+          drawClaimedFile(ctx, agent.position.x, agent.position.y, scale, worldState.tick);
+        }
+      } else {
+        // Draw unclaimed file on the ground
+        const scale = perspectiveScale(file.position.y, groundY, boundsY);
+        drawDroppedFile(ctx, file.position.x, file.position.y, file.file_name, scale);
+      }
     }
 
     // Play attention sounds periodically

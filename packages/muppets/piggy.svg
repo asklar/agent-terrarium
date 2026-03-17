@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-16 -30 32 48">
+  <!-- Miss Piggy -->
+  <!-- Body - glamorous, rounded -->
+  <ellipse cx="0" cy="6" rx="9" ry="9" fill="#F8BBD0"/>
+  <!-- Gloved arms (long purple opera gloves) -->
+  <path d="M -9,2 Q -13,-2 -14,-5" stroke="#CE93D8" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <circle cx="-14" cy="-5.5" r="1.8" fill="#CE93D8"/>
+  <path d="M 9,2 Q 13,-2 14,-5" stroke="#CE93D8" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <circle cx="14" cy="-5.5" r="1.8" fill="#CE93D8"/>
+  <!-- Pearl necklace - prominent -->
+  <circle cx="-6" cy="-1.5" r="1.5" fill="#FAFAFA" stroke="#BDBDBD" stroke-width="0.4"/>
+  <circle cx="-3" cy="-2.8" r="1.6" fill="#FAFAFA" stroke="#BDBDBD" stroke-width="0.4"/>
+  <circle cx="0" cy="-3.2" r="1.7" fill="#FAFAFA" stroke="#BDBDBD" stroke-width="0.4"/>
+  <circle cx="3" cy="-2.8" r="1.6" fill="#FAFAFA" stroke="#BDBDBD" stroke-width="0.4"/>
+  <circle cx="6" cy="-1.5" r="1.5" fill="#FAFAFA" stroke="#BDBDBD" stroke-width="0.4"/>
+  <!-- Pearl luster -->
+  <circle cx="-3.5" cy="-3.5" r="0.5" fill="white" opacity="0.7"/>
+  <circle cx="0" cy="-4" r="0.5" fill="white" opacity="0.7"/>
+  <!-- Head -->
+  <ellipse cx="0" cy="-12" rx="10" ry="9" fill="#F8BBD0"/>
+  <!-- Blonde hair - big, flowing, glamorous -->
+  <path d="M -11,-14 Q -14,-24 -8,-28 Q -4,-30 0,-28 Q 4,-30 8,-28 Q 14,-24 11,-14"
+        fill="#FFD54F" stroke="#F9A825" stroke-width="0.5"/>
+  <!-- Hair curls on sides -->
+  <path d="M -11,-14 Q -14,-10 -13,-5 Q -12,-2 -11,0" fill="#FFD54F" stroke="#F9A825" stroke-width="0.4"/>
+  <path d="M -12,-8 Q -15,-6 -14,-3" fill="#FFEE58" stroke="none" opacity="0.5"/>
+  <path d="M 11,-14 Q 14,-10 13,-5 Q 12,-2 11,0" fill="#FFD54F" stroke="#F9A825" stroke-width="0.4"/>
+  <path d="M 12,-8 Q 15,-6 14,-3" fill="#FFEE58" stroke="none" opacity="0.5"/>
+  <!-- Hair highlight -->
+  <path d="M -4,-28 Q -1,-26 2,-28" fill="#FFEE58" opacity="0.6"/>
+  <!-- Eyes - big with heavy lashes -->
+  <ellipse cx="-4" cy="-13" rx="3.5" ry="4" fill="white" stroke="#E8B4C8" stroke-width="0.4"/>
+  <ellipse cx="4" cy="-13" rx="3.5" ry="4" fill="white" stroke="#E8B4C8" stroke-width="0.4"/>
+  <!-- Irises -->
+  <circle cx="-3.5" cy="-13" r="2" fill="#42A5F5"/>
+  <circle cx="4.5" cy="-13" r="2" fill="#42A5F5"/>
+  <circle cx="-3.5" cy="-13" r="1" fill="#1565C0"/>
+  <circle cx="4.5" cy="-13" r="1" fill="#1565C0"/>
+  <!-- Eye highlights -->
+  <circle cx="-4.5" cy="-14.5" r="0.8" fill="white" opacity="0.9"/>
+  <circle cx="3.5" cy="-14.5" r="0.8" fill="white" opacity="0.9"/>
+  <!-- Long dramatic eyelashes -->
+  <path d="M -7.5,-12 L -8.5,-14.5 M -7,-11 L -8.5,-12.5 M -7.5,-13.5 L -9,-15.5" stroke="#333" stroke-width="0.7" stroke-linecap="round"/>
+  <path d="M 7.5,-12 L 8.5,-14.5 M 7,-11 L 8.5,-12.5 M 7.5,-13.5 L 9,-15.5" stroke="#333" stroke-width="0.7" stroke-linecap="round"/>
+  <!-- Eyebrows - arched, feminine -->
+  <path d="M -7,-16 Q -4,-18.5 -1,-16.5" stroke="#D4A017" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+  <path d="M 1,-16.5 Q 4,-18.5 7,-16" stroke="#D4A017" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+  <!-- Pig snout - prominent -->
+  <ellipse cx="0" cy="-7.5" rx="4.5" ry="3" fill="#F06292"/>
+  <ellipse cx="-1.8" cy="-7.5" rx="1.2" ry="0.9" fill="#D81B60"/>
+  <ellipse cx="1.8" cy="-7.5" rx="1.2" ry="0.9" fill="#D81B60"/>
+  <!-- Snout highlight -->
+  <ellipse cx="0" cy="-9" rx="2" ry="0.8" fill="#F48FB1" opacity="0.5"/>
+  <!-- Small dainty mouth -->
+  <path d="M -2.5,-4.5 Q 0,-3 2.5,-4.5" stroke="#C2185B" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+  <!-- Beauty mark -->
+  <circle cx="5.5" cy="-7" r="0.5" fill="#333"/>
+  <!-- Cheek blush -->
+  <ellipse cx="-7" cy="-9" rx="2.5" ry="1.8" fill="#F48FB1" opacity="0.35"/>
+  <ellipse cx="7" cy="-9" rx="2.5" ry="1.8" fill="#F48FB1" opacity="0.35"/>
+  <!-- Legs -->
+  <path d="M -4,14 L -4,16 L -6,17" stroke="#F48FB1" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+  <path d="M 4,14 L 4,16 L 6,17" stroke="#F48FB1" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+</svg>

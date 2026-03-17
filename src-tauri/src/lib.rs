@@ -27,6 +27,11 @@ fn throw_ball(world: tauri::State<'_, Arc<World>>, x: f64, y: f64, vx: f64, vy: 
 }
 
 #[tauri::command]
+fn drop_file(world: tauri::State<'_, Arc<World>>, file_name: String, file_path: String, x: f64, y: f64) -> String {
+    world.drop_file(&file_name, &file_path, x, y)
+}
+
+#[tauri::command]
 fn push_bubble(world: tauri::State<'_, Arc<World>>, agent_id: String, content: String, is_emoji: bool, duration: f64) {
     world.push_bubble(&agent_id, content, is_emoji, duration);
 }
@@ -102,6 +107,9 @@ async fn send_message(world: tauri::State<'_, Arc<World>>, app: tauri::AppHandle
 
     // Append the response to the chat session
     world.complete_response(&agent_id, &response.content);
+
+    // Detach any claimed file from this agent now that the backend has responded
+    world.detach_file(&agent_id);
 
     // Persist chat history to disk
     let updated_messages = world.get_chat_messages(&agent_id);
@@ -748,6 +756,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_world_state,
             throw_ball,
+            drop_file,
             push_bubble,
             speak_sapi,
             click_agent,

@@ -55,6 +55,7 @@ function App() {
   const {
     worldState,
     throwBall,
+    dropFile,
     clickAgent,
     sendMessage,
     dismissChat,
@@ -372,6 +373,65 @@ function App() {
     });
     return () => { unlisteners.forEach((fn) => fn()); };
   }, [clickAgent, saveConfig]);
+
+  // Listen for OS file drag-and-drop into the terrarium
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    import("@tauri-apps/api/event").then(({ listen }) => {
+      listen<{ paths: string[]; position?: { x: number; y: number } }>("tauri://drag-drop", async (event) => {
+        const { paths, position } = event.payload;
+        if (!paths || paths.length === 0) return;
+        log.info("Files dropped:", paths.length, "at", position);
+
+        // Position is in physical pixels relative to the window;
+        // the canvas uses CSS pixels, so divide by DPR.
+        const mainEl = document.querySelector(".terrarium-container");
+        if (!mainEl) return;
+        const rect = mainEl.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        const pos = position ?? { x: (rect.left + rect.width / 2) * dpr, y: (rect.top + rect.height / 2) * dpr };
+        const baseX = pos.x / dpr - rect.left;
+        const baseY = pos.y / dpr - rect.top;
+
+        for (let i = 0; i < paths.length; i++) {
+          const filePath = paths[i];
+          const fileName = filePath.split(/[\\/]/).pop() || filePath;
+          // Spread multiple files horizontally
+          const offsetX = (i - (paths.length - 1) / 2) * 40;
+          await dropFile(fileName, filePath, baseX + offsetX, baseY);
+        }
+      }).then((fn) => { unlisten = fn; });
+    });
+    return () => { unlisten?.(); };
+  }, [dropFile]);
+
+  // Auto-chat when an agent claims a file: detect newly-claimed files
+  const prevClaimedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!worldState) return;
+    const currentClaimed = new Set<string>();
+    for (const file of worldState.dropped_files) {
+      if (file.claimed_by && file.active) {
+        const key = `${file.claimed_by}:${file.id}`;
+        currentClaimed.add(key);
+        if (!prevClaimedRef.current.has(key)) {
+          // Newly claimed! Auto-start conversation
+          const agentId = file.claimed_by;
+          const agent = worldState.agents.find((a) => a.id === agentId);
+          if (agent && agent.state !== "Chatting") {
+            playAgentSound(agent.avatar, "gear");
+            const prompt = `[File dropped by user] The user dropped a file into your terrarium for you: "${file.file_name}" (path: ${file.file_path}). Please take a look at it and let the user know what you find.`;
+            log.info("Auto-chat for file claim:", file.file_name, "→", agent.name);
+            // Start the chat session and send the file message
+            clickAgent(agentId).then(() => {
+              sendMessageWithThinking(agentId, prompt);
+            });
+          }
+        }
+      }
+    }
+    prevClaimedRef.current = currentClaimed;
+  }, [worldState, clickAgent, sendMessageWithThinking]);
 
   const handleCanvasClick = useCallback(() => {
     // Light dismiss: clicking canvas (not on an agent) dismisses all chats
