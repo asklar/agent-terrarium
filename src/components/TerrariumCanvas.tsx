@@ -38,7 +38,7 @@ const DEFAULT_DRAW_SPEC: import("../themes/PackageTypes").DrawSpec = {
 const imageCache = new Map<string, HTMLImageElement>();
 function getOrLoadImage(url: string): HTMLImageElement | null {
   const cached = imageCache.get(url);
-  if (cached) return cached.complete ? cached : null;
+  if (cached) return cached.complete && cached.naturalWidth > 0 ? cached : null;
   const img = new Image();
   img.src = url;
   imageCache.set(url, img);
