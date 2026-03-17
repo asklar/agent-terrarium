@@ -36,6 +36,15 @@ jobs:
       - name: TypeScript check
         run: pnpm exec tsc --noEmit
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache-dependency-path: src-tauri/copilot-bridge/go.sum
+
+      - name: Install MinGW (for CGO)
+        run: choco install mingw -y --no-progress
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
@@ -46,6 +55,8 @@ jobs:
 
       - name: Rust check
         run: cargo check --manifest-path src-tauri/Cargo.toml
+        env:
+          CGO_ENABLED: '1'
 
       - name: Build frontend
         run: pnpm run build
@@ -72,6 +83,15 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache-dependency-path: src-tauri/copilot-bridge/go.sum
+
+      - name: Install MinGW (for CGO)
+        run: choco install mingw -y --no-progress
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
@@ -82,6 +102,8 @@ jobs:
 
       - name: Build Tauri app (generates MSI)
         run: pnpm tauri build
+        env:
+          CGO_ENABLED: '1'
 
       - name: Publish GitHub Release (MSI)
         uses: softprops/action-gh-release@v2
