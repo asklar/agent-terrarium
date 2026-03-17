@@ -306,6 +306,32 @@ export function TerrariumCanvas({
     for (const agent of sortedAgents) {
       const scale = perspectiveScale(agent.position.y, groundY, boundsY);
       drawAgent(ctx, agent, thinkingAgentIds?.has(agent.id), scale);
+
+      // Draw pending file indicator (📎 badge) above agent
+      const agentPending = worldState.pending_files[agent.id];
+      if (agentPending && agentPending.length > 0) {
+        const bob = Math.sin(worldState.tick * 0.15) * 1.5;
+        const ix = agent.position.x + AGENT_SIZE * scale * 0.4;
+        const iy = agent.position.y - AGENT_SIZE * scale * 1.1 + bob;
+        ctx.save();
+        ctx.translate(ix, iy);
+        ctx.scale(scale * 0.7, scale * 0.7);
+        // Badge circle
+        ctx.fillStyle = "rgba(139,195,74,0.85)";
+        ctx.beginPath();
+        ctx.arc(0, 0, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        // Paperclip emoji
+        ctx.fillStyle = "white";
+        ctx.font = "bold 9px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("📎", 0, 0.5);
+        ctx.restore();
+      }
     }
 
     // Draw dropped files (only unclaimed ones — claimed files appear as pills in chat)
