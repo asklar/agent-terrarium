@@ -100,4 +100,5 @@ export interface WorldState {
   ground_y_ratio: number;
   tick: number;
   attention_interval_secs: number;
+  pending_files: Record<string, [string, string][]>;
 }

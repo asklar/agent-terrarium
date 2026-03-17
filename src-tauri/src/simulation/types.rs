@@ -296,6 +296,10 @@ pub struct WorldState {
     /// Event buffer — drained by the event dispatcher
     #[serde(skip)]
     pub events: Vec<TerrariumEvent>,
+    /// Pending file paths per agent (agent_id → [(name, path)])
+    /// Set by frontend on claim, read by both inline and pop-out chat windows
+    #[serde(default)]
+    pub pending_files: std::collections::HashMap<String, Vec<(String, String)>>,
 }
 
 /// Saved agent definition for config persistence

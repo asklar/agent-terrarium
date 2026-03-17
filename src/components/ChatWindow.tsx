@@ -41,20 +41,8 @@ export function ChatWindow({ agentId }: ChatWindowProps) {
           setAgentAvatar(agent.avatar);
           agentRef.current = agent;
         }
-        // Collect files claimed by this agent (deduplicate by path)
-        const claimed: [string, string][] = [];
-        const seenPaths = new Set<string>();
-        for (const f of state.dropped_files) {
-          if (f.active && f.claimed_by === agentId) {
-            for (const file of f.files) {
-              if (!seenPaths.has(file[1])) {
-                seenPaths.add(file[1]);
-                claimed.push(file as [string, string]);
-              }
-            }
-          }
-        }
-        setPendingFiles(claimed);
+        // Read pending files from Rust state
+        setPendingFiles(state.pending_files[agentId] ?? []);
       } catch (e) {
         log.error("ChatWindow poll error:", e);
       }
@@ -89,13 +77,7 @@ export function ChatWindow({ agentId }: ChatWindowProps) {
     setInputText("");
     setIsLoading(true);
     try {
-      // Prepend pending file context if any
-      if (pendingFiles.length > 0) {
-        const fileList = pendingFiles.map(([name, path]) => `- ${name}: ${path}`).join("\n");
-        text = `[The user has shared the following file(s) with you:\n${fileList}\n]\n\n${text}`;
-        // Detach files from agent
-        await invoke("detach_agent_file", { agentId });
-      }
+      // Rust's send_message reads pending_files and prepends file context automatically
       log.info("ChatWindow send to", agentId, text.slice(0, 80));
       await invoke("send_message", { agentId, text });
     } catch (e) {
@@ -104,7 +86,7 @@ export function ChatWindow({ agentId }: ChatWindowProps) {
       setIsLoading(false);
       requestAnimationFrame(() => inputRef.current?.focus());
     }
-  }, [inputText, isLoading, agentId, pendingFiles]);
+  }, [inputText, isLoading, agentId]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -161,7 +143,7 @@ export function ChatWindow({ agentId }: ChatWindowProps) {
             <span key={i} className="chat-file-pill">
               📎 {name.length > 20 ? name.slice(0, 18) + "…" : name}
               <button className="chat-file-remove" onClick={async () => {
-                await invoke("detach_agent_file", { agentId });
+                await invoke("clear_pending_files", { agentId });
               }}>✕</button>
             </span>
           ))}

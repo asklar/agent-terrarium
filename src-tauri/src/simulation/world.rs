@@ -35,6 +35,7 @@ impl World {
                 ball_kick_on_capture: true,
                 attention_interval_secs: 5.0,
                 events: Vec::new(),
+                pending_files: std::collections::HashMap::new(),
             }),
             backend_registry,
         }
@@ -585,6 +586,28 @@ impl World {
         let mut state = self.state.lock().unwrap();
         state.dropped_files.retain(|f| f.id != file_id);
         log::info!("Removed dropped file: {}", file_id);
+    }
+
+    /// Set pending files for an agent (called by frontend on file claim)
+    pub fn set_pending_files(&self, agent_id: &str, files: Vec<(String, String)>) {
+        let mut state = self.state.lock().unwrap();
+        if files.is_empty() {
+            state.pending_files.remove(agent_id);
+        } else {
+            state.pending_files.insert(agent_id.to_string(), files);
+        }
+    }
+
+    /// Clear pending files for an agent (called after sending or removing)
+    pub fn clear_pending_files(&self, agent_id: &str) {
+        let mut state = self.state.lock().unwrap();
+        state.pending_files.remove(agent_id);
+    }
+
+    /// Get pending files for an agent
+    pub fn get_pending_files(&self, agent_id: &str) -> Vec<(String, String)> {
+        let state = self.state.lock().unwrap();
+        state.pending_files.get(agent_id).cloned().unwrap_or_default()
     }
 
     pub fn click_agent(&self, agent_id: &str, restored_messages: Option<Vec<ChatMessage>>) -> bool {

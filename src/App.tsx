@@ -89,7 +89,6 @@ function App() {
   const [showDebug, setShowDebug] = useState(false);
   const [thinkingAgentIds, setThinkingAgentIds] = useState<Set<string>>(new Set());
   const [poppedOutAgents, setPoppedOutAgents] = useState<Set<string>>(new Set());
-  const [pendingFiles, setPendingFiles] = useState<Map<string, [string, string][]>>(new Map());
   const themeRef = useRef(theme);
   themeRef.current = theme;
   const musicMutedRef = useRef(musicMuted);
@@ -261,22 +260,7 @@ function App() {
       log.info("Sending message to", agentId, text.slice(0, 80));
       setThinkingAgentIds((prev) => new Set(prev).add(agentId));
       try {
-        // Prepend pending file context if any
-        let fullText = text;
-        const files = pendingFiles.get(agentId);
-        if (files && files.length > 0) {
-          const fileList = files.map(([name, path]) => `- ${name}: ${path}`).join("\n");
-          fullText = `[The user has shared the following file(s) with you:\n${fileList}\n]\n\n${text}`;
-          // Clear pending files and detach icon from agent
-          setPendingFiles((prev) => {
-            const next = new Map(prev);
-            next.delete(agentId);
-            return next;
-          });
-          detachAgentFile(agentId);
-        }
-
-        const reply = await sendMessage(agentId, fullText);
+        const reply = await sendMessage(agentId, text);
         log.info("Reply from", agentId, reply.slice(0, 80));
         return reply;
       } catch (e) {
@@ -290,7 +274,7 @@ function App() {
         });
       }
     },
-    [sendMessage, pendingFiles, detachAgentFile],
+    [sendMessage],
   );
 
   const playGearSound = useCallback((agentId: string) => {
@@ -445,17 +429,9 @@ function App() {
         if (agent) {
           playAgentSound(agent.avatar, "gear");
           log.info("File claimed:", file.label, "→", agent.name);
-          setPendingFiles((prev) => {
-            const next = new Map(prev);
-            const existing = next.get(agentId) ?? [];
-            const existingPaths = new Set(existing.map(([, p]) => p));
-            const newFiles = (file.files as [string, string][]).filter(([, p]) => !existingPaths.has(p));
-            if (newFiles.length > 0) {
-              next.set(agentId, [...existing, ...newFiles]);
-            }
-            return next;
-          });
-          // Remove the file from the world — it now lives as pendingFiles in React
+          // Store pending files in Rust state (accessible by both inline and pop-out windows)
+          invoke("set_pending_files", { agentId, files: file.files });
+          // Remove the file from the world
           detachAgentFile(agentId);
           // Open chat if not already chatting
           if (agent.state !== "Chatting") {
@@ -550,22 +526,9 @@ function App() {
             session={session}
             agentPosition={agent.position}
             agentName={agent.name}
-            pendingFiles={pendingFiles.get(session.agent_id)}
-            onRemovePendingFile={(idx) => {
-              const agentId = session.agent_id;
-              setPendingFiles((prev) => {
-                const next = new Map(prev);
-                const files = [...(next.get(agentId) ?? [])];
-                files.splice(idx, 1);
-                if (files.length === 0) {
-                  next.delete(agentId);
-                  // All files removed — detach from agent in Rust too
-                  detachAgentFile(agentId);
-                } else {
-                  next.set(agentId, files);
-                }
-                return next;
-              });
+            pendingFiles={worldState?.pending_files[session.agent_id]}
+            onRemovePendingFile={() => {
+              invoke("clear_pending_files", { agentId: session.agent_id });
             }}
             onSend={sendMessageWithThinking}
             onDismiss={handleDismiss}
