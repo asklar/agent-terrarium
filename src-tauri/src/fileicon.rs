@@ -11,6 +11,7 @@ use windows::core::PCWSTR;
 /// Get the system icon for a file path as a base64 PNG data URL.
 /// Returns the icon at 32×32 (large icon size).
 pub fn get_file_icon_data_url(path: &str) -> Result<String, String> {
+    log::info!("Extracting icon for: {}", path);
     unsafe {
         let wide_path: Vec<u16> = path.encode_utf16().chain(std::iter::once(0)).collect();
 
@@ -24,16 +25,22 @@ pub fn get_file_icon_data_url(path: &str) -> Result<String, String> {
         );
 
         if result == 0 {
+            log::warn!("SHGetFileInfo failed for: {}", path);
             return Err("SHGetFileInfo failed".to_string());
         }
 
         let hicon = shfi.hIcon;
         if hicon.is_invalid() {
+            log::warn!("No icon returned for: {}", path);
             return Err("No icon returned".to_string());
         }
 
         let result = icon_to_png_data_url(hicon);
         let _ = DestroyIcon(hicon);
+        match &result {
+            Ok(url) => log::info!("Icon extracted: {} bytes", url.len()),
+            Err(e) => log::warn!("Icon extraction failed: {}", e),
+        }
         result
     }
 }
