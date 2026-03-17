@@ -1,6 +1,8 @@
-//! Extract Windows shell file icons as base64 PNG data URLs.
+//! Extract file icons/thumbnails as base64 PNG data URLs.
+//! For image files, generates a thumbnail. For others, extracts the Windows shell icon.
 
 use std::io::Cursor;
+use std::path::Path;
 
 use windows::Win32::Graphics::Gdi::*;
 use windows::Win32::UI::Shell::*;
@@ -8,10 +10,44 @@ use windows::Win32::UI::WindowsAndMessaging::*;
 use windows::Win32::Storage::FileSystem::FILE_FLAGS_AND_ATTRIBUTES;
 use windows::core::PCWSTR;
 
-/// Get the system icon for a file path as a base64 PNG data URL.
-/// Returns the icon at 32×32 (large icon size).
+const THUMB_SIZE: u32 = 48;
+
+/// Get the icon/thumbnail for a file path as a base64 PNG data URL.
+/// For image files (png, jpg, gif, bmp, webp), generates a thumbnail.
+/// For other files, extracts the Windows shell icon.
 pub fn get_file_icon_data_url(path: &str) -> Result<String, String> {
     log::info!("Extracting icon for: {}", path);
+
+    // Try thumbnail for image files
+    let ext = Path::new(path)
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_lowercase())
+        .unwrap_or_default();
+
+    if matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "gif" | "bmp" | "webp" | "ico") {
+        if let Ok(url) = generate_thumbnail(path) {
+            return Ok(url);
+        }
+        // Fall through to shell icon on failure
+    }
+
+    get_shell_icon(path)
+}
+
+fn generate_thumbnail(path: &str) -> Result<String, String> {
+    let img = image::open(path).map_err(|e| format!("Image open: {}", e))?;
+    let thumb = img.thumbnail(THUMB_SIZE, THUMB_SIZE);
+    let rgba = thumb.to_rgba8();
+    let mut png_buf = Cursor::new(Vec::new());
+    rgba.write_to(&mut png_buf, image::ImageFormat::Png)
+        .map_err(|e| format!("PNG encode: {}", e))?;
+    let b64 = base64_encode(&png_buf.into_inner());
+    log::info!("Thumbnail generated: {}x{}", rgba.width(), rgba.height());
+    Ok(format!("data:image/png;base64,{}", b64))
+}
+
+fn get_shell_icon(path: &str) -> Result<String, String> {
     unsafe {
         let wide_path: Vec<u16> = path.encode_utf16().chain(std::iter::once(0)).collect();
 
