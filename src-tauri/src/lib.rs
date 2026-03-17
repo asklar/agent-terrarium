@@ -664,7 +664,7 @@ pub fn run() {
                                 system_context, context, events_text
                             );
 
-                            let tools = agents::tools::define_tools();
+                            let tools = agents::tools::define_tools_json();
                             let handlers = agents::tools::create_handlers(
                                 world_ref.clone(), aid.clone(), aname.clone(),
                             );

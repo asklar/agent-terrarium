@@ -1,27 +1,18 @@
 use async_trait::async_trait;
-use copilot_sdk::{Client, CustomAgentConfig, ResumeSessionConfig, Session, SessionConfig, SessionEventData, SystemMessageConfig, SystemMessageMode, Tool};
 use std::collections::HashMap;
+use std::os::raw::c_char;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use super::backend::{AgentBackend, AgentOption, BackendConfig, BackendMessage, BackendResponse, MessageRole, ModelOption};
-
-struct AgentSession {
-    session: Arc<Session>,
-}
+use super::copilot_ffi;
 
 pub struct CopilotBackend {
-    client: Arc<RwLock<Option<Client>>>,
+    initialized: Arc<RwLock<bool>>,
     /// Persistent sessions for awareness events, keyed by agent_id
-    awareness_sessions: Arc<RwLock<HashMap<String, AwarenessSession>>>,
+    awareness_sessions: Arc<RwLock<HashMap<String, String>>>, // agent_id → session_id
     /// Persistent sessions for user chat, keyed by agent_id
-    chat_sessions: Arc<RwLock<HashMap<String, AgentSession>>>,
-}
-
-struct AwarenessSession {
-    session: Arc<Session>,
-    idle_notify: Arc<tokio::sync::Notify>,
-    collected: Arc<std::sync::Mutex<String>>,
+    chat_sessions: Arc<RwLock<HashMap<String, String>>>, // agent_id → session_id
 }
 
 fn session_id_path(agent_id: &str) -> std::path::PathBuf {
@@ -49,236 +40,152 @@ fn delete_session_id(agent_id: &str) {
     let _ = std::fs::remove_file(&path);
 }
 
+/// Build a JSON config string for the Go bridge from BackendConfig
+fn build_config_json(config: &BackendConfig) -> String {
+    serde_json::json!({
+        "model": config.model,
+        "system_prompt": config.system_prompt,
+        "custom_agent": config.custom_agent,
+        "working_directory": config.cwd,
+    }).to_string()
+}
+
 impl CopilotBackend {
     pub fn new() -> Self {
         Self {
-            client: Arc::new(RwLock::new(None)),
+            initialized: Arc::new(RwLock::new(false)),
             awareness_sessions: Arc::new(RwLock::new(HashMap::new())),
             chat_sessions: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
-    async fn ensure_client(&self) -> Result<(), String> {
-        let mut client_lock = self.client.write().await;
-        if client_lock.is_none() {
-            log::info!("Creating Copilot SDK client...");
-            let client = Client::builder()
-                .use_stdio(true)
-                .build()
-                .map_err(|e| {
-                    log::error!("Failed to create Copilot client: {}", e);
-                    format!("Failed to create Copilot client: {}", e)
-                })?;
-            client
-                .start()
-                .await
-                .map_err(|e| {
-                    log::error!("Failed to start Copilot client: {}", e);
-                    format!("Failed to start Copilot client: {}", e)
-                })?;
-            log::info!("Copilot SDK client initialized");
-            *client_lock = Some(client);
+    async fn ensure_init(&self) -> Result<(), String> {
+        let mut init = self.initialized.write().await;
+        if !*init {
+            log::info!("Initializing Copilot Go bridge...");
+            copilot_ffi::init()?;
+            log::info!("Copilot Go bridge initialized (protocol v3)");
+            *init = true;
         }
         Ok(())
     }
 
-    /// Get or create a persistent awareness session for an agent.
-    async fn get_or_create_awareness_session(
-        &self,
-        agent_id: &str,
-        config: &BackendConfig,
-        tools: &[Tool],
-        tool_handlers: &[(String, Arc<dyn Fn(&str, &serde_json::Value) -> copilot_sdk::ToolResultObject + Send + Sync>)],
-    ) -> Result<(), String> {
-        // Check if session already exists
-        {
-            let sessions = self.awareness_sessions.read().await;
-            if sessions.contains_key(agent_id) {
-                // Update tool handlers (they capture fresh World state)
-                let agent_session = sessions.get(agent_id).unwrap();
-                for (name, handler) in tool_handlers {
-                    agent_session.session
-                        .register_tool_with_handler(Tool::new(name), Some(handler.clone()))
-                        .await;
-                }
-                return Ok(());
-            }
-        }
-
-        // Create new session
-        self.ensure_client().await?;
-        let client_lock = self.client.read().await;
-        let client = client_lock.as_ref().unwrap();
-
-        let mut session_config = SessionConfig {
-            model: config.model.clone(),
-            tools: tools.to_vec(),
-            ..Default::default()
-        };
-
-        if let Some(ref prompt_text) = config.system_prompt {
-            session_config.system_message = Some(SystemMessageConfig {
-                mode: Some(SystemMessageMode::Replace),
-                content: Some(prompt_text.clone()),
-            });
-        }
-
-        if let Some(ref agent_name) = config.custom_agent {
-            session_config.custom_agents = Some(vec![CustomAgentConfig {
-                name: agent_name.clone(),
-                prompt: config.system_prompt.clone().unwrap_or_default(),
-                display_name: None,
-                description: None,
-                tools: None,
-                mcp_servers: None,
-                infer: Some(true),
-            }]);
-        }
-
-        log::info!("Creating persistent awareness session for agent {}", agent_id);
-        let session = client
-            .create_session(session_config)
-            .await
-            .map_err(|e| format!("Failed to create session: {}", e))?;
-
-        // Register tool handlers
-        for (name, handler) in tool_handlers {
-            session
-                .register_tool_with_handler(Tool::new(name), Some(handler.clone()))
-                .await;
-        }
-
-        // Set up event listener for this session
-        let idle_notify = Arc::new(tokio::sync::Notify::new());
-        let idle_clone = Arc::clone(&idle_notify);
-        let collected = Arc::new(std::sync::Mutex::new(String::new()));
-        let collected_clone = collected.clone();
-
-        let _unsub = session
-            .on(move |event| match &event.data {
-                SessionEventData::AssistantMessage(msg) => {
-                    collected_clone.lock().unwrap().push_str(&msg.content);
-                }
-                SessionEventData::AssistantMessageDelta(delta) => {
-                    collected_clone.lock().unwrap().push_str(&delta.delta_content);
-                }
-                SessionEventData::ToolExecutionStart(start) => {
-                    log::info!("[tool-call] {} args={}", start.tool_name,
-                        start.arguments.as_ref().map(|v| v.to_string()).unwrap_or_else(|| "{}".to_string()));
-                }
-                SessionEventData::ToolExecutionComplete(complete) => {
-                    if let Some(ref result) = complete.result {
-                        log::info!("[tool-result] {}", result.content);
-                    }
-                }
-                SessionEventData::SessionIdle(_) => {
-                    idle_clone.notify_one();
-                }
-                _ => {}
-            })
-            .await;
-
-        let mut sessions = self.awareness_sessions.write().await;
-        sessions.insert(agent_id.to_string(), AwarenessSession {
-            session,
-            idle_notify,
-            collected,
-        });
-
-        Ok(())
-    }
-
-    /// Dispatch awareness events using a persistent tool-enabled session.
+    /// Dispatch awareness events using a tool-enabled session.
     pub async fn dispatch_with_tools(
         &self,
         agent_id: &str,
         config: &BackendConfig,
         prompt: &str,
-        tools: Vec<Tool>,
-        tool_handlers: Vec<(String, Arc<dyn Fn(&str, &serde_json::Value) -> copilot_sdk::ToolResultObject + Send + Sync>)>,
+        tools: Vec<serde_json::Value>,
+        tool_handlers: Vec<(String, Arc<dyn Fn(&str, &serde_json::Value) -> String + Send + Sync>)>,
     ) -> Result<String, String> {
-        // Ensure session exists and handlers are current
-        self.get_or_create_awareness_session(agent_id, config, &tools, &tool_handlers).await?;
+        self.ensure_init().await?;
 
-        let sessions = self.awareness_sessions.read().await;
-        let agent_session = sessions.get(agent_id).ok_or("Session not found")?;
+        // Check if we have an existing awareness session
+        let existing = {
+            let sessions = self.awareness_sessions.read().await;
+            sessions.get(agent_id).cloned()
+        };
 
-        // Clear collected text from previous turn
-        agent_session.collected.lock().unwrap().clear();
+        let sid = if let Some(sid) = existing {
+            sid
+        } else {
+            // Create new session with tools
+            let config_json = build_config_json(config);
+            let tools_json = serde_json::to_string(&tools).map_err(|e| e.to_string())?;
 
-        // Send the prompt on the existing session
-        agent_session.session.send(prompt).await.map_err(|e| {
-            // If send fails, drop the session so it gets recreated next time
-            log::warn!("Session send failed for {}, will recreate: {}", agent_id, e);
-            format!("Send failed: {}", e)
-        })?;
+            // Set up tool callback before creating session
+            // Store handlers in a thread-local so the C callback can find them
+            {
+                let mut handlers_map = TOOL_HANDLERS.lock().unwrap();
+                for (name, handler) in &tool_handlers {
+                    handlers_map.insert(name.clone(), handler.clone());
+                }
+            }
+            copilot_ffi::set_tool_callback(Some(tool_callback_trampoline));
 
-        // Wait for idle with timeout
-        let timeout_result = tokio::time::timeout(
-            std::time::Duration::from_secs(15),
-            agent_session.idle_notify.notified(),
-        ).await;
+            let sid = copilot_ffi::create_session_with_tools(&config_json, &tools_json)?;
+            log::info!("Created awareness session for {}: {}", agent_id, sid);
 
-        if timeout_result.is_err() {
-            // Drop broken session so it gets recreated
-            drop(sessions);
-            self.awareness_sessions.write().await.remove(agent_id);
-            return Err("Timed out waiting for response (15s)".to_string());
+            let mut sessions = self.awareness_sessions.write().await;
+            sessions.insert(agent_id.to_string(), sid.clone());
+            sid
+        };
+
+        // Update tool handlers for this call
+        {
+            let mut handlers_map = TOOL_HANDLERS.lock().unwrap();
+            for (name, handler) in &tool_handlers {
+                handlers_map.insert(name.clone(), handler.clone());
+            }
         }
 
-        let result = agent_session.collected.lock().unwrap().clone();
-        Ok(result)
+        let result = copilot_ffi::send_with_tools(&sid, prompt, 15);
+
+        match result {
+            Ok(response) => Ok(response),
+            Err(e) => {
+                // Session might be broken, remove it so it gets recreated
+                log::warn!("Awareness session failed for {}: {}", agent_id, e);
+                let mut sessions = self.awareness_sessions.write().await;
+                sessions.remove(agent_id);
+                copilot_ffi::destroy_session(&sid);
+                Err(e)
+            }
+        }
     }
 
-    /// Remove a persistent session (e.g. when agent is removed)
+    /// Remove a persistent session
     #[allow(dead_code)]
     pub async fn remove_session(&self, agent_id: &str) {
         let mut sessions = self.awareness_sessions.write().await;
-        if let Some(agent_session) = sessions.remove(agent_id) {
-            let _ = agent_session.session.destroy().await;
+        if let Some(sid) = sessions.remove(agent_id) {
+            copilot_ffi::destroy_session(&sid);
             log::info!("Destroyed awareness session for {}", agent_id);
         }
         drop(sessions);
 
-        let mut chat_sessions = self.chat_sessions.write().await;
-        if let Some(agent_session) = chat_sessions.remove(agent_id) {
-            let _ = agent_session.session.destroy().await;
+        let mut chat = self.chat_sessions.write().await;
+        if let Some(sid) = chat.remove(agent_id) {
+            copilot_ffi::destroy_session(&sid);
             log::info!("Destroyed chat session for {}", agent_id);
         }
     }
+}
 
-    async fn create_new_session(&self, client: &Client, config: &BackendConfig) -> Result<Arc<Session>, String> {
-        let mut session_config = SessionConfig {
-            model: config.model.clone(),
-            working_directory: config.cwd.clone(),
-            ..Default::default()
-        };
+// Global tool handler registry (used by the C callback trampoline)
+use std::sync::Mutex;
+static TOOL_HANDLERS: std::sync::LazyLock<Mutex<HashMap<String, Arc<dyn Fn(&str, &serde_json::Value) -> String + Send + Sync>>>> =
+    std::sync::LazyLock::new(|| Mutex::new(HashMap::new()));
 
-        if let Some(ref prompt) = config.system_prompt {
-            session_config.system_message = Some(SystemMessageConfig {
-                mode: Some(SystemMessageMode::Replace),
-                content: Some(prompt.clone()),
-            });
+/// C callback that Go invokes when a tool is called.
+/// Returns a malloc'd C string with the result.
+unsafe extern "C" fn tool_callback_trampoline(
+    _session_id: *mut c_char,
+    tool_name: *mut c_char,
+    args_json: *mut c_char,
+) -> *mut c_char {
+    let name = std::ffi::CStr::from_ptr(tool_name).to_string_lossy();
+    let args_str = std::ffi::CStr::from_ptr(args_json).to_string_lossy();
+    let args: serde_json::Value = serde_json::from_str(&args_str).unwrap_or(serde_json::Value::Null);
+
+    let result = {
+        let handlers = TOOL_HANDLERS.lock().unwrap();
+        if let Some(handler) = handlers.get(name.as_ref()) {
+            handler(&name, &args)
+        } else {
+            format!("Unknown tool: {}", name)
         }
+    };
 
-        if let Some(ref agent_name) = config.custom_agent {
-            session_config.custom_agents = Some(vec![CustomAgentConfig {
-                name: agent_name.clone(),
-                prompt: config.system_prompt.clone().unwrap_or_default(),
-                display_name: None,
-                description: None,
-                tools: None,
-                mcp_servers: None,
-                infer: Some(true),
-            }]);
-        }
-
-        log::info!("Creating new chat session");
-        client
-            .create_session(session_config)
-            .await
-            .map_err(|e| format!("Failed to create session: {}", e))
+    // Allocate with libc::malloc so Go can free with C.free
+    let c_result = std::ffi::CString::new(result).unwrap_or_default();
+    let len = c_result.as_bytes_with_nul().len();
+    let ptr = libc::malloc(len) as *mut c_char;
+    if !ptr.is_null() {
+        std::ptr::copy_nonoverlapping(c_result.as_ptr(), ptr, len);
     }
+    ptr
 }
 
 #[async_trait]
@@ -300,56 +207,42 @@ impl AgentBackend for CopilotBackend {
         log::info!("Copilot respond: agent={}, model={:?}, custom_agent={:?}, {} messages",
             agent_id, config.model, config.custom_agent, messages.len());
 
-        // Get or create a persistent chat session for this agent
+        self.ensure_init().await?;
+
+        // Get or create a persistent chat session
         let need_create = {
             let sessions = self.chat_sessions.read().await;
             !sessions.contains_key(agent_id)
         };
 
         if need_create {
-            self.ensure_client().await?;
-            let client_lock = self.client.read().await;
-            let client = client_lock.as_ref().unwrap();
+            let config_json = build_config_json(config);
 
             // Try to resume a previously persisted session
-            let session = if let Some(saved_id) = load_session_id(agent_id) {
+            let sid = if let Some(saved_id) = load_session_id(agent_id) {
                 log::info!("Resuming session {} for agent {}", saved_id, agent_id);
-                let resume_config = ResumeSessionConfig {
-                    model: config.model.clone(),
-                    working_directory: config.cwd.clone(),
-                    custom_agents: config.custom_agent.as_ref().map(|name| vec![CustomAgentConfig {
-                        name: name.clone(),
-                        prompt: config.system_prompt.clone().unwrap_or_default(),
-                        display_name: None,
-                        description: None,
-                        tools: None,
-                        mcp_servers: None,
-                        infer: Some(true),
-                    }]),
-                    ..Default::default()
-                };
-                match client.resume_session(&saved_id, resume_config).await {
-                    Ok(s) => {
-                        log::info!("Resumed session {} for agent {}", s.session_id(), agent_id);
-                        s
+                match copilot_ffi::resume_session(&saved_id, &config_json) {
+                    Ok(sid) => {
+                        log::info!("Resumed session {} for agent {}", sid, agent_id);
+                        sid
                     }
                     Err(e) => {
                         log::warn!("Failed to resume session {} for {}: {}, creating new", saved_id, agent_id, e);
                         delete_session_id(agent_id);
-                        self.create_new_session(client, config).await?
+                        copilot_ffi::create_session(&config_json)?
                     }
                 }
             } else {
-                self.create_new_session(client, config).await?
+                copilot_ffi::create_session(&config_json)?
             };
 
-            save_session_id(agent_id, session.session_id());
+            save_session_id(agent_id, &sid);
 
             let mut sessions = self.chat_sessions.write().await;
-            sessions.insert(agent_id.to_string(), AgentSession { session });
+            sessions.insert(agent_id.to_string(), sid);
         }
 
-        // Send only the latest user message on the persistent session
+        // Send only the latest user message
         let last_user_msg = messages
             .iter()
             .rev()
@@ -357,12 +250,12 @@ impl AgentBackend for CopilotBackend {
             .map(|m| m.content.as_str())
             .unwrap_or("Hello");
 
-        let sessions = self.chat_sessions.read().await;
-        let agent_session = sessions.get(agent_id).ok_or("Chat session not found")?;
+        let sid = {
+            let sessions = self.chat_sessions.read().await;
+            sessions.get(agent_id).cloned().ok_or("Chat session not found")?
+        };
 
-        let response = agent_session.session
-            .send_and_collect(last_user_msg, Some(std::time::Duration::from_secs(60)))
-            .await
+        let response = copilot_ffi::send_and_wait(&sid, last_user_msg, 60)
             .map_err(|e| {
                 log::error!("Copilot chat error for {}: {}", agent_id, e);
                 format!("Copilot error: {}", e)
@@ -377,8 +270,8 @@ impl AgentBackend for CopilotBackend {
     }
 
     async fn is_available(&self) -> bool {
-        // The SDK handles auth via the Copilot CLI; assume available if client can be built
-        match Client::builder().use_stdio(true).build() {
+        // Try to init — if it works, the bridge is available
+        match self.ensure_init().await {
             Ok(_) => true,
             Err(_) => false,
         }
@@ -386,28 +279,19 @@ impl AgentBackend for CopilotBackend {
 
     async fn destroy_chat_session(&self, agent_id: &str) {
         let mut sessions = self.chat_sessions.write().await;
-        if let Some(agent_session) = sessions.remove(agent_id) {
-            let _ = agent_session.session.destroy().await;
+        if let Some(sid) = sessions.remove(agent_id) {
+            copilot_ffi::destroy_session(&sid);
             log::info!("Destroyed chat session for agent {} (new session requested)", agent_id);
         }
         delete_session_id(agent_id);
     }
 
     async fn list_models(&self) -> Result<Vec<ModelOption>, String> {
-        self.ensure_client().await?;
-        let client_lock = self.client.read().await;
-        let client = client_lock.as_ref().unwrap();
-        let models = client
-            .list_models()
-            .await
-            .map_err(|e| format!("Failed to list models: {}", e))?;
-        Ok(models
-            .into_iter()
-            .map(|m| ModelOption {
-                id: m.id.clone(),
-                name: m.name,
-            })
-            .collect())
+        self.ensure_init().await?;
+        let json_str = copilot_ffi::list_models()?;
+        let models: Vec<ModelOption> = serde_json::from_str(&json_str)
+            .map_err(|e| format!("Failed to parse models: {}", e))?;
+        Ok(models)
     }
 
     async fn list_agents(&self, cwd: Option<&str>) -> Result<Vec<AgentOption>, String> {
