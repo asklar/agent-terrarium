@@ -18,6 +18,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"sync"
 	"time"
 	"unsafe"
@@ -51,14 +54,36 @@ func copilot_init(errorOut **C.char) C.int {
 		return 0
 	}
 
-	client := copilot.NewClient(&copilot.ClientOptions{
+	opts := &copilot.ClientOptions{
 		LogLevel: "error",
-	})
+	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	// If COPILOT_CLI_PATH is not set, try to find copilot in common locations
+	if os.Getenv("COPILOT_CLI_PATH") == "" {
+		if path, err := exec.LookPath("copilot"); err == nil {
+			opts.CLIPath = path
+			fmt.Fprintf(os.Stderr, "[copilot-bridge] Found CLI at: %s\n", path)
+		} else if path, err := exec.LookPath("copilot.exe"); err == nil {
+			opts.CLIPath = path
+			fmt.Fprintf(os.Stderr, "[copilot-bridge] Found CLI at: %s\n", path)
+		} else {
+			fmt.Fprintf(os.Stderr, "[copilot-bridge] WARNING: copilot CLI not found in PATH\n")
+		}
+	}
 
-	if err := client.Start(ctx); err != nil {
+	// Capture CLI stderr to a log file for debugging
+	logPath := filepath.Join(os.TempDir(), "copilot-bridge-cli.log")
+	logFile, _ := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	if logFile != nil {
+		opts.Env = append(os.Environ(), "COPILOT_DEBUG_LOG="+logPath)
+		fmt.Fprintf(os.Stderr, "[copilot-bridge] CLI log: %s\n", logPath)
+	}
+
+	client := copilot.NewClient(opts)
+
+	// Use background context for Start — the CLI process must live for the
+	// lifetime of the app. A timeout context would kill it on cancel.
+	if err := client.Start(context.Background()); err != nil {
 		*errorOut = C.CString(fmt.Sprintf("Failed to start Copilot client: %v", err))
 		return 1
 	}
