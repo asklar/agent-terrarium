@@ -423,54 +423,45 @@ function App() {
   }, [dropFiles]);
 
   // When an agent claims a file: open chat, play sound, store pending files (don't auto-send)
-  const prevClaimedRef = useRef<Set<string>>(new Set());
+  // Track agent IDs we've already opened chat for to prevent double-open
+  const handledClaimsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (!worldState) return;
-    const currentClaimed = new Set<string>();
     for (const file of worldState.dropped_files) {
       if (file.claimed_by && file.active) {
-        const key = `${file.claimed_by}:${file.id}`;
-        currentClaimed.add(key);
-        if (!prevClaimedRef.current.has(key)) {
-          const agentId = file.claimed_by;
-          const agent = worldState.agents.find((a) => a.id === agentId);
-          if (agent && agent.state !== "Chatting") {
-            playAgentSound(agent.avatar, "gear");
-            log.info("File claimed:", file.label, "→", agent.name);
-            // Store pending files for this agent
-            setPendingFiles((prev) => {
-              const next = new Map(prev);
-              const existing = next.get(agentId) ?? [];
-              next.set(agentId, [...existing, ...file.files]);
-              return next;
-            });
-            // Open chat window (don't send message)
+        const agentId = file.claimed_by;
+        if (handledClaimsRef.current.has(file.id)) continue;
+        handledClaimsRef.current.add(file.id);
+
+        const agent = worldState.agents.find((a) => a.id === agentId);
+        if (agent) {
+          playAgentSound(agent.avatar, "gear");
+          log.info("File claimed:", file.label, "→", agent.name);
+          setPendingFiles((prev) => {
+            const next = new Map(prev);
+            const existing = next.get(agentId) ?? [];
+            const existingPaths = new Set(existing.map(([, p]) => p));
+            const newFiles = (file.files as [string, string][]).filter(([, p]) => !existingPaths.has(p));
+            if (newFiles.length > 0) {
+              next.set(agentId, [...existing, ...newFiles]);
+            }
+            return next;
+          });
+          // Remove the file from the world — it now lives as pendingFiles in React
+          detachAgentFile(agentId);
+          // Open chat if not already chatting
+          if (agent.state !== "Chatting") {
             clickAgent(agentId);
           }
         }
       }
     }
-    prevClaimedRef.current = currentClaimed;
-
-    // Sync: remove pendingFiles for agents whose files were detached in Rust
-    // (e.g. by the pop-out window sending a message)
-    const agentsWithClaimed = new Set(
-      worldState.dropped_files
-        .filter((f) => f.active && f.claimed_by)
-        .map((f) => f.claimed_by!),
-    );
-    setPendingFiles((prev) => {
-      let changed = false;
-      const next = new Map(prev);
-      for (const agentId of next.keys()) {
-        if (!agentsWithClaimed.has(agentId)) {
-          next.delete(agentId);
-          changed = true;
-        }
-      }
-      return changed ? next : prev;
-    });
-  }, [worldState, clickAgent]);
+    // Clean up old entries that are no longer in worldState
+    const activeIds = new Set(worldState.dropped_files.map((f) => f.id));
+    for (const id of handledClaimsRef.current) {
+      if (!activeIds.has(id)) handledClaimsRef.current.delete(id);
+    }
+  }, [worldState, clickAgent, detachAgentFile]);
 
   const handleCanvasClick = useCallback(() => {
     // Light dismiss: clicking canvas (not on an agent) dismisses all chats

@@ -155,51 +155,6 @@ function drawDroppedFile(ctx: CanvasRenderingContext2D, x: number, y: number, la
   ctx.restore();
 }
 
-/** Draw a file icon floating near an agent that claimed it */
-function drawClaimedFile(ctx: CanvasRenderingContext2D, agentX: number, agentY: number, scale: number, tick: number) {
-  ctx.save();
-  // Float above and to the right of the agent's head with a gentle bob
-  const bob = Math.sin(tick * 0.15) * 2;
-  const offsetX = AGENT_SIZE * scale * 0.5;
-  const offsetY = -AGENT_SIZE * scale * 1.2 + bob;
-  ctx.translate(agentX + offsetX, agentY + offsetY);
-  ctx.scale(scale * 0.6, scale * 0.6);
-
-  // Glow
-  ctx.fillStyle = "rgba(255,200,50,0.25)";
-  ctx.beginPath();
-  ctx.arc(0, 0, 12, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Mini document
-  const w = 10, h = 13;
-  const fold = 3;
-  ctx.fillStyle = "#FFF8E1";
-  ctx.strokeStyle = "#F9A825";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(-w / 2, -h / 2);
-  ctx.lineTo(w / 2 - fold, -h / 2);
-  ctx.lineTo(w / 2, -h / 2 + fold);
-  ctx.lineTo(w / 2, h / 2);
-  ctx.lineTo(-w / 2, h / 2);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  // Folded corner
-  ctx.fillStyle = "#FFE082";
-  ctx.beginPath();
-  ctx.moveTo(w / 2 - fold, -h / 2);
-  ctx.lineTo(w / 2 - fold, -h / 2 + fold);
-  ctx.lineTo(w / 2, -h / 2 + fold);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.restore();
-}
-
 export function TerrariumCanvas({
   worldState,
   onAgentClick,
@@ -353,20 +308,12 @@ export function TerrariumCanvas({
       drawAgent(ctx, agent, thinkingAgentIds?.has(agent.id), scale);
     }
 
-    // Draw dropped files
+    // Draw dropped files (only unclaimed ones — claimed files appear as pills in chat)
     for (const file of worldState.dropped_files) {
-      if (!file.active) continue;
-      if (file.claimed_by) {
-        const agent = worldState.agents.find((a) => a.id === file.claimed_by);
-        if (agent) {
-          const scale = perspectiveScale(agent.position.y, groundY, boundsY);
-          drawClaimedFile(ctx, agent.position.x, agent.position.y, scale, worldState.tick);
-        }
-      } else {
-        const scale = perspectiveScale(file.position.y, groundY, boundsY);
-        const fileHeight = file.height ?? 0;
-        drawDroppedFile(ctx, file.position.x, file.position.y, file.label, file.files.length, scale, fileHeight, file.icon_data_url);
-      }
+      if (!file.active || file.claimed_by) continue;
+      const scale = perspectiveScale(file.position.y, groundY, boundsY);
+      const fileHeight = file.height ?? 0;
+      drawDroppedFile(ctx, file.position.x, file.position.y, file.label, file.files.length, scale, fileHeight, file.icon_data_url);
     }
 
     // Play attention sounds periodically
