@@ -137,6 +137,9 @@ pub struct DroppedFile {
     pub files: Vec<(String, String)>,
     /// Display label (e.g. "foo.txt" or "foo.txt + 2 files")
     pub label: String,
+    /// System icon as a base64 PNG data URL (from first file in group)
+    #[serde(default)]
+    pub icon_data_url: Option<String>,
     pub position: Vec2,
     /// Agent ID that claimed this file (None = unclaimed, sitting on ground)
     pub claimed_by: Option<String>,

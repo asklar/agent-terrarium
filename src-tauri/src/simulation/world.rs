@@ -522,6 +522,10 @@ impl World {
             format!("{} + {} files", files[0].0, files.len() - 1)
         };
         log::info!("Files dropped: \"{}\" ({} files) at ({:.0}, {:.0})", label, files.len(), x, y);
+
+        // Extract system icon from the first file
+        let icon_data_url = crate::fileicon::get_file_icon_data_url(&files[0].1).ok();
+
         let mut state = self.state.lock().unwrap();
         let ground_y = state.bounds.y * state.ground_y_ratio;
         let bounds_y = state.bounds.y;
@@ -540,6 +544,7 @@ impl World {
             id: id.clone(),
             label: label.clone(),
             files,
+            icon_data_url,
             position: Vec2::new(pos_x, depth_y),
             claimed_by: None,
             active: true,

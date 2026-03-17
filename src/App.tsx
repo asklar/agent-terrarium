@@ -57,6 +57,7 @@ function App() {
     throwBall,
     dropFiles,
     removeDroppedFile,
+    detachAgentFile,
     clickAgent,
     sendMessage,
     dismissChat,
@@ -266,14 +267,13 @@ function App() {
         if (files && files.length > 0) {
           const fileList = files.map(([name, path]) => `- ${name}: ${path}`).join("\n");
           fullText = `[The user has shared the following file(s) with you:\n${fileList}\n]\n\n${text}`;
-          // Clear pending files after sending
+          // Clear pending files and detach icon from agent
           setPendingFiles((prev) => {
             const next = new Map(prev);
             next.delete(agentId);
             return next;
           });
-          // Detach file icon from agent
-          // (detach_file is called automatically in send_message response handler on Rust side)
+          detachAgentFile(agentId);
         }
 
         const reply = await sendMessage(agentId, fullText);
@@ -290,7 +290,7 @@ function App() {
         });
       }
     },
-    [sendMessage, pendingFiles],
+    [sendMessage, pendingFiles, detachAgentFile],
   );
 
   const playGearSound = useCallback((agentId: string) => {
@@ -534,12 +534,18 @@ function App() {
             agentName={agent.name}
             pendingFiles={pendingFiles.get(session.agent_id)}
             onRemovePendingFile={(idx) => {
+              const agentId = session.agent_id;
               setPendingFiles((prev) => {
                 const next = new Map(prev);
-                const files = [...(next.get(session.agent_id) ?? [])];
+                const files = [...(next.get(agentId) ?? [])];
                 files.splice(idx, 1);
-                if (files.length === 0) next.delete(session.agent_id);
-                else next.set(session.agent_id, files);
+                if (files.length === 0) {
+                  next.delete(agentId);
+                  // All files removed — detach from agent in Rust too
+                  detachAgentFile(agentId);
+                } else {
+                  next.set(agentId, files);
+                }
                 return next;
               });
             }}

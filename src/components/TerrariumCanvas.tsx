@@ -47,7 +47,7 @@ function getOrLoadImage(url: string): HTMLImageElement | null {
 }
 
 /** Draw an unclaimed file icon sitting on the ground */
-function drawDroppedFile(ctx: CanvasRenderingContext2D, x: number, y: number, label: string, fileCount: number, scale: number, height: number) {
+function drawDroppedFile(ctx: CanvasRenderingContext2D, x: number, y: number, label: string, fileCount: number, scale: number, height: number, iconUrl: string | null) {
   ctx.save();
   ctx.translate(x, y - height * scale);
   ctx.scale(scale, scale);
@@ -66,65 +66,79 @@ function drawDroppedFile(ctx: CanvasRenderingContext2D, x: number, y: number, la
     ctx.fill();
   }
 
-  // Stack effect for multiple files
-  if (fileCount > 1) {
-    const offset = Math.min(fileCount - 1, 2);
-    for (let i = offset; i >= 1; i--) {
-      ctx.fillStyle = "#E8E8E8";
-      ctx.strokeStyle = "#AAA";
-      ctx.lineWidth = 0.8;
-      ctx.fillRect(-7 + i * 2, -9 - i * 2, 14, 18);
-      ctx.strokeRect(-7 + i * 2, -9 - i * 2, 14, 18);
+  const iconSize = 24;
+
+  // Try to draw the system icon
+  const iconImg = iconUrl ? getOrLoadImage(iconUrl) : null;
+  if (iconImg) {
+    // Stack effect for multiple files
+    if (fileCount > 1) {
+      const offset = Math.min(fileCount - 1, 2);
+      for (let i = offset; i >= 1; i--) {
+        ctx.globalAlpha = 0.5;
+        ctx.drawImage(iconImg, -iconSize / 2 + i * 2, -iconSize / 2 - i * 2, iconSize, iconSize);
+      }
+      ctx.globalAlpha = 1;
     }
-  }
+    ctx.drawImage(iconImg, -iconSize / 2, -iconSize / 2, iconSize, iconSize);
+  } else {
+    // Fallback: draw generic document icon
+    // Stack effect for multiple files
+    if (fileCount > 1) {
+      const offset = Math.min(fileCount - 1, 2);
+      for (let i = offset; i >= 1; i--) {
+        ctx.fillStyle = "#E8E8E8";
+        ctx.strokeStyle = "#AAA";
+        ctx.lineWidth = 0.8;
+        ctx.fillRect(-7 + i * 2, -9 - i * 2, 14, 18);
+        ctx.strokeRect(-7 + i * 2, -9 - i * 2, 14, 18);
+      }
+    }
 
-  // Document body
-  const w = 14, h = 18;
-  const fold = 5;
-  ctx.fillStyle = "#F5F5F5";
-  ctx.strokeStyle = "#999";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(-w / 2, -h / 2);
-  ctx.lineTo(w / 2 - fold, -h / 2);
-  ctx.lineTo(w / 2, -h / 2 + fold);
-  ctx.lineTo(w / 2, h / 2);
-  ctx.lineTo(-w / 2, h / 2);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  // Folded corner
-  ctx.fillStyle = "#DDD";
-  ctx.beginPath();
-  ctx.moveTo(w / 2 - fold, -h / 2);
-  ctx.lineTo(w / 2 - fold, -h / 2 + fold);
-  ctx.lineTo(w / 2, -h / 2 + fold);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  // Lines on the document
-  ctx.strokeStyle = "#BBB";
-  ctx.lineWidth = 0.8;
-  for (let i = 0; i < 3; i++) {
-    const ly = -h / 2 + fold + 3 + i * 4;
+    const w = 14, h = 18, fold = 5;
+    ctx.fillStyle = "#F5F5F5";
+    ctx.strokeStyle = "#999";
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(-w / 2 + 3, ly);
-    ctx.lineTo(w / 2 - 3, ly);
+    ctx.moveTo(-w / 2, -h / 2);
+    ctx.lineTo(w / 2 - fold, -h / 2);
+    ctx.lineTo(w / 2, -h / 2 + fold);
+    ctx.lineTo(w / 2, h / 2);
+    ctx.lineTo(-w / 2, h / 2);
+    ctx.closePath();
+    ctx.fill();
     ctx.stroke();
+
+    ctx.fillStyle = "#DDD";
+    ctx.beginPath();
+    ctx.moveTo(w / 2 - fold, -h / 2);
+    ctx.lineTo(w / 2 - fold, -h / 2 + fold);
+    ctx.lineTo(w / 2, -h / 2 + fold);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.strokeStyle = "#BBB";
+    ctx.lineWidth = 0.8;
+    for (let i = 0; i < 3; i++) {
+      const ly = -h / 2 + fold + 3 + i * 4;
+      ctx.beginPath();
+      ctx.moveTo(-w / 2 + 3, ly);
+      ctx.lineTo(w / 2 - 3, ly);
+      ctx.stroke();
+    }
   }
 
   // Dismiss ✕ button (top-right)
   ctx.fillStyle = "rgba(200,50,50,0.7)";
   ctx.beginPath();
-  ctx.arc(w / 2 + 3, -h / 2 - 3, 5, 0, Math.PI * 2);
+  ctx.arc(iconSize / 2, -iconSize / 2, 5, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = "white";
   ctx.font = "bold 7px sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("✕", w / 2 + 3, -h / 2 - 3);
+  ctx.fillText("✕", iconSize / 2, -iconSize / 2);
 
   // File name label below with contrast outline
   ctx.textBaseline = "alphabetic";
@@ -134,9 +148,9 @@ function drawDroppedFile(ctx: CanvasRenderingContext2D, x: number, y: number, la
   ctx.strokeStyle = "rgba(255,255,255,0.9)";
   ctx.lineWidth = 2.5;
   ctx.lineJoin = "round";
-  ctx.strokeText(truncLabel, 0, h / 2 + 9);
+  ctx.strokeText(truncLabel, 0, iconSize / 2 + 9);
   ctx.fillStyle = "rgba(0,0,0,0.75)";
-  ctx.fillText(truncLabel, 0, h / 2 + 9);
+  ctx.fillText(truncLabel, 0, iconSize / 2 + 9);
 
   ctx.restore();
 }
@@ -351,7 +365,7 @@ export function TerrariumCanvas({
       } else {
         const scale = perspectiveScale(file.position.y, groundY, boundsY);
         const fileHeight = file.height ?? 0;
-        drawDroppedFile(ctx, file.position.x, file.position.y, file.label, file.files.length, scale, fileHeight);
+        drawDroppedFile(ctx, file.position.x, file.position.y, file.label, file.files.length, scale, fileHeight, file.icon_data_url);
       }
     }
 
@@ -613,9 +627,9 @@ export function TerrariumCanvas({
           if (!file.active || file.claimed_by) continue;
           const scale = perspectiveScale(file.position.y, groundY, boundsY);
           const fileHeight = file.height ?? 0;
-          // Dismiss button is at (w/2 + 3, -h/2 - 3) relative to file center, scaled
-          const btnX = file.position.x + (7 + 3) * scale;
-          const btnY = (file.position.y - fileHeight * scale) + (-9 - 3) * scale;
+          // Dismiss button is at (iconSize/2, -iconSize/2) relative to file center, scaled
+          const btnX = file.position.x + 12 * scale;
+          const btnY = (file.position.y - fileHeight * scale) + (-12) * scale;
           const dist = Math.sqrt((pos.x - btnX) ** 2 + (pos.y - btnY) ** 2);
           if (dist < 8 * scale) {
             e.stopPropagation();

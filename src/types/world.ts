@@ -63,6 +63,7 @@ export interface DroppedFile {
   id: string;
   files: [string, string][];
   label: string;
+  icon_data_url: string | null;
   position: Vec2;
   claimed_by: string | null;
   active: boolean;

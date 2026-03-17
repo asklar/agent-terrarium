@@ -43,6 +43,13 @@ export function useWorldState() {
     [],
   );
 
+  const detachAgentFile = useCallback(
+    async (agentId: string) => {
+      await invoke("detach_agent_file", { agentId });
+    },
+    [],
+  );
+
   const clickAgent = useCallback(async (agentId: string) => {
     await invoke("click_agent", { agentId });
   }, []);
@@ -123,6 +130,7 @@ export function useWorldState() {
     throwBall,
     dropFiles,
     removeDroppedFile,
+    detachAgentFile,
     clickAgent,
     sendMessage,
     dismissChat,

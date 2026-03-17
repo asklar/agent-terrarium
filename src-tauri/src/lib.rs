@@ -1,4 +1,5 @@
 mod agents;
+mod fileicon;
 mod simulation;
 mod tts;
 
@@ -34,6 +35,16 @@ fn drop_files(world: tauri::State<'_, Arc<World>>, files: Vec<(String, String)>,
 #[tauri::command]
 fn remove_dropped_file(world: tauri::State<'_, Arc<World>>, file_id: String) {
     world.remove_dropped_file(&file_id);
+}
+
+#[tauri::command]
+fn detach_agent_file(world: tauri::State<'_, Arc<World>>, agent_id: String) {
+    world.detach_file(&agent_id);
+}
+
+#[tauri::command]
+fn get_file_icon(path: String) -> Result<String, String> {
+    fileicon::get_file_icon_data_url(&path)
 }
 
 #[tauri::command]
@@ -763,6 +774,8 @@ pub fn run() {
             throw_ball,
             drop_files,
             remove_dropped_file,
+            detach_agent_file,
+            get_file_icon,
             push_bubble,
             speak_sapi,
             click_agent,
