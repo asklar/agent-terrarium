@@ -27,8 +27,13 @@ fn throw_ball(world: tauri::State<'_, Arc<World>>, x: f64, y: f64, vx: f64, vy: 
 }
 
 #[tauri::command]
-fn drop_file(world: tauri::State<'_, Arc<World>>, file_name: String, file_path: String, x: f64, y: f64) -> String {
-    world.drop_file(&file_name, &file_path, x, y)
+fn drop_files(world: tauri::State<'_, Arc<World>>, files: Vec<(String, String)>, x: f64, y: f64) -> String {
+    world.drop_files(files, x, y)
+}
+
+#[tauri::command]
+fn remove_dropped_file(world: tauri::State<'_, Arc<World>>, file_id: String) {
+    world.remove_dropped_file(&file_id);
 }
 
 #[tauri::command]
@@ -756,7 +761,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_world_state,
             throw_ball,
-            drop_file,
+            drop_files,
+            remove_dropped_file,
             push_bubble,
             speak_sapi,
             click_agent,

@@ -10,6 +10,8 @@ interface ChatOverlayProps {
   session: ChatSession;
   agentPosition: { x: number; y: number };
   agentName: string;
+  pendingFiles?: [string, string][];
+  onRemovePendingFile?: (index: number) => void;
   onSend: (agentId: string, text: string) => Promise<string>;
   onDismiss: (agentId: string) => void;
   onReply?: (agentId: string) => void;
@@ -21,6 +23,8 @@ export function ChatOverlay({
   session,
   agentPosition,
   agentName,
+  pendingFiles,
+  onRemovePendingFile,
   onSend,
   onDismiss,
   onReply,
@@ -124,6 +128,18 @@ export function ChatOverlay({
         ))}
         <div ref={messagesEndRef} />
       </div>
+      {pendingFiles && pendingFiles.length > 0 && (
+        <div className="chat-pending-files">
+          {pendingFiles.map(([name], i) => (
+            <span key={i} className="chat-file-pill">
+              📎 {name.length > 15 ? name.slice(0, 13) + "…" : name}
+              {onRemovePendingFile && (
+                <button className="chat-file-remove" onClick={() => onRemovePendingFile(i)}>✕</button>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
       <div className="chat-input-row">
         <input
           ref={inputRef}

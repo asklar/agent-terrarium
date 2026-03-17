@@ -55,7 +55,8 @@ function App() {
   const {
     worldState,
     throwBall,
-    dropFile,
+    dropFiles,
+    removeDroppedFile,
     clickAgent,
     sendMessage,
     dismissChat,
@@ -87,6 +88,7 @@ function App() {
   const [showDebug, setShowDebug] = useState(false);
   const [thinkingAgentIds, setThinkingAgentIds] = useState<Set<string>>(new Set());
   const [poppedOutAgents, setPoppedOutAgents] = useState<Set<string>>(new Set());
+  const [pendingFiles, setPendingFiles] = useState<Map<string, [string, string][]>>(new Map());
   const themeRef = useRef(theme);
   themeRef.current = theme;
   const musicMutedRef = useRef(musicMuted);
@@ -258,7 +260,23 @@ function App() {
       log.info("Sending message to", agentId, text.slice(0, 80));
       setThinkingAgentIds((prev) => new Set(prev).add(agentId));
       try {
-        const reply = await sendMessage(agentId, text);
+        // Prepend pending file context if any
+        let fullText = text;
+        const files = pendingFiles.get(agentId);
+        if (files && files.length > 0) {
+          const fileList = files.map(([name, path]) => `- ${name}: ${path}`).join("\n");
+          fullText = `[The user has shared the following file(s) with you:\n${fileList}\n]\n\n${text}`;
+          // Clear pending files after sending
+          setPendingFiles((prev) => {
+            const next = new Map(prev);
+            next.delete(agentId);
+            return next;
+          });
+          // Detach file icon from agent
+          // (detach_file is called automatically in send_message response handler on Rust side)
+        }
+
+        const reply = await sendMessage(agentId, fullText);
         log.info("Reply from", agentId, reply.slice(0, 80));
         return reply;
       } catch (e) {
@@ -272,7 +290,7 @@ function App() {
         });
       }
     },
-    [sendMessage],
+    [sendMessage, pendingFiles],
   );
 
   const playGearSound = useCallback((agentId: string) => {
@@ -393,19 +411,18 @@ function App() {
         const baseX = pos.x / dpr - rect.left;
         const baseY = pos.y / dpr - rect.top;
 
-        for (let i = 0; i < paths.length; i++) {
-          const filePath = paths[i];
-          const fileName = filePath.split(/[\\/]/).pop() || filePath;
-          // Spread multiple files horizontally
-          const offsetX = (i - (paths.length - 1) / 2) * 40;
-          await dropFile(fileName, filePath, baseX + offsetX, baseY);
-        }
+        // Build file list: [name, path] tuples
+        const files: [string, string][] = paths.map((p) => {
+          const name = p.split(/[\\/]/).pop() || p;
+          return [name, p];
+        });
+        await dropFiles(files, baseX, baseY);
       }).then((fn) => { unlisten = fn; });
     });
     return () => { unlisten?.(); };
-  }, [dropFile]);
+  }, [dropFiles]);
 
-  // Auto-chat when an agent claims a file: detect newly-claimed files
+  // When an agent claims a file: open chat, play sound, store pending files (don't auto-send)
   const prevClaimedRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (!worldState) return;
@@ -415,23 +432,26 @@ function App() {
         const key = `${file.claimed_by}:${file.id}`;
         currentClaimed.add(key);
         if (!prevClaimedRef.current.has(key)) {
-          // Newly claimed! Auto-start conversation
           const agentId = file.claimed_by;
           const agent = worldState.agents.find((a) => a.id === agentId);
           if (agent && agent.state !== "Chatting") {
             playAgentSound(agent.avatar, "gear");
-            const prompt = `[File dropped by user] The user dropped a file into your terrarium for you: "${file.file_name}" (path: ${file.file_path}). Please take a look at it and let the user know what you find.`;
-            log.info("Auto-chat for file claim:", file.file_name, "→", agent.name);
-            // Start the chat session and send the file message
-            clickAgent(agentId).then(() => {
-              sendMessageWithThinking(agentId, prompt);
+            log.info("File claimed:", file.label, "→", agent.name);
+            // Store pending files for this agent
+            setPendingFiles((prev) => {
+              const next = new Map(prev);
+              const existing = next.get(agentId) ?? [];
+              next.set(agentId, [...existing, ...file.files]);
+              return next;
             });
+            // Open chat window (don't send message)
+            clickAgent(agentId);
           }
         }
       }
     }
     prevClaimedRef.current = currentClaimed;
-  }, [worldState, clickAgent, sendMessageWithThinking]);
+  }, [worldState, clickAgent]);
 
   const handleCanvasClick = useCallback(() => {
     // Light dismiss: clicking canvas (not on an agent) dismisses all chats
@@ -498,6 +518,7 @@ function App() {
         onBallThrow={throwBall}
         onBackgroundClick={handleCanvasClick}
         onMouseUpdate={updateMouse}
+        onRemoveDroppedFile={removeDroppedFile}
         thinkingAgentIds={thinkingAgentIds}
       />
       {activeSessions.map((session) => {
@@ -511,6 +532,17 @@ function App() {
             session={session}
             agentPosition={agent.position}
             agentName={agent.name}
+            pendingFiles={pendingFiles.get(session.agent_id)}
+            onRemovePendingFile={(idx) => {
+              setPendingFiles((prev) => {
+                const next = new Map(prev);
+                const files = [...(next.get(session.agent_id) ?? [])];
+                files.splice(idx, 1);
+                if (files.length === 0) next.delete(session.agent_id);
+                else next.set(session.agent_id, files);
+                return next;
+              });
+            }}
             onSend={sendMessageWithThinking}
             onDismiss={handleDismiss}
             onReply={playReplyChirp}

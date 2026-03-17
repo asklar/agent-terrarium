@@ -61,11 +61,13 @@ export interface Ball {
 
 export interface DroppedFile {
   id: string;
-  file_name: string;
-  file_path: string;
+  files: [string, string][];
+  label: string;
   position: Vec2;
   claimed_by: string | null;
   active: boolean;
+  height: number;
+  height_velocity: number;
 }
 
 export interface ChatBubble {

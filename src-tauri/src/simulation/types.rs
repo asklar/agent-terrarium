@@ -133,13 +133,21 @@ pub struct Ball {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DroppedFile {
     pub id: String,
-    pub file_name: String,
-    pub file_path: String,
+    /// All files in this drop group: (file_name, file_path)
+    pub files: Vec<(String, String)>,
+    /// Display label (e.g. "foo.txt" or "foo.txt + 2 files")
+    pub label: String,
     pub position: Vec2,
     /// Agent ID that claimed this file (None = unclaimed, sitting on ground)
     pub claimed_by: Option<String>,
     /// Whether this file is still visible in the world
     pub active: bool,
+    /// Height above the ground plane (for drop animation)
+    #[serde(default)]
+    pub height: f64,
+    /// Vertical velocity (positive = upward)
+    #[serde(default)]
+    pub height_velocity: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

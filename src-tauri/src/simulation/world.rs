@@ -367,11 +367,11 @@ impl World {
         if let Some((agent_idx, file_idx)) = file_claim_agent {
             let agent_id = state.agents[agent_idx].id.clone();
             let agent_name = state.agents[agent_idx].name.clone();
-            let file_name = state.dropped_files[file_idx].file_name.clone();
+            let file_label = state.dropped_files[file_idx].label.clone();
             state.dropped_files[file_idx].claimed_by = Some(agent_id.clone());
             state.events.push(TerrariumEvent::FileClaimed {
                 agent_name,
-                file_name,
+                file_name: file_label,
             });
             let emojis = ["📄", "📦", "📂", "🗂️", "📋", "🤓"];
             let emoji = emojis[state.tick as usize % emojis.len()];
@@ -382,6 +382,24 @@ impl World {
                 is_emoji: true,
                 is_event: false,
             });
+        }
+
+        // Update dropped file physics (gravity + bounce)
+        for file in state.dropped_files.iter_mut() {
+            if !file.active || file.claimed_by.is_some() {
+                continue;
+            }
+            if file.height > 0.0 || file.height_velocity.abs() > 0.1 {
+                file.height_velocity -= BALL_GRAVITY * TICK_RATE;
+                file.height += file.height_velocity * TICK_RATE;
+                if file.height < 0.0 {
+                    file.height = 0.0;
+                    file.height_velocity = file.height_velocity.abs() * 0.3; // gentle bounce
+                    if file.height_velocity < 3.0 {
+                        file.height_velocity = 0.0;
+                    }
+                }
+            }
         }
 
         // Update ball physics
@@ -495,43 +513,53 @@ impl World {
         state.events.push(TerrariumEvent::BallThrown);
     }
 
-    /// Drop a file into the terrarium at the given position.
-    /// Returns the generated file ID.
-    pub fn drop_file(&self, file_name: &str, file_path: &str, x: f64, y: f64) -> String {
-        log::info!("File dropped: \"{}\" at ({:.0}, {:.0})", file_name, x, y);
+    /// Drop one or more files into the terrarium at the given position.
+    /// Returns the generated group ID.
+    pub fn drop_files(&self, files: Vec<(String, String)>, x: f64, y: f64) -> String {
+        let label = if files.len() == 1 {
+            files[0].0.clone()
+        } else {
+            format!("{} + {} files", files[0].0, files.len() - 1)
+        };
+        log::info!("Files dropped: \"{}\" ({} files) at ({:.0}, {:.0})", label, files.len(), x, y);
         let mut state = self.state.lock().unwrap();
         let ground_y = state.bounds.y * state.ground_y_ratio;
         let bounds_y = state.bounds.y;
 
-        // Place on the ground plane
-        let pos_y = if y < ground_y { ground_y + 20.0 } else { y.min(bounds_y - 16.0) };
         let pos_x = x.clamp(16.0, state.bounds.x - 16.0);
+        // Pick a landing depth on the ground plane
+        let depth_y = if y < ground_y {
+            ground_y + 20.0
+        } else {
+            y.min(bounds_y - 16.0)
+        };
+        let initial_height = if y < ground_y { ground_y - y } else { 10.0 };
         let id = format!("file_{}", state.tick);
 
         state.dropped_files.push(DroppedFile {
             id: id.clone(),
-            file_name: file_name.to_string(),
-            file_path: file_path.to_string(),
-            position: Vec2::new(pos_x, pos_y),
+            label: label.clone(),
+            files,
+            position: Vec2::new(pos_x, depth_y),
             claimed_by: None,
             active: true,
+            height: initial_height,
+            height_velocity: 0.0,
         });
-        state.events.push(TerrariumEvent::FileDropped { file_name: file_name.to_string() });
+        state.events.push(TerrariumEvent::FileDropped { file_name: label });
         id
     }
 
-    /// Detach a claimed file from an agent (called after backend responds).
-    /// Returns the file info if found, for logging.
-    pub fn detach_file(&self, agent_id: &str) -> Option<(String, String)> {
+    /// Detach a claimed file group from an agent (called after backend responds).
+    pub fn detach_file(&self, agent_id: &str) -> Option<Vec<(String, String)>> {
         let mut state = self.state.lock().unwrap();
         let mut result = None;
         for file in state.dropped_files.iter_mut() {
             if file.active && file.claimed_by.as_deref() == Some(agent_id) {
                 file.active = false;
-                result = Some((file.file_name.clone(), file.file_path.clone()));
+                result = Some(file.files.clone());
             }
         }
-        // Clean up inactive files
         state.dropped_files.retain(|f| f.active);
         if result.is_some() {
             log::info!("File detached from agent {}", agent_id);
@@ -539,12 +567,19 @@ impl World {
         result
     }
 
-    /// Get the file claimed by an agent (if any). Returns (file_name, file_path).
-    pub fn get_claimed_file(&self, agent_id: &str) -> Option<(String, String)> {
+    /// Get the files claimed by an agent (if any).
+    pub fn get_claimed_files(&self, agent_id: &str) -> Option<Vec<(String, String)>> {
         let state = self.state.lock().unwrap();
         state.dropped_files.iter()
             .find(|f| f.active && f.claimed_by.as_deref() == Some(agent_id))
-            .map(|f| (f.file_name.clone(), f.file_path.clone()))
+            .map(|f| f.files.clone())
+    }
+
+    /// Remove a dropped file group by ID (user dismissed it).
+    pub fn remove_dropped_file(&self, file_id: &str) {
+        let mut state = self.state.lock().unwrap();
+        state.dropped_files.retain(|f| f.id != file_id);
+        log::info!("Removed dropped file: {}", file_id);
     }
 
     pub fn click_agent(&self, agent_id: &str, restored_messages: Option<Vec<ChatMessage>>) -> bool {

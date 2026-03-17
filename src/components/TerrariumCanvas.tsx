@@ -10,6 +10,7 @@ interface TerrariumCanvasProps {
   onBallThrow: (x: number, y: number, vx: number, vy: number) => void;
   onBackgroundClick: () => void;
   onMouseUpdate: (x: number | null, y: number | null) => void;
+  onRemoveDroppedFile?: (fileId: string) => void;
   thinkingAgentIds?: ReadonlySet<string>;
 }
 
@@ -46,16 +47,36 @@ function getOrLoadImage(url: string): HTMLImageElement | null {
 }
 
 /** Draw an unclaimed file icon sitting on the ground */
-function drawDroppedFile(ctx: CanvasRenderingContext2D, x: number, y: number, fileName: string, scale: number) {
+function drawDroppedFile(ctx: CanvasRenderingContext2D, x: number, y: number, label: string, fileCount: number, scale: number, height: number) {
   ctx.save();
-  ctx.translate(x, y);
+  ctx.translate(x, y - height * scale);
   ctx.scale(scale, scale);
 
-  // Shadow
-  ctx.fillStyle = "rgba(0,0,0,0.15)";
-  ctx.beginPath();
-  ctx.ellipse(0, 4, 10, 3, 0, 0, Math.PI * 2);
-  ctx.fill();
+  // Shadow on the ground (below, affected by height)
+  if (height > 2) {
+    const shadowAlpha = Math.max(0.05, 0.2 - height * 0.001);
+    ctx.fillStyle = `rgba(0,0,0,${shadowAlpha})`;
+    ctx.beginPath();
+    ctx.ellipse(0, height + 4, 10, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.fillStyle = "rgba(0,0,0,0.15)";
+    ctx.beginPath();
+    ctx.ellipse(0, 4, 10, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Stack effect for multiple files
+  if (fileCount > 1) {
+    const offset = Math.min(fileCount - 1, 2);
+    for (let i = offset; i >= 1; i--) {
+      ctx.fillStyle = "#E8E8E8";
+      ctx.strokeStyle = "#AAA";
+      ctx.lineWidth = 0.8;
+      ctx.fillRect(-7 + i * 2, -9 - i * 2, 14, 18);
+      ctx.strokeRect(-7 + i * 2, -9 - i * 2, 14, 18);
+    }
+  }
 
   // Document body
   const w = 14, h = 18;
@@ -94,12 +115,28 @@ function drawDroppedFile(ctx: CanvasRenderingContext2D, x: number, y: number, fi
     ctx.stroke();
   }
 
-  // File name label below
-  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  // Dismiss ✕ button (top-right)
+  ctx.fillStyle = "rgba(200,50,50,0.7)";
+  ctx.beginPath();
+  ctx.arc(w / 2 + 3, -h / 2 - 3, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "white";
   ctx.font = "bold 7px sans-serif";
   ctx.textAlign = "center";
-  const label = fileName.length > 12 ? fileName.slice(0, 10) + "…" : fileName;
-  ctx.fillText(label, 0, h / 2 + 9);
+  ctx.textBaseline = "middle";
+  ctx.fillText("✕", w / 2 + 3, -h / 2 - 3);
+
+  // File name label below with contrast outline
+  ctx.textBaseline = "alphabetic";
+  const truncLabel = label.length > 16 ? label.slice(0, 14) + "…" : label;
+  ctx.font = "bold 7px sans-serif";
+  ctx.textAlign = "center";
+  ctx.strokeStyle = "rgba(255,255,255,0.9)";
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = "round";
+  ctx.strokeText(truncLabel, 0, h / 2 + 9);
+  ctx.fillStyle = "rgba(0,0,0,0.75)";
+  ctx.fillText(truncLabel, 0, h / 2 + 9);
 
   ctx.restore();
 }
@@ -155,6 +192,7 @@ export function TerrariumCanvas({
   onBallThrow,
   onBackgroundClick,
   onMouseUpdate,
+  onRemoveDroppedFile,
   thinkingAgentIds,
 }: TerrariumCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -305,16 +343,15 @@ export function TerrariumCanvas({
     for (const file of worldState.dropped_files) {
       if (!file.active) continue;
       if (file.claimed_by) {
-        // Draw as small icon floating near the claiming agent
         const agent = worldState.agents.find((a) => a.id === file.claimed_by);
         if (agent) {
           const scale = perspectiveScale(agent.position.y, groundY, boundsY);
           drawClaimedFile(ctx, agent.position.x, agent.position.y, scale, worldState.tick);
         }
       } else {
-        // Draw unclaimed file on the ground
         const scale = perspectiveScale(file.position.y, groundY, boundsY);
-        drawDroppedFile(ctx, file.position.x, file.position.y, file.file_name, scale);
+        const fileHeight = file.height ?? 0;
+        drawDroppedFile(ctx, file.position.x, file.position.y, file.label, file.files.length, scale, fileHeight);
       }
     }
 
@@ -567,18 +604,37 @@ export function TerrariumCanvas({
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       const pos = getCanvasPos(e);
+
+      // Check if clicking on a file dismiss button
+      if (worldState && onRemoveDroppedFile) {
+        const groundY = (canvasRef.current?.height ?? 400) * worldState.ground_y_ratio;
+        const boundsY = canvasRef.current?.height ?? 400;
+        for (const file of worldState.dropped_files) {
+          if (!file.active || file.claimed_by) continue;
+          const scale = perspectiveScale(file.position.y, groundY, boundsY);
+          const fileHeight = file.height ?? 0;
+          // Dismiss button is at (w/2 + 3, -h/2 - 3) relative to file center, scaled
+          const btnX = file.position.x + (7 + 3) * scale;
+          const btnY = (file.position.y - fileHeight * scale) + (-9 - 3) * scale;
+          const dist = Math.sqrt((pos.x - btnX) ** 2 + (pos.y - btnY) ** 2);
+          if (dist < 8 * scale) {
+            e.stopPropagation();
+            onRemoveDroppedFile(file.id);
+            return;
+          }
+        }
+      }
+
       const agent = findAgentAt(pos.x, pos.y);
       if (agent) {
-        // Click on agent — open chat, don't start drag
         e.stopPropagation();
         onAgentClick(agent.id);
       } else {
-        // Start potential drag for ball throw
         setDragStart(pos);
         setDragCurrent(pos);
       }
     },
-    [getCanvasPos, findAgentAt, onAgentClick],
+    [getCanvasPos, findAgentAt, onAgentClick, worldState, onRemoveDroppedFile],
   );
 
   const handleMouseMove = useCallback(
