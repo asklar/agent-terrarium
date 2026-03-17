@@ -393,12 +393,20 @@ function App() {
   }, [clickAgent, saveConfig]);
 
   // Listen for OS file drag-and-drop into the terrarium
+  const lastDropRef = useRef<{ paths: string; time: number }>({ paths: "", time: 0 });
   useEffect(() => {
     let unlisten: (() => void) | undefined;
     import("@tauri-apps/api/event").then(({ listen }) => {
       listen<{ paths: string[]; position?: { x: number; y: number } }>("tauri://drag-drop", async (event) => {
         const { paths, position } = event.payload;
         if (!paths || paths.length === 0) return;
+
+        // Debounce: ignore duplicate events within 500ms with same paths
+        const key = paths.join("|");
+        const now = Date.now();
+        if (key === lastDropRef.current.paths && now - lastDropRef.current.time < 500) return;
+        lastDropRef.current = { paths: key, time: now };
+
         log.info("Files dropped:", paths.length, "at", position);
 
         // Position is in physical pixels relative to the window;
