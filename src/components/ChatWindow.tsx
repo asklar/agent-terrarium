@@ -120,7 +120,7 @@ export function ChatWindow({ agentId }: ChatWindowProps) {
         <span className="chat-window-avatar">{avatarEmoji}</span>
         <span className="chat-window-name">{agentName}</span>
         <button className="chat-window-popin" onClick={handleNewSession} title="New session">
-          🔄
+          ✦
         </button>
         <button className="chat-window-popin" onClick={() => { if (agentRef.current) setConfigAgent(agentRef.current); }} title="Configure agent">
           ⚙️
