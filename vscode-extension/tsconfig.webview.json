@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "outDir": "dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "skipLibCheck": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "typeRoots": ["../node_modules/@types", "./node_modules/@types"],
+    "paths": {
+      "@tauri-apps/api/core": ["./webview/stubs/tauri-core.ts"],
+      "@tauri-apps/api/event": ["./webview/stubs/tauri-event.ts"],
+      "@tauri-apps/api/window": ["./webview/stubs/tauri-event.ts"],
+      "@tauri-apps/api/dpi": ["./webview/stubs/tauri-event.ts"],
+      "@tauri-apps/api/webviewWindow": ["./webview/stubs/tauri-event.ts"],
+      "@tauri-apps/plugin-opener": ["./webview/stubs/tauri-event.ts"],
+      "react": ["../node_modules/@types/react"],
+      "react-dom": ["../node_modules/@types/react-dom"],
+      "react/jsx-runtime": ["../node_modules/@types/react/jsx-runtime"]
+    }
+  },
+  "include": [
+    "webview/**/*.ts",
+    "webview/**/*.tsx",
+    "../src/types/**/*.ts",
+    "../src/themes/PackageTypes.ts",
+    "../src/themes/registry.ts",
+    "../src/themes/index.ts"
+  ]
+}

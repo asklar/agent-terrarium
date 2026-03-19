@@ -12,6 +12,8 @@ import {
   type ChatMessage,
   type AgentConfig as ConfigAgentConfig,
 } from "./config.js";
+import { startPackageWatcher, stopPackageWatcher } from "./packageWatcher.js";
+import { getFileIconDataUrl } from "./fileIcons.js";
 
 // Optional imports for modules that may still be in progress
 let CopilotBackend: (new () => import("./agents/backend.js").AgentBackend) | undefined;
@@ -40,6 +42,7 @@ try {
 import { World } from "./simulation/world.js";
 import { Vec2 } from "./simulation/types.js";
 import * as fs from "node:fs";
+import * as path from "node:path";
 
 // ── Webview provider ────────────────────────────────────────────────
 
@@ -52,6 +55,7 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
   private registry: BackendRegistry;
   private secrets: vscode.SecretStorage;
   private eventDispatcherInstance?: { start(): void; stop(): void };
+  private popOutPanels: Map<string, vscode.WebviewPanel> = new Map();
 
   constructor(
     private readonly extensionUri: vscode.Uri,
@@ -86,6 +90,175 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
     if (this.world.state.agents.length === 0) {
       this.world.addAgent("default", "Buddy");
     }
+
+    // Start package file watcher
+    const pkgDir = userPackagesDir();
+    startPackageWatcher(pkgDir, () => {
+      this.reloadAndNotifyPackages();
+    });
+  }
+
+  // ── Public API for commands ───────────────────────────────────────────
+
+  getWorld(): World {
+    return this.world;
+  }
+
+  getView(): vscode.WebviewView | undefined {
+    return this.view;
+  }
+
+  notifyWebview(msg: Record<string, unknown>): void {
+    this.view?.webview.postMessage(msg);
+  }
+
+  popOutChat(agentId: string): void {
+    // If panel already exists, reveal it
+    const existing = this.popOutPanels.get(agentId);
+    if (existing) {
+      existing.reveal();
+      return;
+    }
+
+    const agent = this.world.state.agents.find((a) => a.id === agentId);
+    const agentName = agent?.name ?? agentId;
+
+    const panel = vscode.window.createWebviewPanel(
+      "agentTerrariumChat",
+      `Chat: ${agentName}`,
+      vscode.ViewColumn.Beside,
+      {
+        enableScripts: true,
+        localResourceRoots: [
+          vscode.Uri.joinPath(this.extensionUri, "dist"),
+          vscode.Uri.joinPath(this.extensionUri, "media"),
+        ],
+      },
+    );
+
+    this.popOutPanels.set(agentId, panel);
+
+    panel.onDidDispose(() => {
+      this.popOutPanels.delete(agentId);
+    });
+
+    // Handle messages from the pop-out chat
+    panel.webview.onDidReceiveMessage((msg) => {
+      if (msg.type === "sendMessage") {
+        // Relay to main handleMessage
+        this.handleMessage({ ...msg, agentId });
+        // Push updated chat to the pop-out panel
+        setTimeout(() => this.pushChatToPanel(agentId), 100);
+      } else if (msg.type === "ready") {
+        this.pushChatToPanel(agentId);
+      }
+    });
+
+    panel.webview.html = this.getChatHtml(panel.webview, agentId, agentName);
+  }
+
+  private pushChatToPanel(agentId: string): void {
+    const panel = this.popOutPanels.get(agentId);
+    if (!panel) return;
+    const messages = this.world.getChatMessages(agentId);
+    panel.webview.postMessage({
+      type: "chatUpdate",
+      agentId,
+      messages,
+    });
+  }
+
+  private getChatHtml(webview: vscode.Webview, agentId: string, agentName: string): string {
+    const nonce = getNonce();
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'none'; script-src 'nonce-${nonce}'; style-src 'unsafe-inline';" />
+  <title>Chat: ${agentName}</title>
+  <style>
+    body { margin: 0; padding: 8px; font-family: var(--vscode-font-family); color: var(--vscode-foreground); background: var(--vscode-editor-background); }
+    #messages { flex: 1; overflow-y: auto; padding: 8px 0; }
+    .msg { margin: 4px 0; padding: 6px 10px; border-radius: 8px; max-width: 80%; word-wrap: break-word; }
+    .msg.user { background: var(--vscode-button-background); color: var(--vscode-button-foreground); margin-left: auto; text-align: right; }
+    .msg.agent { background: var(--vscode-input-background); }
+    #chat-container { display: flex; flex-direction: column; height: 100vh; }
+    #input-row { display: flex; gap: 4px; padding: 8px 0; }
+    #input-row input { flex: 1; padding: 6px 8px; border: 1px solid var(--vscode-input-border); background: var(--vscode-input-background); color: var(--vscode-input-foreground); border-radius: 4px; }
+    #input-row button { padding: 6px 12px; background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; border-radius: 4px; cursor: pointer; }
+    h3 { margin: 0 0 8px 0; }
+  </style>
+</head>
+<body>
+  <div id="chat-container">
+    <h3>💬 ${agentName}</h3>
+    <div id="messages"></div>
+    <div id="input-row">
+      <input id="chat-input" type="text" placeholder="Type a message…" />
+      <button id="send-btn">Send</button>
+    </div>
+  </div>
+  <script nonce="${nonce}">
+    const vscode = acquireVsCodeApi();
+    const agentId = ${JSON.stringify(agentId)};
+    const messagesEl = document.getElementById('messages');
+    const inputEl = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    function renderMessages(messages) {
+      messagesEl.innerHTML = messages.map(m =>
+        '<div class="msg ' + (m.fromUser ? 'user' : 'agent') + '">' +
+        m.text.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>'
+      ).join('');
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function send() {
+      const text = inputEl.value.trim();
+      if (!text) return;
+      vscode.postMessage({ type: 'sendMessage', agentId, text });
+      inputEl.value = '';
+    }
+
+    sendBtn.addEventListener('click', send);
+    inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+
+    window.addEventListener('message', event => {
+      const msg = event.data;
+      if (msg.type === 'chatUpdate') {
+        renderMessages(msg.messages || []);
+      }
+    });
+
+    vscode.postMessage({ type: 'ready' });
+  </script>
+</body>
+</html>`;
+  }
+
+  private reloadAndNotifyPackages(): void {
+    let packages: string[] = [];
+    if (loadUserPackages) {
+      try { packages = loadUserPackages(); } catch {}
+    } else {
+      const dir = userPackagesDir();
+      try {
+        if (fs.existsSync(dir)) {
+          for (const entry of fs.readdirSync(dir)) {
+            const full = path.join(dir, entry);
+            if (entry.endsWith(".json") && fs.statSync(full).isFile()) {
+              packages.push(fs.readFileSync(full, "utf-8"));
+            }
+          }
+        }
+      } catch {}
+    }
+    this.view?.webview.postMessage({
+      type: "loadUserPackagesResult",
+      packages,
+    });
   }
 
   resolveWebviewView(
@@ -122,9 +295,53 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
   }
 
   private pushState(): void {
+    const state = this.world.getState();
+    // Convert Map to plain object for JSON serialization across the webview boundary
+    const pendingFiles: Record<string, [string, string][]> = {};
+    if (state.pendingFiles instanceof Map) {
+      for (const [k, v] of state.pendingFiles) {
+        pendingFiles[k] = v;
+      }
+    }
     this.view?.webview.postMessage({
       type: "worldState",
-      state: this.world.getState(),
+      state: { ...state, pendingFiles },
+    });
+  }
+
+  /** Push built-in package JSON files to the webview for the registry adapter. */
+  private pushBuiltinPackages(): void {
+    const packagesDir = path.join(this.extensionUri.fsPath, "..", "public", "packages");
+    const packageFiles = ["themes.json", "agents.json", "gear.json", "seattle/seattle.json", "clippy/clippy.json"];
+    const packages: string[] = [];
+    for (const rel of packageFiles) {
+      const full = path.join(packagesDir, rel);
+      try {
+        if (fs.existsSync(full)) {
+          packages.push(fs.readFileSync(full, "utf-8"));
+        }
+      } catch {}
+    }
+    // Also load user packages
+    let userPkgs: string[] = [];
+    if (loadUserPackages) {
+      try { userPkgs = loadUserPackages(); } catch {}
+    } else {
+      const dir = userPackagesDir();
+      try {
+        if (fs.existsSync(dir)) {
+          for (const entry of fs.readdirSync(dir)) {
+            const full = path.join(dir, entry);
+            if (entry.endsWith(".json") && fs.statSync(full).isFile()) {
+              userPkgs.push(fs.readFileSync(full, "utf-8"));
+            }
+          }
+        }
+      } catch {}
+    }
+    this.view?.webview.postMessage({
+      type: "packages",
+      packages: [...packages, ...userPkgs],
     });
   }
 
@@ -157,6 +374,7 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
       case "sendMessage": {
         const agentId = msg.agentId as string;
         const text = msg.text as string;
+        const requestId = msg.requestId as number | undefined;
 
         // Check for pending files — build context prefix for the backend (mirrors Rust lib.rs)
         const pending = this.world.getPendingFiles(agentId);
@@ -192,6 +410,7 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
             };
         const backendId = effectiveConfig.backendId ?? "echo";
         const backend = this.registry.get(backendId) ?? this.registry.get("echo");
+        let replyContent = "";
         if (backend) {
           // Lazily load credential from SecretStorage if backend needs one
           if (!(await backend.isAvailable())) {
@@ -226,11 +445,21 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
             if (resp.needsAttention) {
               this.world.requestAttention(agentId);
             }
+            replyContent = resp.content;
           } catch (err) {
             const errMsg =
               err instanceof Error ? err.message : "Unknown error";
             this.world.completeResponse(agentId, `Error: ${errMsg}`);
+            replyContent = `Error: ${errMsg}`;
           }
+        }
+        // Send reply back to the webview for the promise resolution
+        if (requestId !== undefined) {
+          this.view?.webview.postMessage({
+            type: "sendMessageResult",
+            requestId,
+            reply: replyContent,
+          });
         }
         break;
       }
@@ -306,7 +535,11 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
           msg.x as number,
           msg.y as number,
         );
-        this.view?.webview.postMessage({ type: "dropFilesResult", fileId });
+        this.view?.webview.postMessage({
+          type: "dropFilesResult",
+          fileId,
+          requestId: msg.requestId,
+        });
         break;
       }
 
@@ -483,13 +716,57 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
 
       case "ready":
         this.pushState();
+        this.pushBuiltinPackages();
         break;
+
+      case "updateMouse":
+        // Mouse position tracking (optional, for agent gaze)
+        break;
+
+      // ── File drop via picker ────────────────────────────────────────
+      case "openFilePicker": {
+        const uris = await vscode.window.showOpenDialog({
+          canSelectMany: true,
+          openLabel: "Drop into Terrarium",
+        });
+        if (uris && uris.length > 0) {
+          const files: [string, string][] = uris.map((u) => [
+            path.basename(u.fsPath),
+            u.fsPath,
+          ]);
+          const bounds = this.world.getState().bounds;
+          const x = bounds.x / 2;
+          const y = bounds.y * 0.8;
+          const fileId = this.world.dropFiles(files, x, y);
+          this.view?.webview.postMessage({ type: "dropFilesResult", fileId });
+        }
+        break;
+      }
+
+      // ── Pop-out chat ────────────────────────────────────────────────
+      case "popOutChat":
+        this.popOutChat(msg.agentId as string);
+        break;
+
+      // ── Get file icon data URL ──────────────────────────────────────
+      case "getFileIcon": {
+        const dataUrl = getFileIconDataUrl(msg.filename as string);
+        this.view?.webview.postMessage({
+          type: "getFileIconResult",
+          filename: msg.filename,
+          dataUrl,
+        });
+        break;
+      }
     }
   }
 
   private getHtml(webview: vscode.Webview): string {
     const scriptUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.extensionUri, "dist", "webview.js"),
+    );
+    const cssUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.extensionUri, "dist", "webview.css"),
     );
     const nonce = getNonce();
 
@@ -499,8 +776,9 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'none'; script-src 'nonce-${nonce}'; style-src 'unsafe-inline';" />
+    content="default-src 'none'; script-src 'nonce-${nonce}'; style-src ${webview.cspSource} 'unsafe-inline';" />
   <title>Agent Terrarium</title>
+  <link rel="stylesheet" href="${cssUri}" />
   <style>
     body { margin: 0; padding: 0; overflow: hidden; background: transparent; }
     #root { width: 100%; height: 100vh; }
@@ -519,6 +797,11 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
       this.tickInterval = undefined;
     }
     this.eventDispatcherInstance?.stop();
+    stopPackageWatcher();
+    for (const panel of this.popOutPanels.values()) {
+      panel.dispose();
+    }
+    this.popOutPanels.clear();
   }
 }
 
@@ -546,9 +829,72 @@ export function activate(context: vscode.ExtensionContext): void {
     ),
   );
 
+  // ── Commands ────────────────────────────────────────────────────────
+
   context.subscriptions.push(
     vscode.commands.registerCommand("agent-terrarium.toggle", () => {
       vscode.commands.executeCommand("agentTerrariumView.focus");
+    }),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("agent-terrarium.addAgent", async () => {
+      if (!provider) return;
+      const avatars = [
+        { label: "🐱 Cat", value: "cat" },
+        { label: "✨ Copilot", value: "copilot" },
+        { label: "🐿️ Squirrel", value: "squirrel" },
+        { label: "🐧 Penguin", value: "penguin" },
+        { label: "👻 Ghost", value: "ghost" },
+        { label: "📎 Clippy", value: "clippy" },
+        { label: "😊 Default", value: "default" },
+      ];
+      const picked = await vscode.window.showQuickPick(
+        avatars.map((a) => ({ label: a.label, description: a.value })),
+        { placeHolder: "Choose an avatar for the new agent" },
+      );
+      if (!picked) return;
+      const avatar = picked.description!;
+      const name = await vscode.window.showInputBox({
+        prompt: "Name your new agent",
+        value: avatar.charAt(0).toUpperCase() + avatar.slice(1),
+      });
+      if (!name) return;
+      provider.getWorld().addAgent(avatar, name);
+    }),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("agent-terrarium.changeTheme", async () => {
+      if (!provider) return;
+      const themes = [
+        { label: "🌿 Default", value: "default" },
+        { label: "🌙 Night", value: "night" },
+        { label: "🏖️ Beach", value: "beach" },
+        { label: "🌌 Space", value: "space" },
+        { label: "🍂 Autumn", value: "autumn" },
+        { label: "❄️ Winter", value: "winter" },
+        { label: "🌸 Cherry Blossom", value: "cherry_blossom" },
+      ];
+      const picked = await vscode.window.showQuickPick(
+        themes.map((t) => ({ label: t.label, description: t.value })),
+        { placeHolder: "Choose a theme" },
+      );
+      if (!picked) return;
+      provider.notifyWebview({ type: "themeChanged", theme: picked.description });
+    }),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("agent-terrarium.throwBall", () => {
+      if (!provider) return;
+      const world = provider.getWorld();
+      const bounds = world.getState().bounds;
+      const x = bounds.x / 2;
+      const y = bounds.y * 0.3;
+      const vx = (Math.random() - 0.5) * 200;
+      const vy = Math.random() * 100 + 50;
+      world.throwBall(x, y, vx, vy);
     }),
   );
 }
