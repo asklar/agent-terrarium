@@ -65,6 +65,8 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
   private secrets: vscode.SecretStorage;
   private eventDispatcherInstance?: { start(): void; stop(): void };
   private popOutPanels: Map<string, vscode.WebviewPanel> = new Map();
+  private packagesBaseUri = "";
+  private userPackagesBaseUri = "";
 
   constructor(
     private readonly extensionUri: vscode.Uri,
@@ -289,8 +291,18 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
       localResourceRoots: [
         vscode.Uri.joinPath(this.extensionUri, "dist"),
         vscode.Uri.joinPath(this.extensionUri, "media"),
+        vscode.Uri.joinPath(this.extensionUri, "..", "public", "packages"),
+        vscode.Uri.file(userPackagesDir()),
       ],
     };
+
+    // Compute webview URI for the packages directory so the webview can load SVGs
+    this.packagesBaseUri = webviewView.webview.asWebviewUri(
+      vscode.Uri.joinPath(this.extensionUri, "..", "public", "packages"),
+    ).toString();
+    this.userPackagesBaseUri = webviewView.webview.asWebviewUri(
+      vscode.Uri.file(userPackagesDir()),
+    ).toString();
 
     webviewView.webview.html = this.getHtml(webviewView.webview);
     log("Webview HTML set");
@@ -745,6 +757,12 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
       }
 
       case "ready":
+        // Send base URIs for loading SVG assets
+        this.view?.webview.postMessage({
+          type: "assetBaseUris",
+          packagesBaseUri: this.packagesBaseUri,
+          userPackagesBaseUri: this.userPackagesBaseUri,
+        });
         this.pushState();
         this.pushBuiltinPackages();
         break;

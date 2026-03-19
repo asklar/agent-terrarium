@@ -16,6 +16,47 @@ const vscode = vscodeApi;
 // Initialize registry adapter to receive packages from extension host
 initRegistryAdapter(vscode);
 
+// ── Asset URL rewriting ─────────────────────────────────────────────
+// The shared components load images from "/packages/...", which works in
+// the Tauri app (Vite dev server). In VS Code webviews, we rewrite these
+// to webview URIs provided by the extension host.
+
+let packagesBaseUri = "";
+let userPackagesBaseUri = "";
+
+window.addEventListener("message", (event) => {
+  const msg = event.data;
+  if (msg?.type === "assetBaseUris") {
+    packagesBaseUri = msg.packagesBaseUri ?? "";
+    userPackagesBaseUri = msg.userPackagesBaseUri ?? "";
+    console.log("[AT] Asset base URIs set:", packagesBaseUri, userPackagesBaseUri);
+  }
+});
+
+// Monkey-patch Image.src to rewrite /packages/ URLs
+const OrigImage = window.Image;
+const originalDescriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "src")!;
+Object.defineProperty(HTMLImageElement.prototype, "src", {
+  set(value: string) {
+    let rewritten = value;
+    if (typeof value === "string" && value.startsWith("/packages/") && packagesBaseUri) {
+      const relPath = value.replace(/^\/packages\//, "").replace(/\?.*$/, "");
+      rewritten = `${packagesBaseUri}/${relPath}`;
+      // If built-in fails, try user packages
+      this.onerror = () => {
+        if (userPackagesBaseUri) {
+          originalDescriptor.set!.call(this, `${userPackagesBaseUri}/${relPath}`);
+        }
+      };
+    }
+    originalDescriptor.set!.call(this, rewritten);
+  },
+  get() {
+    return originalDescriptor.get!.call(this);
+  },
+  configurable: true,
+});
+
 // ── App ─────────────────────────────────────────────────────────────
 
 function App() {
