@@ -5,6 +5,7 @@ import { initRegistryAdapter } from "./registryAdapter";
 import { TerrariumCanvas } from "../../src/components/TerrariumCanvas";
 import { ChatOverlay } from "../../src/components/ChatOverlay";
 import { AnimatedBackground } from "../../src/components/AnimatedBackground";
+import { ContextMenu } from "../../src/components/ContextMenu";
 import { registry } from "../../src/themes";
 import { playAgentSound } from "../../src/audio/agentSounds";
 import "../../src/App.css";
@@ -72,10 +73,15 @@ function App() {
     dropFiles,
     updateMouse,
     saveConfig,
+    addAgent,
+    removeAgent,
+    setGear,
   } = useWorldState();
 
   const [theme, setTheme] = useState("meadow");
+  const [dynamicSky, setDynamicSky] = useState(false);
   const [thinkingAgentIds, setThinkingAgentIds] = useState<Set<string>>(new Set());
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
 
   // Load theme from extension host config
   useEffect(() => {
@@ -228,8 +234,12 @@ function App() {
   console.log("[Agent Terrarium] Rendering", worldState.agents.length, "agents, tick:", worldState.tick);
 
   return (
-    <div className="terrarium-container">
-      <AnimatedBackground theme={theme} />
+    <div className="terrarium-container" onContextMenu={(e) => {
+      if (e.shiftKey) return; // Shift+right-click for native menu
+      e.preventDefault();
+      setContextMenu({ x: e.clientX, y: e.clientY });
+    }}>
+      <AnimatedBackground theme={theme} dynamicSky={dynamicSky} />
       <TerrariumCanvas
         worldState={worldState}
         onAgentClick={handleAgentClick}
@@ -258,6 +268,24 @@ function App() {
           />
         );
       })}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          agents={worldState.agents}
+          currentTheme={theme}
+          dynamicSky={dynamicSky}
+          onClose={() => setContextMenu(null)}
+          onThemeChange={(t) => { setTheme(t); saveConfig(t); }}
+          onDynamicSkyToggle={() => setDynamicSky((d) => !d)}
+          onAddAgent={(avatar, name) => addAgent(avatar, name)}
+          onRemoveAgent={(agentId) => removeAgent(agentId)}
+          onSetGear={(agentId, gearIds) => setGear(agentId, gearIds)}
+          onToggleDebug={() => {}}
+          debugOpen={false}
+          onAbout={() => {}}
+        />
+      )}
     </div>
   );
 }

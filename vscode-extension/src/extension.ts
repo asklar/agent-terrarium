@@ -309,7 +309,10 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
 
     // Handle messages from webview
     webviewView.webview.onDidReceiveMessage((msg) => {
-      log(`Webview message: ${msg?.type ?? msg?.command ?? JSON.stringify(msg).slice(0, 80)}`);
+      const msgType = msg?.type ?? msg?.command ?? "unknown";
+      if (msgType !== "updateMouse" && msgType !== "resize") {
+        log(`Webview message: ${msgType}`);
+      }
       this.handleMessage(msg);
     });
 
