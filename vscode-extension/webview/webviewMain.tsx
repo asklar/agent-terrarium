@@ -163,6 +163,7 @@ function App() {
     worldState?.chat_sessions.filter((s) => s.active) ?? [];
 
   if (!worldState) {
+    console.log("[Agent Terrarium] No worldState yet, showing placeholder");
     return (
       <div
         style={{
@@ -172,6 +173,7 @@ function App() {
           height: "100vh",
           fontFamily: "var(--vscode-font-family)",
           color: "var(--vscode-foreground)",
+          background: "var(--vscode-sideBar-background, #252526)",
         }}
       >
         <div style={{ textAlign: "center" }}>
@@ -181,6 +183,8 @@ function App() {
       </div>
     );
   }
+
+  console.log("[Agent Terrarium] Rendering", worldState.agents.length, "agents, tick:", worldState.tick);
 
   return (
     <div className="terrarium-container">
@@ -219,7 +223,18 @@ function App() {
 
 // ── Mount ────────────────────────────────────────────────────────────
 
+console.log("[Agent Terrarium] Webview script loaded");
+
 const rootEl = document.getElementById("root");
 if (rootEl) {
-  createRoot(rootEl).render(<App />);
+  console.log("[Agent Terrarium] Mounting React app...");
+  try {
+    createRoot(rootEl).render(<App />);
+    console.log("[Agent Terrarium] React app mounted");
+  } catch (e) {
+    console.error("[Agent Terrarium] Failed to mount:", e);
+    rootEl.textContent = `Error: ${e}`;
+  }
+} else {
+  console.error("[Agent Terrarium] #root element not found!");
 }
