@@ -43,6 +43,18 @@ type SessionConfig struct {
 	SystemPrompt     string `json:"system_prompt,omitempty"`
 	CustomAgent      string `json:"custom_agent,omitempty"`
 	WorkingDirectory string `json:"working_directory,omitempty"`
+	ConfigDir        string `json:"config_dir,omitempty"`
+}
+
+// configDir returns the agent-terrarium-specific copilot config directory
+func configDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	dir := filepath.Join(home, "agent-terrarium", ".copilot")
+	os.MkdirAll(dir, 0755)
+	return dir
 }
 
 //export copilot_init
@@ -56,6 +68,13 @@ func copilot_init(errorOut **C.char) C.int {
 
 	opts := &copilot.ClientOptions{
 		LogLevel: "error",
+	}
+
+	// Use a separate config dir so we don't pollute personal CLI sessions
+	cfgDir := configDir()
+	if cfgDir != "" {
+		opts.CLIArgs = []string{"--config-dir", cfgDir}
+		fmt.Fprintf(os.Stderr, "[copilot-bridge] Config dir: %s\n", cfgDir)
 	}
 
 	// If COPILOT_CLI_PATH is not set, try to find copilot in common locations
@@ -127,6 +146,7 @@ func copilot_create_session(configJSON *C.char, sessionIDOut **C.char, errorOut 
 	sessionCfg := &copilot.SessionConfig{
 		Model:               cfg.Model,
 		WorkingDirectory:    cfg.WorkingDirectory,
+		ConfigDir:           configDir(),
 		OnPermissionRequest: copilot.PermissionHandler.ApproveAll,
 	}
 
@@ -184,6 +204,7 @@ func copilot_resume_session(savedID *C.char, configJSON *C.char, sessionIDOut **
 	resumeCfg := &copilot.ResumeSessionConfig{
 		Model:               cfg.Model,
 		WorkingDirectory:    cfg.WorkingDirectory,
+		ConfigDir:           configDir(),
 		OnPermissionRequest: copilot.PermissionHandler.ApproveAll,
 	}
 
@@ -325,6 +346,7 @@ func copilot_create_session_with_tools(configJSON *C.char, toolsJSON *C.char, se
 	sessionCfg := &copilot.SessionConfig{
 		Model:               cfg.Model,
 		WorkingDirectory:    cfg.WorkingDirectory,
+		ConfigDir:           configDir(),
 		Tools:               tools,
 		OnPermissionRequest: copilot.PermissionHandler.ApproveAll,
 	}

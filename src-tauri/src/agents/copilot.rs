@@ -40,26 +40,7 @@ fn delete_session_id(agent_id: &str) {
     let _ = std::fs::remove_file(&path);
 }
 
-/// Clear all persisted session IDs (e.g. after a protocol version change)
-fn clear_all_session_ids() {
-    let dir = dirs::home_dir()
-        .unwrap_or_else(|| std::path::PathBuf::from("."))
-        .join("agent-terrarium")
-        .join("sessions");
-    if let Ok(entries) = std::fs::read_dir(&dir) {
-        let mut count = 0;
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.extension().and_then(|e| e.to_str()) == Some("txt") {
-                let _ = std::fs::remove_file(&path);
-                count += 1;
-            }
-        }
-        if count > 0 {
-            log::info!("Cleared {} old session ID files", count);
-        }
-    }
-}
+
 
 /// Build a JSON config string for the Go bridge from BackendConfig
 fn build_config_json(config: &BackendConfig) -> String {
@@ -84,8 +65,6 @@ impl CopilotBackend {
         let mut init = self.initialized.write().await;
         if !*init {
             log::info!("Initializing Copilot Go bridge...");
-            // Clear old session IDs — they may be from an incompatible protocol version
-            clear_all_session_ids();
             copilot_ffi::init()?;
             log::info!("Copilot Go bridge initialized (protocol v3)");
             *init = true;
@@ -241,19 +220,33 @@ impl AgentBackend for CopilotBackend {
         if need_create {
             let config_json = build_config_json(config);
 
-            // Always create a fresh session (old protocol sessions are incompatible)
-            let sid = copilot_ffi::create_session(&config_json)
-                .map_err(|e| {
-                    log::error!("Failed to create Copilot session: {}", e);
-                    // If CLI process died, reset init state so next call re-initializes
-                    if e.contains("CLI process exited") {
-                        let init = self.initialized.clone();
-                        tokio::spawn(async move {
-                            *init.write().await = false;
-                        });
+            // Try to resume a previously persisted session
+            let sid = if let Some(saved_id) = load_session_id(agent_id) {
+                log::info!("Resuming session {} for agent {}", saved_id, agent_id);
+                match copilot_ffi::resume_session(&saved_id, &config_json) {
+                    Ok(sid) => {
+                        log::info!("Resumed session {}", sid);
+                        sid
                     }
-                    format!("Failed to create session: {}", e)
-                })?;
+                    Err(e) => {
+                        log::warn!("Failed to resume session: {}, creating new", e);
+                        delete_session_id(agent_id);
+                        copilot_ffi::create_session(&config_json)?
+                    }
+                }
+            } else {
+                copilot_ffi::create_session(&config_json)
+                    .map_err(|e| {
+                        log::error!("Failed to create Copilot session: {}", e);
+                        if e.contains("CLI process exited") {
+                            let init = self.initialized.clone();
+                            tokio::spawn(async move {
+                                *init.write().await = false;
+                            });
+                        }
+                        format!("Failed to create session: {}", e)
+                    })?
+            };
 
             save_session_id(agent_id, &sid);
 
