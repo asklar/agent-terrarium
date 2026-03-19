@@ -131,6 +131,29 @@ pub struct Ball {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DroppedFile {
+    pub id: String,
+    /// All files in this drop group: (file_name, file_path)
+    pub files: Vec<(String, String)>,
+    /// Display label (e.g. "foo.txt" or "foo.txt + 2 files")
+    pub label: String,
+    /// System icon as a base64 PNG data URL (from first file in group)
+    #[serde(default)]
+    pub icon_data_url: Option<String>,
+    pub position: Vec2,
+    /// Agent ID that claimed this file (None = unclaimed, sitting on ground)
+    pub claimed_by: Option<String>,
+    /// Whether this file is still visible in the world
+    pub active: bool,
+    /// Height above the ground plane (for drop animation)
+    #[serde(default)]
+    pub height: f64,
+    /// Vertical velocity (positive = upward)
+    #[serde(default)]
+    pub height_velocity: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatBubble {
     pub agent_id: String,
     pub content: String,
@@ -158,6 +181,10 @@ pub enum TerrariumEvent {
     AgentLeft { agent_name: String },
     /// User clicked on an agent to chat
     UserClickedAgent { agent_name: String },
+    /// A file was dropped into the terrarium
+    FileDropped { file_name: String },
+    /// An agent picked up a dropped file
+    FileClaimed { agent_name: String, file_name: String },
     /// An agent is nearby (within awareness radius)
     AgentNearby { agent_name: String, other_name: String, distance: f64 },
 }
@@ -173,6 +200,8 @@ impl TerrariumEvent {
             TerrariumEvent::AgentArrived { .. } => 1,
             TerrariumEvent::AgentLeft { .. } => 1,
             TerrariumEvent::UserClickedAgent { .. } => 1,
+            TerrariumEvent::FileDropped { .. } => 1,
+            TerrariumEvent::FileClaimed { .. } => 1,
             TerrariumEvent::AgentNearby { .. } => 3,
         }
     }
@@ -207,6 +236,16 @@ impl TerrariumEvent {
                     format!("The user started talking to {}.", agent_name)
                 }
             }
+            TerrariumEvent::FileDropped { file_name } => {
+                format!("The user dropped a file into the terrarium: \"{}\"", file_name)
+            }
+            TerrariumEvent::FileClaimed { agent_name, file_name } => {
+                if agent_name == observer {
+                    format!("You picked up the file \"{}\"!", file_name)
+                } else {
+                    format!("{} picked up the file \"{}\".", agent_name, file_name)
+                }
+            }
             TerrariumEvent::AgentNearby { agent_name, other_name, distance } => {
                 if agent_name == observer {
                     format!("{} is nearby (about {:.0}px away).", other_name, distance)
@@ -235,6 +274,7 @@ pub struct ChatSession {
 pub struct WorldState {
     pub agents: Vec<Agent>,
     pub ball: Option<Ball>,
+    pub dropped_files: Vec<DroppedFile>,
     pub bubbles: Vec<ChatBubble>,
     pub chat_sessions: Vec<ChatSession>,
     pub bounds: Vec2,
@@ -256,6 +296,10 @@ pub struct WorldState {
     /// Event buffer — drained by the event dispatcher
     #[serde(skip)]
     pub events: Vec<TerrariumEvent>,
+    /// Pending file paths per agent (agent_id → [(name, path)])
+    /// Set by frontend on claim, read by both inline and pop-out chat windows
+    #[serde(default)]
+    pub pending_files: std::collections::HashMap<String, Vec<(String, String)>>,
 }
 
 /// Saved agent definition for config persistence

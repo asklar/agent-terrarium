@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "name": "Muppets Pack",
+  "author": "Agent Terrarium Community",
+  "agents": [
+    {
+      "id": "kermit",
+      "name": "Kermit",
+      "icon": "🐸",
+      "shape": "kermit",
+      "voice": { "basePitch": 620, "pitchVar": 180, "wave": "triangle", "syllables": 4, "speed": 0.065, "volume": 0.1, "ttsRate": 2, "ttsPitchShift": 1.8 },
+      "personality": { "speedMin": 25, "speedMax": 100, "movementStyle": "wander", "interactionChance": 0.9, "ballInterest": 0.5, "chatEmojis": ["🐸", "🎭", "✨", "🎵", "💚"] },
+      "drawSpec": { "movement": "walk", "svgFile": "muppets/kermit.svg", "svgWidth": 32, "svgHeight": 46, "layers": [] }
+    },
+    {
+      "id": "piggy",
+      "name": "Miss Piggy",
+      "icon": "🐷",
+      "shape": "piggy",
+      "voice": { "basePitch": 480, "pitchVar": 120, "wave": "sine", "syllables": 5, "speed": 0.055, "volume": 0.1, "ttsRate": 1, "ttsPitchShift": 1.5 },
+      "personality": { "speedMin": 15, "speedMax": 140, "movementStyle": "wander", "interactionChance": 0.8, "ballInterest": 0.2, "chatEmojis": ["🐷", "💅", "💋", "👑", "💖"] },
+      "drawSpec": { "movement": "walk", "waddleAmount": 2, "svgFile": "muppets/piggy.svg", "svgWidth": 32, "svgHeight": 48, "layers": [] }
+    },
+    {
+      "id": "gonzo",
+      "name": "Gonzo",
+      "icon": "🎺",
+      "shape": "gonzo",
+      "voice": { "basePitch": 420, "pitchVar": 200, "wave": "sawtooth", "syllables": 4, "speed": 0.07, "volume": 0.1, "ttsRate": 2, "ttsPitchShift": 1.3 },
+      "personality": { "speedMin": 40, "speedMax": 160, "movementStyle": "bounce", "interactionChance": 0.7, "ballInterest": 0.95, "chatEmojis": ["🎺", "💥", "🤪", "🐔", "⭐"] },
+      "drawSpec": { "movement": "walk", "svgFile": "muppets/gonzo.svg", "svgWidth": 28, "svgHeight": 46, "layers": [] }
+    },
+    {
+      "id": "fozzie",
+      "name": "Fozzie Bear",
+      "icon": "🐻",
+      "shape": "fozzie",
+      "voice": { "basePitch": 380, "pitchVar": 140, "wave": "triangle", "syllables": 5, "speed": 0.06, "volume": 0.1, "ttsRate": 0, "ttsPitchShift": 1.1 },
+      "personality": { "speedMin": 20, "speedMax": 90, "movementStyle": "wander", "interactionChance": 0.95, "ballInterest": 0.6, "chatEmojis": ["🐻", "😂", "🎤", "🎭", "✨"] },
+      "drawSpec": { "movement": "walk", "waddleAmount": 2, "svgFile": "muppets/fozzie.svg", "svgWidth": 28, "svgHeight": 48, "layers": [] }
+    },
+    {
+      "id": "animal",
+      "name": "Animal",
+      "icon": "🥁",
+      "shape": "animal",
+      "voice": { "basePitch": 300, "pitchVar": 250, "wave": "sawtooth", "syllables": 2, "speed": 0.04, "volume": 0.15, "ttsRate": 4, "ttsPitchShift": 0.8 },
+      "personality": { "speedMin": 60, "speedMax": 200, "movementStyle": "bounce", "interactionChance": 0.3, "ballInterest": 0.85, "chatEmojis": ["🥁", "🔥", "💥", "😤", "⚡"] },
+      "drawSpec": { "movement": "walk", "waddleAmount": 5, "svgFile": "muppets/animal.svg", "svgWidth": 32, "svgHeight": 50, "layers": [] }
+    },
+    {
+      "id": "rowlf",
+      "name": "Rowlf",
+      "icon": "🐶",
+      "shape": "rowlf",
+      "voice": { "basePitch": 280, "pitchVar": 100, "wave": "sine", "syllables": 3, "speed": 0.05, "volume": 0.1, "ttsRate": -1, "ttsPitchShift": 0.9 },
+      "personality": { "speedMin": 15, "speedMax": 70, "movementStyle": "wander", "interactionChance": 0.6, "ballInterest": 0.3, "chatEmojis": ["🐶", "🎹", "🎵", "😌", "💤"] },
+      "drawSpec": { "movement": "walk", "waddleAmount": 1, "svgFile": "muppets/rowlf.svg", "svgWidth": 32, "svgHeight": 42, "layers": [] }
+    }
+  ],
+  "themes": [
+    {
+      "id": "muppet_theater",
+      "name": "Muppet Theater",
+      "icon": "🎭",
+      "sky": ["#1A0A0A", "#3E1111", "#5D1A1A"],
+      "ground": "#4E342E",
+      "groundAccent": "#3E2723",
+      "groundWave": 0,
+      "particles": { "type": "sparkle", "color": "#FFD700", "count": 8 },
+      "decorators": ["curtain_left", "curtain_right", "stage_light_left", "stage_light_right"],
+      "customDecorators": [
+        { "name": "curtain_left", "file": "muppets/curtain-left.svg", "fileX": 0.06, "fileY": 0.35, "fileWidth": 100, "fileHeight": 250, "fileAnchor": "center", "fileOpacity": 0.95 },
+        { "name": "curtain_right", "file": "muppets/curtain-right.svg", "fileX": 0.94, "fileY": 0.35, "fileWidth": 100, "fileHeight": 250, "fileAnchor": "center", "fileOpacity": 0.95 },
+        { "name": "stage_light_left", "file": "muppets/stage-light.svg", "fileX": 0.18, "fileY": 0.02, "fileWidth": 60, "fileHeight": 90, "fileAnchor": "center", "fileOpacity": 0.8 },
+        { "name": "stage_light_right", "file": "muppets/stage-light.svg", "fileX": 0.82, "fileY": 0.02, "fileWidth": 60, "fileHeight": 90, "fileAnchor": "center", "fileOpacity": 0.8 }
+      ],
+      "disableDynamicSky": true,
+      "music": { "bpm": 140, "key": 60, "scale": [0, 2, 4, 5, 7, 9, 11], "wave": "square", "bassWave": "triangle", "volume": 0.08, "chords": [[0,4,7],[5,9,12],[7,11,14],[0,4,7],[9,12,16],[5,9,12],[7,11,14],[0,4,7]] }
+    }
+  ],
+  "gear": [
+    { "id": "fozzie-hat", "name": "Fozzie's Hat", "icon": "🎩", "slot": "hat", "shape": "top-hat", "color": "#795548", "accentColor": "#5D4037", "image": "muppets/fozzie-hat.svg", "imageWidth": 28, "imageHeight": 24, "imageOffsetY": -4 },
+    { "id": "kermit-banjo", "name": "Kermit's Banjo", "icon": "🪕", "slot": "body", "shape": "sweater", "color": "#DEB887", "image": "muppets/banjo.svg", "imageWidth": 22, "imageHeight": 10, "imageOffsetY": 2 },
+    { "id": "piggy-pearls", "name": "Piggy's Pearls", "icon": "📿", "slot": "neck", "shape": "scarf", "color": "#FAFAFA", "accentColor": "#E0E0E0", "image": "muppets/pearls.svg", "imageWidth": 22, "imageHeight": 8, "imageOffsetY": 0 },
+    { "id": "animal-chain", "name": "Animal's Chain", "icon": "⛓️", "slot": "neck", "shape": "scarf", "color": "#9E9E9E", "image": "muppets/chain.svg", "imageWidth": 22, "imageHeight": 8, "imageOffsetY": 0 },
+    { "id": "gonzo-trumpet", "name": "Gonzo's Trumpet", "icon": "🎺", "slot": "body", "shape": "sweater", "color": "#DAA520", "image": "muppets/trumpet.svg", "imageWidth": 24, "imageHeight": 11, "imageOffsetY": 2 }
+  ]
+}

@@ -1,4 +1,5 @@
 mod agents;
+mod fileicon;
 mod simulation;
 mod tts;
 
@@ -27,6 +28,36 @@ fn throw_ball(world: tauri::State<'_, Arc<World>>, x: f64, y: f64, vx: f64, vy: 
 }
 
 #[tauri::command]
+fn drop_files(world: tauri::State<'_, Arc<World>>, files: Vec<(String, String)>, x: f64, y: f64) -> String {
+    world.drop_files(files, x, y)
+}
+
+#[tauri::command]
+fn remove_dropped_file(world: tauri::State<'_, Arc<World>>, file_id: String) {
+    world.remove_dropped_file(&file_id);
+}
+
+#[tauri::command]
+fn detach_agent_file(world: tauri::State<'_, Arc<World>>, agent_id: String) {
+    world.detach_file(&agent_id);
+}
+
+#[tauri::command]
+fn set_pending_files(world: tauri::State<'_, Arc<World>>, agent_id: String, files: Vec<(String, String)>) {
+    world.set_pending_files(&agent_id, files);
+}
+
+#[tauri::command]
+fn clear_pending_files(world: tauri::State<'_, Arc<World>>, agent_id: String) {
+    world.clear_pending_files(&agent_id);
+}
+
+#[tauri::command]
+fn get_file_icon(path: String) -> Result<String, String> {
+    fileicon::get_file_icon_data_url(&path)
+}
+
+#[tauri::command]
 fn push_bubble(world: tauri::State<'_, Arc<World>>, agent_id: String, content: String, is_emoji: bool, duration: f64) {
     world.push_bubble(&agent_id, content, is_emoji, duration);
 }
@@ -47,7 +78,20 @@ fn click_agent(world: tauri::State<'_, Arc<World>>, agent_id: String) -> bool {
 
 #[tauri::command]
 async fn send_message(world: tauri::State<'_, Arc<World>>, app: tauri::AppHandle, agent_id: String, text: String) -> Result<String, String> {
-    // Add user message and get backend config
+    // Check for pending files — build context prefix for the backend
+    let pending = world.get_pending_files(&agent_id);
+    let backend_text = if pending.is_empty() {
+        text.clone()
+    } else {
+        let file_list = pending.iter()
+            .map(|(name, path)| format!("- {}: {}", name, path))
+            .collect::<Vec<_>>()
+            .join("\n");
+        world.clear_pending_files(&agent_id);
+        format!("[The user has shared the following file(s) with you:\n{}\n]\n\n{}", file_list, text)
+    };
+
+    // Add user message (display text only, without file context) and get backend config
     let backend_config = world.add_user_message(&agent_id, &text);
 
     let backend_config = match backend_config {
@@ -57,7 +101,7 @@ async fn send_message(world: tauri::State<'_, Arc<World>>, app: tauri::AppHandle
 
     // Build conversation history for the backend
     let chat_messages = world.get_chat_messages(&agent_id);
-    let messages: Vec<BackendMessage> = chat_messages
+    let mut messages: Vec<BackendMessage> = chat_messages
         .iter()
         .map(|m| BackendMessage {
             role: if m.from_user {
@@ -68,6 +112,10 @@ async fn send_message(world: tauri::State<'_, Arc<World>>, app: tauri::AppHandle
             content: m.text.clone(),
         })
         .collect();
+    // Replace the last user message content with the backend_text (includes file context)
+    if let Some(last) = messages.iter_mut().rev().find(|m| m.role == MessageRole::User) {
+        last.content = backend_text;
+    }
 
     // Look up backend and generate response
     let registry = world.get_backend_registry();
@@ -102,6 +150,9 @@ async fn send_message(world: tauri::State<'_, Arc<World>>, app: tauri::AppHandle
 
     // Append the response to the chat session
     world.complete_response(&agent_id, &response.content);
+
+    // Detach any claimed file from this agent now that the backend has responded
+    world.detach_file(&agent_id);
 
     // Persist chat history to disk
     let updated_messages = world.get_chat_messages(&agent_id);
@@ -748,6 +799,12 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_world_state,
             throw_ball,
+            drop_files,
+            remove_dropped_file,
+            detach_agent_file,
+            set_pending_files,
+            clear_pending_files,
+            get_file_icon,
             push_bubble,
             speak_sapi,
             click_agent,

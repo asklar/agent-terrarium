@@ -21,6 +21,7 @@ export function ChatWindow({ agentId }: ChatWindowProps) {
   const [configAgent, setConfigAgent] = useState<Agent | null>(null);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<[string, string][]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -40,6 +41,8 @@ export function ChatWindow({ agentId }: ChatWindowProps) {
           setAgentAvatar(agent.avatar);
           agentRef.current = agent;
         }
+        // Read pending files from Rust state
+        setPendingFiles(state.pending_files[agentId] ?? []);
       } catch (e) {
         log.error("ChatWindow poll error:", e);
       }
@@ -70,10 +73,11 @@ export function ChatWindow({ agentId }: ChatWindowProps) {
 
   const handleSend = useCallback(async () => {
     if (!inputText.trim() || isLoading) return;
-    const text = inputText.trim();
+    let text = inputText.trim();
     setInputText("");
     setIsLoading(true);
     try {
+      // Rust's send_message reads pending_files and prepends file context automatically
       log.info("ChatWindow send to", agentId, text.slice(0, 80));
       await invoke("send_message", { agentId, text });
     } catch (e) {
@@ -116,7 +120,7 @@ export function ChatWindow({ agentId }: ChatWindowProps) {
         <span className="chat-window-avatar">{avatarEmoji}</span>
         <span className="chat-window-name">{agentName}</span>
         <button className="chat-window-popin" onClick={handleNewSession} title="New session">
-          🔄
+          ✦
         </button>
         <button className="chat-window-popin" onClick={() => { if (agentRef.current) setConfigAgent(agentRef.current); }} title="Configure agent">
           ⚙️
@@ -131,8 +135,25 @@ export function ChatWindow({ agentId }: ChatWindowProps) {
             {msg.from_user ? msg.text : <Markdown remarkPlugins={[remarkGfm]} components={mdComponents}>{msg.text}</Markdown>}
           </div>
         )) ?? <div className="chat-window-empty">No messages yet. Say hi!</div>}
+        {isLoading && (
+          <div className="chat-window-msg agent chat-typing">
+            <span className="typing-dots"><span>.</span><span>.</span><span>.</span></span>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
+      {pendingFiles.length > 0 && (
+        <div className="chat-pending-files">
+          {pendingFiles.map(([name], i) => (
+            <span key={i} className="chat-file-pill">
+              📎 {name.length > 20 ? name.slice(0, 18) + "…" : name}
+              <button className="chat-file-remove" onClick={async () => {
+                await invoke("clear_pending_files", { agentId });
+              }}>✕</button>
+            </span>
+          ))}
+        </div>
+      )}
       <div className="chat-window-input-row">
         <input
           ref={inputRef}

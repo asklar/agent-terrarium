@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-16 -32 32 50">
+  <!-- Animal -->
+  <!-- Body -->
+  <ellipse cx="0" cy="6" rx="7" ry="8" fill="#BF360C"/>
+  <!-- Arms (drumstick-holding pose) -->
+  <path d="M -7,2 Q -11,-1 -13,1" stroke="#BF360C" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M 7,2 Q 11,-1 13,1" stroke="#BF360C" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Spiked collar / chain - prominent -->
+  <path d="M -8,-1.5 Q -6,-3 -4,-1 Q -2,-3 0,-1 Q 2,-3 4,-1 Q 6,-3 8,-1.5"
+        stroke="#757575" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  <circle cx="-5" cy="-2.5" r="1" fill="#9E9E9E" stroke="#616161" stroke-width="0.3"/>
+  <circle cx="0" cy="-2.5" r="1" fill="#9E9E9E" stroke="#616161" stroke-width="0.3"/>
+  <circle cx="5" cy="-2.5" r="1" fill="#9E9E9E" stroke="#616161" stroke-width="0.3"/>
+  <!-- Head - wide -->
+  <ellipse cx="0" cy="-11" rx="9" ry="7.5" fill="#D84315"/>
+  <!-- MASSIVE wild hair - Animal's #1 feature -->
+  <!-- Center spikes -->
+  <path d="M -3,-17 L -5,-28 L -1,-19" fill="#E65100"/>
+  <path d="M 0,-18 L -1,-31 L 2,-19" fill="#FF6D00"/>
+  <path d="M 3,-17 L 6,-29 L 5,-18" fill="#E65100"/>
+  <!-- Outer spikes -->
+  <path d="M -7,-15 L -12,-26 L -5,-17" fill="#E65100"/>
+  <path d="M -9,-13 L -15,-22 L -8,-14" fill="#D84315"/>
+  <path d="M 7,-15 L 12,-26 L 5,-17" fill="#E65100"/>
+  <path d="M 9,-13 L 15,-22 L 8,-14" fill="#D84315"/>
+  <!-- Even wilder side tufts -->
+  <path d="M -10,-10 L -16,-16 L -9,-11" fill="#BF360C"/>
+  <path d="M 10,-10 L 16,-16 L 9,-11" fill="#BF360C"/>
+  <!-- Crazy stray hairs -->
+  <path d="M -2,-18 L -7,-30" stroke="#FF8F00" stroke-width="0.8" stroke-linecap="round"/>
+  <path d="M 1,-19 L 3,-31" stroke="#FF8F00" stroke-width="0.8" stroke-linecap="round"/>
+  <path d="M 5,-16 L 10,-27" stroke="#E65100" stroke-width="0.7" stroke-linecap="round"/>
+  <!-- Crazed eyes - whites showing all around, manic -->
+  <circle cx="-4" cy="-13" r="5" fill="white" stroke="#BF360C" stroke-width="0.6"/>
+  <circle cx="4" cy="-13" r="5" fill="white" stroke="#BF360C" stroke-width="0.6"/>
+  <!-- Bloodshot lines -->
+  <path d="M -8.5,-14 L -7,-13.5" stroke="#EF9A9A" stroke-width="0.3"/>
+  <path d="M -8,-11 L -6.5,-12" stroke="#EF9A9A" stroke-width="0.3"/>
+  <path d="M 8.5,-14 L 7,-13.5" stroke="#EF9A9A" stroke-width="0.3"/>
+  <!-- Huge pupils (manic) -->
+  <circle cx="-4" cy="-12.5" r="3.2" fill="#222"/>
+  <circle cx="4" cy="-12.5" r="3.2" fill="#222"/>
+  <!-- Tiny white dot = manic stare -->
+  <circle cx="-5" cy="-14" r="1" fill="white" opacity="0.9"/>
+  <circle cx="3" cy="-14" r="1" fill="white" opacity="0.9"/>
+  <!-- Angry/wild eyebrows -->
+  <path d="M -8.5,-17 L -4,-15.5 L 0,-17" stroke="#7F2800" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+  <path d="M 0,-17 L 4,-15.5 L 8.5,-17" stroke="#7F2800" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+  <!-- HUGE open mouth - teeth bared -->
+  <ellipse cx="0" cy="-5" rx="7" ry="4.5" fill="#3E2723"/>
+  <!-- Tongue -->
+  <ellipse cx="0" cy="-3" rx="3" ry="2" fill="#C62828" opacity="0.7"/>
+  <!-- Top teeth - jagged, uneven -->
+  <path d="M -6,-8 L -5,-6 L -3,-8.5 L -1,-5.5 L 1,-8.5 L 3,-6 L 5,-8.5 L 6,-7" fill="white" stroke="#E0E0E0" stroke-width="0.2"/>
+  <!-- Bottom teeth -->
+  <path d="M -4,-1.5 L -3,-3.5 L -1,-1 L 1,-3.5 L 3,-1.5 L 4,-3" fill="white" stroke="#E0E0E0" stroke-width="0.2"/>
+  <!-- Legs -->
+  <path d="M -4,13 L -5,16 L -7,16" stroke="#BF360C" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M 4,13 L 5,16 L 7,16" stroke="#BF360C" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+</svg>

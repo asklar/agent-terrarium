@@ -29,6 +29,27 @@ export function useWorldState() {
     [],
   );
 
+  const dropFiles = useCallback(
+    async (files: [string, string][], x: number, y: number): Promise<string> => {
+      return await invoke<string>("drop_files", { files, x, y });
+    },
+    [],
+  );
+
+  const removeDroppedFile = useCallback(
+    async (fileId: string) => {
+      await invoke("remove_dropped_file", { fileId });
+    },
+    [],
+  );
+
+  const detachAgentFile = useCallback(
+    async (agentId: string) => {
+      await invoke("detach_agent_file", { agentId });
+    },
+    [],
+  );
+
   const clickAgent = useCallback(async (agentId: string) => {
     await invoke("click_agent", { agentId });
   }, []);
@@ -107,6 +128,9 @@ export function useWorldState() {
   return {
     worldState,
     throwBall,
+    dropFiles,
+    removeDroppedFile,
+    detachAgentFile,
     clickAgent,
     sendMessage,
     dismissChat,

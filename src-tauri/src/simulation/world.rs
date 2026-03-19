@@ -24,6 +24,7 @@ impl World {
             state: Mutex::new(WorldState {
                 agents: Vec::new(),
                 ball: None,
+                dropped_files: Vec::new(),
                 bubbles: Vec::new(),
                 chat_sessions: Vec::new(),
                 bounds,
@@ -34,6 +35,7 @@ impl World {
                 ball_kick_on_capture: true,
                 attention_interval_secs: 5.0,
                 events: Vec::new(),
+                pending_files: std::collections::HashMap::new(),
             }),
             backend_registry,
         }
@@ -56,6 +58,34 @@ impl World {
             .collect();
 
         let mut ball_capture_agent: Option<usize> = None;
+        // Track which file each agent is targeting (agent_idx, file_idx, distance)
+        let mut file_claim_agent: Option<(usize, usize)> = None;
+
+        // Pre-compute nearest unclaimed file for each agent
+        // Only one agent per file: pick the closest agent for each unclaimed file
+        let mut file_targets: Vec<Option<usize>> = vec![None; state.dropped_files.len()];
+        for (fi, file) in state.dropped_files.iter().enumerate() {
+            if !file.active || file.claimed_by.is_some() {
+                continue;
+            }
+            let mut best_dist = f64::MAX;
+            let mut best_agent: Option<usize> = None;
+            for (ai, agent) in state.agents.iter().enumerate() {
+                if agent.state == AgentState::Chatting
+                    || agent.state == AgentState::NeedsAttention
+                    || agent.state == AgentState::Interacting
+                    || agent.backend_config.backend_id == "echo"
+                {
+                    continue;
+                }
+                let dist = agent.position.distance_to(&file.position);
+                if dist < best_dist {
+                    best_dist = dist;
+                    best_agent = Some(ai);
+                }
+            }
+            file_targets[fi] = best_agent;
+        }
 
         for i in 0..agent_count {
             // Skip agents that are chatting or need attention
@@ -101,7 +131,44 @@ impl World {
                 false
             };
 
-            if !chasing_ball && state.agents[i].state != AgentState::Interacting {
+            // Check if this agent should chase an unclaimed file
+            let chasing_file = if !chasing_ball {
+                let mut target_file: Option<usize> = None;
+                for (fi, assigned) in file_targets.iter().enumerate() {
+                    if *assigned == Some(i) {
+                        target_file = Some(fi);
+                        break;
+                    }
+                }
+                if let Some(fi) = target_file {
+                    let file_pos = state.dropped_files[fi].position;
+                    let dir = file_pos - state.agents[i].position;
+                    let dist = dir.magnitude();
+                    if dist > 15.0 {
+                        let speed = state.agents[i].personality.speed_max * 0.6;
+                        state.agents[i].velocity = dir.normalized() * speed;
+                        state.agents[i].state = AgentState::Walking;
+                        state.agents[i].direction = if dir.x > 0.0 {
+                            Direction::Right
+                        } else {
+                            Direction::Left
+                        };
+                        true
+                    } else {
+                        // Agent reached the file — claim it
+                        if file_claim_agent.is_none() {
+                            file_claim_agent = Some((i, fi));
+                        }
+                        false
+                    }
+                } else {
+                    false
+                }
+            } else {
+                false
+            };
+
+            if !chasing_ball && !chasing_file && state.agents[i].state != AgentState::Interacting {
                 // Wander behavior
                 if state.agents[i].target.is_none() || state.agents[i].state_timer <= 0.0 {
                     pick_new_target(&mut state.agents[i], &bounds, ground_y);
@@ -297,6 +364,45 @@ impl World {
             }
         }
 
+        // Handle file claim by agent
+        if let Some((agent_idx, file_idx)) = file_claim_agent {
+            let agent_id = state.agents[agent_idx].id.clone();
+            let agent_name = state.agents[agent_idx].name.clone();
+            let file_label = state.dropped_files[file_idx].label.clone();
+            state.dropped_files[file_idx].claimed_by = Some(agent_id.clone());
+            state.events.push(TerrariumEvent::FileClaimed {
+                agent_name,
+                file_name: file_label,
+            });
+            let emojis = ["📄", "📦", "📂", "🗂️", "📋", "🤓"];
+            let emoji = emojis[state.tick as usize % emojis.len()];
+            state.bubbles.push(ChatBubble {
+                agent_id,
+                content: emoji.to_string(),
+                timer: 2.5,
+                is_emoji: true,
+                is_event: false,
+            });
+        }
+
+        // Update dropped file physics (gravity + bounce)
+        for file in state.dropped_files.iter_mut() {
+            if !file.active || file.claimed_by.is_some() {
+                continue;
+            }
+            if file.height > 0.0 || file.height_velocity.abs() > 0.1 {
+                file.height_velocity -= BALL_GRAVITY * TICK_RATE;
+                file.height += file.height_velocity * TICK_RATE;
+                if file.height < 0.0 {
+                    file.height = 0.0;
+                    file.height_velocity = file.height_velocity.abs() * 0.3; // gentle bounce
+                    if file.height_velocity < 3.0 {
+                        file.height_velocity = 0.0;
+                    }
+                }
+            }
+        }
+
         // Update ball physics
         if let Some(ref mut ball) = state.ball {
             if ball.active {
@@ -406,6 +512,102 @@ impl World {
             });
         }
         state.events.push(TerrariumEvent::BallThrown);
+    }
+
+    /// Drop one or more files into the terrarium at the given position.
+    /// Returns the generated group ID.
+    pub fn drop_files(&self, files: Vec<(String, String)>, x: f64, y: f64) -> String {
+        let label = if files.len() == 1 {
+            files[0].0.clone()
+        } else {
+            format!("{} + {} files", files[0].0, files.len() - 1)
+        };
+        log::info!("Files dropped: \"{}\" ({} files) at ({:.0}, {:.0})", label, files.len(), x, y);
+
+        // Extract system icon from the first file
+        let icon_data_url = crate::fileicon::get_file_icon_data_url(&files[0].1).ok();
+
+        let mut state = self.state.lock().unwrap();
+        let ground_y = state.bounds.y * state.ground_y_ratio;
+        let bounds_y = state.bounds.y;
+
+        let pos_x = x.clamp(16.0, state.bounds.x - 16.0);
+        // Pick a landing depth on the ground plane
+        let depth_y = if y < ground_y {
+            ground_y + 20.0
+        } else {
+            y.min(bounds_y - 16.0)
+        };
+        let initial_height = if y < ground_y { ground_y - y } else { 10.0 };
+        let id = format!("file_{}", state.tick);
+
+        state.dropped_files.push(DroppedFile {
+            id: id.clone(),
+            label: label.clone(),
+            files,
+            icon_data_url,
+            position: Vec2::new(pos_x, depth_y),
+            claimed_by: None,
+            active: true,
+            height: initial_height,
+            height_velocity: 0.0,
+        });
+        state.events.push(TerrariumEvent::FileDropped { file_name: label });
+        id
+    }
+
+    /// Detach a claimed file group from an agent (called after backend responds).
+    pub fn detach_file(&self, agent_id: &str) -> Option<Vec<(String, String)>> {
+        let mut state = self.state.lock().unwrap();
+        let mut result = None;
+        for file in state.dropped_files.iter_mut() {
+            if file.active && file.claimed_by.as_deref() == Some(agent_id) {
+                file.active = false;
+                result = Some(file.files.clone());
+            }
+        }
+        state.dropped_files.retain(|f| f.active);
+        if result.is_some() {
+            log::info!("File detached from agent {}", agent_id);
+        }
+        result
+    }
+
+    /// Get the files claimed by an agent (if any).
+    pub fn get_claimed_files(&self, agent_id: &str) -> Option<Vec<(String, String)>> {
+        let state = self.state.lock().unwrap();
+        state.dropped_files.iter()
+            .find(|f| f.active && f.claimed_by.as_deref() == Some(agent_id))
+            .map(|f| f.files.clone())
+    }
+
+    /// Remove a dropped file group by ID (user dismissed it).
+    pub fn remove_dropped_file(&self, file_id: &str) {
+        let mut state = self.state.lock().unwrap();
+        state.dropped_files.retain(|f| f.id != file_id);
+        log::info!("Removed dropped file: {}", file_id);
+    }
+
+    /// Set pending files for an agent (called by frontend on file claim)
+    pub fn set_pending_files(&self, agent_id: &str, files: Vec<(String, String)>) {
+        let mut state = self.state.lock().unwrap();
+        if files.is_empty() {
+            state.pending_files.remove(agent_id);
+        } else {
+            state.pending_files.insert(agent_id.to_string(), files);
+        }
+    }
+
+    /// Clear pending files for an agent (called after sending or removing)
+    pub fn clear_pending_files(&self, agent_id: &str) {
+        let mut state = self.state.lock().unwrap();
+        state.pending_files.remove(agent_id);
+    }
+
+    /// Get pending files for an agent
+    pub fn get_pending_files(&self, agent_id: &str) -> Vec<(String, String)> {
+        let state = self.state.lock().unwrap();
+        state.pending_files.get(agent_id).cloned().unwrap_or_default()
     }
 
     pub fn click_agent(&self, agent_id: &str, restored_messages: Option<Vec<ChatMessage>>) -> bool {
@@ -745,6 +947,7 @@ impl World {
         state.agents.clear();
         state.chat_sessions.clear();
         state.bubbles.clear();
+        state.dropped_files.clear();
         state.ball_max_captures = config.ball_max_captures;
         state.ball_kick_on_capture = config.ball_kick_on_capture;
         state.attention_interval_secs = config.attention_interval_secs;

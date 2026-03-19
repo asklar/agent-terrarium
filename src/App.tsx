@@ -55,6 +55,9 @@ function App() {
   const {
     worldState,
     throwBall,
+    dropFiles,
+    removeDroppedFile,
+    detachAgentFile,
     clickAgent,
     sendMessage,
     dismissChat,
@@ -373,6 +376,77 @@ function App() {
     return () => { unlisteners.forEach((fn) => fn()); };
   }, [clickAgent, saveConfig]);
 
+  // Listen for OS file drag-and-drop into the terrarium
+  const lastDropRef = useRef<{ paths: string; time: number }>({ paths: "", time: 0 });
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    import("@tauri-apps/api/event").then(({ listen }) => {
+      listen<{ paths: string[]; position?: { x: number; y: number } }>("tauri://drag-drop", async (event) => {
+        const { paths, position } = event.payload;
+        if (!paths || paths.length === 0) return;
+
+        // Debounce: ignore duplicate events within 500ms with same paths
+        const key = paths.join("|");
+        const now = Date.now();
+        if (key === lastDropRef.current.paths && now - lastDropRef.current.time < 500) return;
+        lastDropRef.current = { paths: key, time: now };
+
+        log.info("Files dropped:", paths.length, "at", position);
+
+        // Position is in physical pixels relative to the window;
+        // the canvas uses CSS pixels, so divide by DPR.
+        const mainEl = document.querySelector(".terrarium-container");
+        if (!mainEl) return;
+        const rect = mainEl.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        const pos = position ?? { x: (rect.left + rect.width / 2) * dpr, y: (rect.top + rect.height / 2) * dpr };
+        const baseX = pos.x / dpr - rect.left;
+        const baseY = pos.y / dpr - rect.top;
+
+        // Build file list: [name, path] tuples
+        const files: [string, string][] = paths.map((p) => {
+          const name = p.split(/[\\/]/).pop() || p;
+          return [name, p];
+        });
+        await dropFiles(files, baseX, baseY);
+      }).then((fn) => { unlisten = fn; });
+    });
+    return () => { unlisten?.(); };
+  }, [dropFiles]);
+
+  // When an agent claims a file: open chat, play sound, store pending files (don't auto-send)
+  // Track agent IDs we've already opened chat for to prevent double-open
+  const handledClaimsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!worldState) return;
+    for (const file of worldState.dropped_files) {
+      if (file.claimed_by && file.active) {
+        const agentId = file.claimed_by;
+        if (handledClaimsRef.current.has(file.id)) continue;
+        handledClaimsRef.current.add(file.id);
+
+        const agent = worldState.agents.find((a) => a.id === agentId);
+        if (agent) {
+          playAgentSound(agent.avatar, "gear");
+          log.info("File claimed:", file.label, "→", agent.name);
+          // Store pending files in Rust state (accessible by both inline and pop-out windows)
+          invoke("set_pending_files", { agentId, files: file.files });
+          // Remove the file from the world
+          detachAgentFile(agentId);
+          // Open chat if not already chatting
+          if (agent.state !== "Chatting") {
+            clickAgent(agentId);
+          }
+        }
+      }
+    }
+    // Clean up old entries that are no longer in worldState
+    const activeIds = new Set(worldState.dropped_files.map((f) => f.id));
+    for (const id of handledClaimsRef.current) {
+      if (!activeIds.has(id)) handledClaimsRef.current.delete(id);
+    }
+  }, [worldState, clickAgent, detachAgentFile]);
+
   const handleCanvasClick = useCallback(() => {
     // Light dismiss: clicking canvas (not on an agent) dismisses all chats
     const sessions = worldState?.chat_sessions.filter((s) => s.active) ?? [];
@@ -438,6 +512,7 @@ function App() {
         onBallThrow={throwBall}
         onBackgroundClick={handleCanvasClick}
         onMouseUpdate={updateMouse}
+        onRemoveDroppedFile={removeDroppedFile}
         thinkingAgentIds={thinkingAgentIds}
       />
       {activeSessions.map((session) => {
@@ -451,6 +526,10 @@ function App() {
             session={session}
             agentPosition={agent.position}
             agentName={agent.name}
+            pendingFiles={worldState?.pending_files[session.agent_id]}
+            onRemovePendingFile={() => {
+              invoke("clear_pending_files", { agentId: session.agent_id });
+            }}
             onSend={sendMessageWithThinking}
             onDismiss={handleDismiss}
             onReply={playReplyChirp}

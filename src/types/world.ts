@@ -59,6 +59,18 @@ export interface Ball {
   height_velocity: number;
 }
 
+export interface DroppedFile {
+  id: string;
+  files: [string, string][];
+  label: string;
+  icon_data_url: string | null;
+  position: Vec2;
+  claimed_by: string | null;
+  active: boolean;
+  height: number;
+  height_velocity: number;
+}
+
 export interface ChatBubble {
   agent_id: string;
   content: string;
@@ -81,10 +93,12 @@ export interface ChatSession {
 export interface WorldState {
   agents: Agent[];
   ball: Ball | null;
+  dropped_files: DroppedFile[];
   bubbles: ChatBubble[];
   chat_sessions: ChatSession[];
   bounds: Vec2;
   ground_y_ratio: number;
   tick: number;
   attention_interval_secs: number;
+  pending_files: Record<string, [string, string][]>;
 }
