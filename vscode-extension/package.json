@@ -1,0 +1,44 @@
+{
+  "name": "agent-terrarium",
+  "displayName": "Agent Terrarium",
+  "description": "AI agents live in a tiny animated world in your editor",
+  "version": "0.1.0",
+  "publisher": "asklar",
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "activationEvents": [
+    "onView:agentTerrariumView"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "type": "webview",
+          "id": "agentTerrariumView",
+          "name": "Agent Terrarium"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "agent-terrarium.toggle",
+        "title": "Toggle Agent Terrarium"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -watch -p .",
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node && esbuild webview/webviewMain.tsx --bundle --outfile=dist/webview.js --format=esm",
+    "package": "npx @vscode/vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/vscode": "^1.100.0",
+    "@vscode/vsce": "^3.3.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.8.0"
+  }
+}
