@@ -331,38 +331,48 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
 
   /** Push built-in package JSON files to the webview for the registry adapter. */
   private pushBuiltinPackages(): void {
-    const packagesDir = path.join(this.extensionUri.fsPath, "..", "public", "packages");
-    const packageFiles = ["themes.json", "agents.json", "gear.json", "seattle/seattle.json", "clippy/clippy.json"];
     const packages: string[] = [];
-    for (const rel of packageFiles) {
-      const full = path.join(packagesDir, rel);
-      try {
-        if (fs.existsSync(full)) {
-          packages.push(fs.readFileSync(full, "utf-8"));
-        }
-      } catch {}
-    }
-    // Also load user packages
-    let userPkgs: string[] = [];
-    if (loadUserPackages) {
-      try { userPkgs = loadUserPackages(); } catch {}
-    } else {
-      const dir = userPackagesDir();
-      try {
-        if (fs.existsSync(dir)) {
-          for (const entry of fs.readdirSync(dir)) {
-            const full = path.join(dir, entry);
-            if (entry.endsWith(".json") && fs.statSync(full).isFile()) {
-              userPkgs.push(fs.readFileSync(full, "utf-8"));
-            }
-          }
-        }
-      } catch {}
-    }
+
+    // Load built-in packages from public/packages/ (shipped with app)
+    const publicDir = path.join(this.extensionUri.fsPath, "..", "public", "packages");
+    log(`Loading built-in packages from: ${publicDir}`);
+    try {
+      if (fs.existsSync(publicDir)) {
+        this.loadPackagesFromDir(publicDir, packages);
+      }
+    } catch (e) { log(`Error loading built-in packages: ${e}`); }
+
+    // Load user packages from ~/agent-terrarium/packages/
+    const userDir = userPackagesDir();
+    log(`Loading user packages from: ${userDir}`);
+    try {
+      if (fs.existsSync(userDir)) {
+        this.loadPackagesFromDir(userDir, packages);
+      }
+    } catch (e) { log(`Error loading user packages: ${e}`); }
+
+    log(`Pushing ${packages.length} packages to webview`);
     this.view?.webview.postMessage({
       type: "packages",
-      packages: [...packages, ...userPkgs],
+      packages,
     });
+  }
+
+  private loadPackagesFromDir(dir: string, packages: string[]): void {
+    for (const entry of fs.readdirSync(dir)) {
+      const full = path.join(dir, entry);
+      const stat = fs.statSync(full);
+      if (stat.isFile() && entry.endsWith(".json")) {
+        try { packages.push(fs.readFileSync(full, "utf-8")); } catch {}
+      } else if (stat.isDirectory()) {
+        // Recurse into subdirectories (e.g. seattle/, clippy/)
+        for (const sub of fs.readdirSync(full)) {
+          if (sub.endsWith(".json")) {
+            try { packages.push(fs.readFileSync(path.join(full, sub), "utf-8")); } catch {}
+          }
+        }
+      }
+    }
   }
 
   private async handleMessage(msg: {
