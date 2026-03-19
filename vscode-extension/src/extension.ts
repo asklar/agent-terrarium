@@ -790,25 +790,7 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
     );
     const nonce = getNonce();
 
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy"
-    content="default-src 'none'; script-src 'nonce-${nonce}'; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data: https:; connect-src https:; font-src ${webview.cspSource};" />
-  <title>Agent Terrarium</title>
-  <link rel="stylesheet" href="${cssUri}" />
-  <style>
-    body { margin: 0; padding: 0; overflow: hidden; background: transparent; }
-    #root { width: 100%; height: 100vh; }
-  </style>
-</head>
-<body>
-  <div id="root"></div>
-  <script nonce="${nonce}" src="${scriptUri}"></script>
-</body>
-</html>`;
+    return `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8" />\n  <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n  <meta http-equiv="Content-Security-Policy"\n    content="default-src 'none'; script-src 'nonce-${nonce}'; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data: https:; connect-src https:; font-src ${webview.cspSource};" />\n  <title>Agent Terrarium</title>\n  <link rel="stylesheet" href="${cssUri}" />\n  <style>\n    body { margin: 0; padding: 0; overflow: hidden; }\n    #root { width: 100%; height: 100vh; }\n    #loading { padding: 16px; font-family: var(--vscode-font-family); color: var(--vscode-foreground); }\n  </style>\n</head>\n<body>\n  <div id="root"><div id="loading">🏡 Loading Agent Terrarium...</div></div>\n  <script nonce="${nonce}">\n    console.log('[AT] Inline script running');\n    window.onerror = function(msg, src, line, col, err) {\n      console.error('[AT] Error:', msg, src, line, col, err);\n      document.getElementById('root').innerHTML = '<pre style="color:red;padding:10px;font-size:11px;white-space:pre-wrap;">Error: ' + msg + '\\n' + (err && err.stack || '') + '</pre>';\n    };\n  </script>\n  <script nonce="${nonce}" src="${scriptUri}"></script>\n</body>\n</html>`;
   }
 
   stop(): void {
