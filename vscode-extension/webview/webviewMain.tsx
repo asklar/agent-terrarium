@@ -20,35 +20,37 @@ initRegistryAdapter(vscode);
 // ── Asset URL rewriting ─────────────────────────────────────────────
 // The shared components load images from "/packages/...", which works in
 // the Tauri app (Vite dev server). In VS Code webviews, we rewrite these
-// to webview URIs provided by the extension host.
+// to webview URIs embedded in the HTML by the extension host.
 
-let packagesBaseUri = "";
-let userPackagesBaseUri = "";
-
-window.addEventListener("message", (event) => {
-  const msg = event.data;
-  if (msg?.type === "assetBaseUris") {
-    packagesBaseUri = msg.packagesBaseUri ?? "";
-    userPackagesBaseUri = msg.userPackagesBaseUri ?? "";
-    console.log("[AT] Asset base URIs set:", packagesBaseUri, userPackagesBaseUri);
+declare global {
+  interface Window {
+    __PACKAGES_BASE_URI__?: string;
+    __USER_PACKAGES_BASE_URI__?: string;
   }
-});
+}
+
+const packagesBaseUri = window.__PACKAGES_BASE_URI__ || "";
+const userPackagesBaseUri = window.__USER_PACKAGES_BASE_URI__ || "";
+console.log("[AT] Asset base URIs:", packagesBaseUri ? "set" : "empty", userPackagesBaseUri ? "set" : "empty");
 
 // Monkey-patch Image.src to rewrite /packages/ URLs
-const OrigImage = window.Image;
 const originalDescriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "src")!;
 Object.defineProperty(HTMLImageElement.prototype, "src", {
   set(value: string) {
     let rewritten = value;
-    if (typeof value === "string" && value.startsWith("/packages/") && packagesBaseUri) {
+    if (typeof value === "string" && value.startsWith("/packages/") && (packagesBaseUri || userPackagesBaseUri)) {
       const relPath = value.replace(/^\/packages\//, "").replace(/\?.*$/, "");
-      rewritten = `${packagesBaseUri}/${relPath}`;
-      // If built-in fails, try user packages
-      this.onerror = () => {
-        if (userPackagesBaseUri) {
-          originalDescriptor.set!.call(this, `${userPackagesBaseUri}/${relPath}`);
-        }
-      };
+      // Try built-in packages first, fall back to user packages
+      if (packagesBaseUri) {
+        rewritten = `${packagesBaseUri}/${relPath}`;
+        this.onerror = () => {
+          if (userPackagesBaseUri) {
+            originalDescriptor.set!.call(this, `${userPackagesBaseUri}/${relPath}`);
+          }
+        };
+      } else if (userPackagesBaseUri) {
+        rewritten = `${userPackagesBaseUri}/${relPath}`;
+      }
     }
     originalDescriptor.set!.call(this, rewritten);
   },
