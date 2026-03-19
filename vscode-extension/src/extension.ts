@@ -101,10 +101,13 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
     if (config) {
       this.world.loadFromConfig(config as unknown as import("./simulation/types.js").AppConfig);
       log(`Loaded config: ${this.world.state.agents.length} agents`);
+      for (const a of this.world.state.agents) {
+        log(`  Agent ${a.name} (${a.avatar}): pos=(${a.position.x.toFixed(0)},${a.position.y.toFixed(0)}), bounds=(${this.world.state.bounds.x},${this.world.state.bounds.y})`);
+      }
     }
     if (this.world.state.agents.length === 0) {
-      this.world.addAgent("default", "Buddy");
-      log("Added default agent");
+      this.world.addAgent("copilot", "Copilot");
+      log("Added default copilot agent");
     }
 
     // Start package file watcher
