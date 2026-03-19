@@ -34,31 +34,39 @@ const userPackagesBaseUri = window.__USER_PACKAGES_BASE_URI__ || "";
 console.log("[AT] Asset base URIs:", packagesBaseUri ? "set" : "empty", userPackagesBaseUri ? "set" : "empty");
 
 // Monkey-patch Image.src to rewrite /packages/ URLs
-const originalDescriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "src")!;
-Object.defineProperty(HTMLImageElement.prototype, "src", {
-  set(value: string) {
-    let rewritten = value;
-    if (typeof value === "string" && value.startsWith("/packages/") && (packagesBaseUri || userPackagesBaseUri)) {
-      const relPath = value.replace(/^\/packages\//, "").replace(/\?.*$/, "");
-      // Try built-in packages first, fall back to user packages
-      if (packagesBaseUri) {
-        rewritten = `${packagesBaseUri}/${relPath}`;
-        this.onerror = () => {
-          if (userPackagesBaseUri) {
-            originalDescriptor.set!.call(this, `${userPackagesBaseUri}/${relPath}`);
+try {
+  const originalDescriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "src")!;
+  if (originalDescriptor && originalDescriptor.set) {
+    Object.defineProperty(HTMLImageElement.prototype, "src", {
+      set(value: string) {
+        let rewritten = value;
+        if (typeof value === "string" && value.startsWith("/packages/") && (packagesBaseUri || userPackagesBaseUri)) {
+          const relPath = value.replace(/^\/packages\//, "").replace(/\?.*$/, "");
+          if (packagesBaseUri) {
+            rewritten = `${packagesBaseUri}/${relPath}`;
+            const self = this;
+            this.onerror = () => {
+              if (userPackagesBaseUri) {
+                originalDescriptor.set!.call(self, `${userPackagesBaseUri}/${relPath}`);
+              }
+            };
+          } else if (userPackagesBaseUri) {
+            rewritten = `${userPackagesBaseUri}/${relPath}`;
           }
-        };
-      } else if (userPackagesBaseUri) {
-        rewritten = `${userPackagesBaseUri}/${relPath}`;
-      }
-    }
-    originalDescriptor.set!.call(this, rewritten);
-  },
-  get() {
-    return originalDescriptor.get!.call(this);
-  },
-  configurable: true,
-});
+          console.log("[AT] Rewrote image:", value, "→", rewritten);
+        }
+        originalDescriptor.set!.call(this, rewritten);
+      },
+      get() {
+        return originalDescriptor.get!.call(this);
+      },
+      configurable: true,
+    });
+    console.log("[AT] Image.src monkey-patch installed");
+  }
+} catch (e) {
+  console.error("[AT] Failed to install Image.src monkey-patch:", e);
+}
 
 // ── App ─────────────────────────────────────────────────────────────
 
