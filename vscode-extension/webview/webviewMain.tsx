@@ -42,18 +42,18 @@ try {
         let rewritten = value;
         if (typeof value === "string" && value.startsWith("/packages/") && (packagesBaseUri || userPackagesBaseUri)) {
           const relPath = value.replace(/^\/packages\//, "").replace(/\?.*$/, "");
-          if (packagesBaseUri) {
-            rewritten = `${packagesBaseUri}/${relPath}`;
+          // Try user packages first (custom themes), fall back to built-in
+          if (userPackagesBaseUri) {
+            rewritten = `${userPackagesBaseUri}/${relPath}`;
             const self = this;
             this.onerror = () => {
-              if (userPackagesBaseUri) {
-                originalDescriptor.set!.call(self, `${userPackagesBaseUri}/${relPath}`);
+              if (packagesBaseUri) {
+                originalDescriptor.set!.call(self, `${packagesBaseUri}/${relPath}`);
               }
             };
-          } else if (userPackagesBaseUri) {
-            rewritten = `${userPackagesBaseUri}/${relPath}`;
+          } else if (packagesBaseUri) {
+            rewritten = `${packagesBaseUri}/${relPath}`;
           }
-          console.log("[AT] Rewrote image:", value, "→", rewritten);
         }
         originalDescriptor.set!.call(this, rewritten);
       },

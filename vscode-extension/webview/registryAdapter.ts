@@ -15,12 +15,6 @@
 import { registry } from "../../src/themes/registry";
 import type { Package } from "../../src/themes/PackageTypes";
 
-declare function acquireVsCodeApi(): {
-  postMessage(msg: unknown): void;
-  getState(): unknown;
-  setState(state: unknown): void;
-};
-
 let initialized = false;
 
 /**
@@ -28,7 +22,7 @@ let initialized = false;
  * Requests package data from the extension host and loads it
  * into the shared registry singleton.
  */
-export function initRegistryAdapter(vscode: ReturnType<typeof acquireVsCodeApi>): void {
+export function initRegistryAdapter(vscode: { postMessage(msg: unknown): void }): void {
   if (initialized) return;
   initialized = true;
 
@@ -36,28 +30,26 @@ export function initRegistryAdapter(vscode: ReturnType<typeof acquireVsCodeApi>)
     const msg = event.data;
     if (!msg) return;
 
-    if (msg.type === "packages") {
-      const packages = msg.packages as (Package | string)[];
+    if (msg.type === "packages" || msg.type === "loadUserPackagesResult") {
+      const packages = msg.packages as unknown[];
+      let loaded = 0;
       for (const pkg of packages) {
         try {
-          const parsed: Package = typeof pkg === "string" ? JSON.parse(pkg) : pkg;
+          let parsed: Package;
+          if (typeof pkg === "string") {
+            parsed = JSON.parse(pkg);
+          } else if (pkg && typeof pkg === "object") {
+            parsed = pkg as Package;
+          } else {
+            continue;
+          }
           registry.loadPackage(parsed);
+          loaded++;
         } catch (e) {
           console.warn("Failed to load package in webview:", e);
         }
       }
-    }
-
-    if (msg.type === "loadUserPackagesResult") {
-      const packages = msg.packages as string[];
-      for (const json of packages) {
-        try {
-          const pkg = JSON.parse(json) as Package;
-          registry.loadPackage(pkg);
-        } catch (e) {
-          console.warn("Failed to load user package in webview:", e);
-        }
-      }
+      console.log(`[AT] Loaded ${loaded}/${packages.length} packages from ${msg.type}`);
     }
   });
 
