@@ -241,7 +241,7 @@ function App() {
     );
   }
 
-  console.log("[Agent Terrarium] Rendering", worldState.agents.length, "agents, tick:", worldState.tick);
+  // Render terrarium
 
   return (
     <div className="terrarium-container" onContextMenu={(e) => {
