@@ -77,6 +77,8 @@ function App() {
     clickAgent,
     sendMessage,
     dismissChat,
+    clearChat,
+    popOutChat,
     resizeWorld,
     removeDroppedFile,
     detachAgentFile,
@@ -86,6 +88,8 @@ function App() {
     addAgent,
     removeAgent,
     setGear,
+    renameAgent,
+    setBackendConfig,
   } = useWorldState();
 
   const [theme, setTheme] = useState("meadow");
@@ -275,6 +279,11 @@ function App() {
             onSend={sendMessageWithThinking}
             onDismiss={dismissChat}
             onReply={playReplyChirp}
+            onNewSession={(agentId) => clearChat(agentId)}
+            onConfigure={(agentId) => {
+              vscode.postMessage({ type: "configureAgent", agentId });
+            }}
+            onPopOut={(agentId) => popOutChat(agentId)}
           />
         );
       })}

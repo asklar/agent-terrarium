@@ -17,6 +17,7 @@ interface ChatOverlayProps {
   onReply?: (agentId: string) => void;
   onConfigure?: (agentId: string) => void;
   onPopOut?: (agentId: string) => void;
+  onNewSession?: (agentId: string) => void;
 }
 
 export function ChatOverlay({
@@ -30,6 +31,7 @@ export function ChatOverlay({
   onReply,
   onConfigure,
   onPopOut,
+  onNewSession,
 }: ChatOverlayProps) {
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -92,6 +94,15 @@ export function ChatOverlay({
     >
       <div className="chat-header">
         <span className="chat-agent-name">{agentName}</span>
+        {onNewSession && (
+          <button
+            className="chat-configure"
+            onClick={() => onNewSession(session.agent_id)}
+            title="New session"
+          >
+            ✦
+          </button>
+        )}
         {onConfigure && (
           <button
             className="chat-configure"

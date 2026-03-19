@@ -258,6 +258,46 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
 </html>`;
   }
 
+  async configureAgent(agentId: string): Promise<void> {
+    const agent = this.world.state.agents.find((a) => a.id === agentId);
+    if (!agent) return;
+
+    const action = await vscode.window.showQuickPick(
+      ["Rename agent", "Change backend"],
+      { placeHolder: `Configure ${agent.name}` },
+    );
+    if (!action) return;
+
+    if (action === "Rename agent") {
+      const newName = await vscode.window.showInputBox({
+        prompt: "New agent name",
+        value: agent.name,
+      });
+      if (newName && newName !== agent.name) {
+        this.world.renameAgent(agentId, newName);
+      }
+    } else if (action === "Change backend") {
+      const backends = ["echo", "copilot", "openai", "ollama"];
+      const currentBackend = agent.backendConfig?.backendId ?? "echo";
+      const pick = await vscode.window.showQuickPick(
+        backends.map((b) => ({ label: b, picked: b === currentBackend })),
+        { placeHolder: `Current backend: ${currentBackend}` },
+      );
+      if (pick) {
+        this.world.setBackendConfig(agentId, {
+          backendId: pick.label,
+          model: agent.backendConfig?.model ?? null,
+          awarenessModel: agent.backendConfig?.awarenessModel ?? null,
+          systemPrompt: agent.backendConfig?.systemPrompt ?? null,
+          customAgent: agent.backendConfig?.customAgent ?? null,
+          awarenessLevel: agent.backendConfig?.awarenessLevel ?? 0,
+          ttsEnabled: agent.backendConfig?.ttsEnabled ?? false,
+          cwd: agent.backendConfig?.cwd ?? null,
+        });
+      }
+    }
+  }
+
   private reloadAndNotifyPackages(): void {
     let packages: string[] = [];
     if (loadUserPackages) {
@@ -802,6 +842,11 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
       // ── Pop-out chat ────────────────────────────────────────────────
       case "popOutChat":
         this.popOutChat(msg.agentId as string);
+        break;
+
+      // ── Configure agent (VS Code native UI) ─────────────────────────
+      case "configureAgent":
+        this.configureAgent(msg.agentId as string);
         break;
 
       // ── Get file icon data URL ──────────────────────────────────────

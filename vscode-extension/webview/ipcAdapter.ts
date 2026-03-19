@@ -263,6 +263,13 @@ export function useWorldState() {
     [post],
   );
 
+  const clearChat = useCallback(
+    async (agentId: string) => {
+      post("clearChat", { agentId });
+    },
+    [post],
+  );
+
   const resizeWorld = useCallback(
     async (width: number, height: number) => {
       post("resize", { width, height });
@@ -357,6 +364,13 @@ export function useWorldState() {
     return null;
   }, []);
 
+  const popOutChat = useCallback(
+    async (agentId: string) => {
+      post("popOutChat", { agentId });
+    },
+    [post],
+  );
+
   return {
     worldState,
     throwBall,
@@ -366,6 +380,8 @@ export function useWorldState() {
     clickAgent,
     sendMessage,
     dismissChat,
+    clearChat,
+    popOutChat,
     resizeWorld,
     addAgent,
     removeAgent,
