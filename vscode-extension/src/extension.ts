@@ -44,6 +44,15 @@ import { Vec2 } from "./simulation/types.js";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
+// ── Logging ─────────────────────────────────────────────────────────
+
+let outputChannel: vscode.OutputChannel;
+
+function log(msg: string): void {
+  const ts = new Date().toISOString();
+  outputChannel?.appendLine(`[${ts}] ${msg}`);
+}
+
 // ── Webview provider ────────────────────────────────────────────────
 
 class TerrariumViewProvider implements vscode.WebviewViewProvider {
@@ -63,15 +72,17 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
   ) {
     this.secrets = context.secrets;
     this.world = new World(Vec2.new(300, 200));
+    log("World created (300x200)");
     this.registry = new BackendRegistry();
     this.registry.register(new EchoBackend());
+    log("Registered echo backend");
 
     // Register optional backends
     if (CopilotBackend) {
-      try { this.registry.register(new CopilotBackend()); } catch {}
+      try { this.registry.register(new CopilotBackend()); log("Registered copilot backend"); } catch (e) { log(`Failed to register copilot: ${e}`); }
     }
     if (OpenAIBackend) {
-      try { this.registry.register(new OpenAIBackend()); } catch {}
+      try { this.registry.register(new OpenAIBackend()); log("Registered openai backend"); } catch (e) { log(`Failed to register openai: ${e}`); }
     }
 
     // Start event dispatcher if available
@@ -79,16 +90,19 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
       try {
         this.eventDispatcherInstance = new EventDispatcher(this.world, this.registry);
         this.eventDispatcherInstance.start();
-      } catch {}
+        log("Event dispatcher started");
+      } catch (e) { log(`Failed to start event dispatcher: ${e}`); }
     }
 
     // Restore config
     const config = loadConfig();
     if (config) {
       this.world.loadFromConfig(config as unknown as import("./simulation/types.js").AppConfig);
+      log(`Loaded config: ${this.world.state.agents.length} agents`);
     }
     if (this.world.state.agents.length === 0) {
       this.world.addAgent("default", "Buddy");
+      log("Added default agent");
     }
 
     // Start package file watcher
@@ -96,6 +110,7 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
     startPackageWatcher(pkgDir, () => {
       this.reloadAndNotifyPackages();
     });
+    log("Extension ready");
   }
 
   // ── Public API for commands ───────────────────────────────────────────
@@ -267,6 +282,7 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
     _token: vscode.CancellationToken,
   ): void {
     this.view = webviewView;
+    log("Resolving webview view...");
 
     webviewView.webview.options = {
       enableScripts: true,
@@ -277,19 +293,23 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
     };
 
     webviewView.webview.html = this.getHtml(webviewView.webview);
+    log("Webview HTML set");
 
     // Handle messages from webview
-    webviewView.webview.onDidReceiveMessage((msg) =>
-      this.handleMessage(msg),
-    );
+    webviewView.webview.onDidReceiveMessage((msg) => {
+      log(`Webview message: ${msg?.type ?? msg?.command ?? JSON.stringify(msg).slice(0, 80)}`);
+      this.handleMessage(msg);
+    });
 
     // Start simulation tick loop (20 Hz = 50ms)
     this.tickInterval = setInterval(() => {
       this.world.tick();
       this.pushState();
     }, 50);
+    log("Simulation tick loop started (20 Hz)");
 
     webviewView.onDidDispose(() => {
+      log("Webview disposed");
       if (this.tickInterval) clearInterval(this.tickInterval);
     });
   }
@@ -776,7 +796,7 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'none'; script-src 'nonce-${nonce}'; style-src ${webview.cspSource} 'unsafe-inline';" />
+    content="default-src 'none'; script-src 'nonce-${nonce}'; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data: https:; connect-src https:; font-src ${webview.cspSource};" />
   <title>Agent Terrarium</title>
   <link rel="stylesheet" href="${cssUri}" />
   <style>
@@ -820,6 +840,10 @@ function getNonce(): string {
 let provider: TerrariumViewProvider | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
+  outputChannel = vscode.window.createOutputChannel("Agent Terrarium");
+  context.subscriptions.push(outputChannel);
+  log("Extension activating...");
+
   provider = new TerrariumViewProvider(context.extensionUri, context);
 
   context.subscriptions.push(
