@@ -21,21 +21,21 @@ import type {
   ChatMessage,
 } from "../../src/types/world";
 
-// acquireVsCodeApi is injected globally by the VS Code webview host
+// acquireVsCodeApi is injected globally by the VS Code webview host.
+// It can only be called ONCE, so we cache it at module scope.
 declare function acquireVsCodeApi(): {
   postMessage(msg: unknown): void;
   getState(): unknown;
   setState(state: unknown): void;
 };
 
-let vscodeApi: ReturnType<typeof acquireVsCodeApi> | undefined;
+const vscodeApi = acquireVsCodeApi();
 
 function getVsCodeApi() {
-  if (!vscodeApi) {
-    vscodeApi = acquireVsCodeApi();
-  }
   return vscodeApi;
 }
+
+export { vscodeApi };
 
 // ── camelCase → snake_case conversion ────────────────────────────────
 

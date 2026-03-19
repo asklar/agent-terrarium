@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { useWorldState } from "./ipcAdapter";
+import { useWorldState, vscodeApi } from "./ipcAdapter";
 import { initRegistryAdapter } from "./registryAdapter";
 import { TerrariumCanvas } from "../../src/components/TerrariumCanvas";
 import { ChatOverlay } from "../../src/components/ChatOverlay";
@@ -11,13 +11,7 @@ import "../../src/App.css";
 
 // ── VS Code API ─────────────────────────────────────────────────────
 
-declare function acquireVsCodeApi(): {
-  postMessage(msg: unknown): void;
-  getState(): unknown;
-  setState(state: unknown): void;
-};
-
-const vscode = acquireVsCodeApi();
+const vscode = vscodeApi;
 
 // Initialize registry adapter to receive packages from extension host
 initRegistryAdapter(vscode);

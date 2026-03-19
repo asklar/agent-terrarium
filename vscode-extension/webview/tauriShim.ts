@@ -1,18 +1,5 @@
 // Shim for @tauri-apps/api/core — redirects invoke() to VS Code postMessage IPC
-declare function acquireVsCodeApi(): {
-  postMessage(msg: unknown): void;
-  getState(): unknown;
-  setState(state: unknown): void;
-};
-
-let _vscode: ReturnType<typeof acquireVsCodeApi> | undefined;
-
-function getVsCodeApi(): ReturnType<typeof acquireVsCodeApi> {
-  if (!_vscode) {
-    _vscode = acquireVsCodeApi();
-  }
-  return _vscode;
-}
+import { vscodeApi } from "./ipcAdapter";
 
 /**
  * Drop-in replacement for Tauri's `invoke()`.
@@ -41,6 +28,6 @@ export function invoke(cmd: string, args?: Record<string, unknown>): Promise<unk
     };
 
     window.addEventListener("message", handler);
-    getVsCodeApi().postMessage({ command: cmd, ...args, responseId: id });
+    vscodeApi.postMessage({ command: cmd, ...args, responseId: id });
   });
 }
