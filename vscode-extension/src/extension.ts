@@ -7,264 +7,39 @@ import {
   saveConfig,
   loadChatHistory,
   saveChatHistory,
+  userPackagesDir,
   type AppConfig,
   type ChatMessage,
+  type AgentConfig as ConfigAgentConfig,
 } from "./config.js";
 
-// ── Lightweight simulation types (mirrors Rust WorldState) ──────────
+// Optional imports for modules that may still be in progress
+let CopilotBackend: (new () => import("./agents/backend.js").AgentBackend) | undefined;
+let OpenAIBackend: (new () => import("./agents/backend.js").AgentBackend) | undefined;
+let EventDispatcher: (new (world: World, registry: BackendRegistry) => { start(): void; stop(): void }) | undefined;
 
-interface Vec2 {
-  x: number;
-  y: number;
-}
+try { CopilotBackend = require("./agents/copilot.js").CopilotBackend; } catch {}
+try { OpenAIBackend = require("./agents/openai.js").OpenAIBackend; } catch {}
+try { EventDispatcher = require("./eventDispatcher.js").EventDispatcher; } catch {}
 
-type AgentState =
-  | "Idle"
-  | "Walking"
-  | "Running"
-  | "Jumping"
-  | "Chatting"
-  | "NeedsAttention";
+// Optional utility modules
+let fetchLocation: (() => Promise<unknown>) | undefined;
+let fetchWeather: ((lat: number, lon: number) => Promise<unknown>) | undefined;
+let loadUserPackages: (() => string[]) | undefined;
 
-interface SimAgent {
-  id: string;
-  name: string;
-  avatar: string;
-  position: Vec2;
-  velocity: Vec2;
-  state: AgentState;
-  direction: "Left" | "Right";
-  stateTimer: number;
-  gear: string[];
-  backendConfig?: BackendConfig;
-}
+try {
+  const weather = require("./weather.js");
+  fetchLocation = weather.fetchLocation;
+  fetchWeather = weather.fetchWeather;
+} catch {}
 
-interface SimBall {
-  position: Vec2;
-  velocity: Vec2;
-  active: boolean;
-  height: number;
-  heightVelocity: number;
-}
+try {
+  loadUserPackages = require("./packages.js").loadUserPackages;
+} catch {}
 
-interface SimChatBubble {
-  agentId: string;
-  content: string;
-  timer: number;
-  isEmoji: boolean;
-}
-
-interface SimWorldState {
-  agents: SimAgent[];
-  ball: SimBall | null;
-  bubbles: SimChatBubble[];
-  bounds: Vec2;
-  tick: number;
-}
-
-// ── Minimal simulation engine ───────────────────────────────────────
-
-const TICK_RATE = 1 / 20;
-const GROUND_Y_RATIO = 0.85;
-
-class World {
-  agents: SimAgent[] = [];
-  ball: SimBall | null = null;
-  bubbles: SimChatBubble[] = [];
-  bounds: Vec2 = { x: 300, y: 200 };
-  tick = 0;
-  chatSessions = new Map<string, ChatMessage[]>();
-
-  private nextId = 1;
-
-  addAgent(avatar: string, name: string): string {
-    const id = `agent-${this.nextId++}`;
-    const groundY = this.bounds.y * GROUND_Y_RATIO;
-    this.agents.push({
-      id,
-      name,
-      avatar,
-      position: { x: Math.random() * this.bounds.x, y: groundY },
-      velocity: { x: (Math.random() - 0.5) * 40, y: 0 },
-      state: "Idle",
-      direction: Math.random() > 0.5 ? "Right" : "Left",
-      stateTimer: 0,
-      gear: [],
-    });
-    return id;
-  }
-
-  removeAgent(agentId: string): void {
-    this.agents = this.agents.filter((a) => a.id !== agentId);
-    this.chatSessions.delete(agentId);
-  }
-
-  renameAgent(agentId: string, name: string): void {
-    const agent = this.agents.find((a) => a.id === agentId);
-    if (agent) agent.name = name;
-  }
-
-  setGear(agentId: string, gearIds: string[]): void {
-    const agent = this.agents.find((a) => a.id === agentId);
-    if (agent) agent.gear = gearIds;
-  }
-
-  setBackendConfig(agentId: string, config: BackendConfig): void {
-    const agent = this.agents.find((a) => a.id === agentId);
-    if (agent) agent.backendConfig = config;
-  }
-
-  requestAttention(agentId: string): void {
-    const agent = this.agents.find((a) => a.id === agentId);
-    if (agent) agent.state = "NeedsAttention";
-  }
-
-  dismissAttention(agentId: string): void {
-    const agent = this.agents.find((a) => a.id === agentId);
-    if (agent && agent.state === "NeedsAttention") agent.state = "Idle";
-  }
-
-  throwBall(x: number, y: number, vx: number, vy: number): void {
-    this.ball = {
-      position: { x, y },
-      velocity: { x: vx, y: vy },
-      active: true,
-      height: 0,
-      heightVelocity: -200,
-    };
-  }
-
-  clickAgent(agentId: string): boolean {
-    const agent = this.agents.find((a) => a.id === agentId);
-    if (!agent) return false;
-    agent.state = "Chatting";
-    if (!this.chatSessions.has(agentId)) {
-      const history = loadChatHistory(agentId);
-      this.chatSessions.set(agentId, history);
-    }
-    return true;
-  }
-
-  dismissChat(agentId: string): void {
-    const agent = this.agents.find((a) => a.id === agentId);
-    if (agent) agent.state = "Idle";
-  }
-
-  clearChat(agentId: string): void {
-    this.chatSessions.set(agentId, []);
-    saveChatHistory(agentId, []);
-  }
-
-  addUserMessage(agentId: string, text: string): void {
-    const msgs = this.chatSessions.get(agentId) ?? [];
-    msgs.push({ role: "user", content: text });
-    this.chatSessions.set(agentId, msgs);
-  }
-
-  completeResponse(agentId: string, content: string): void {
-    const msgs = this.chatSessions.get(agentId) ?? [];
-    msgs.push({ role: "assistant", content });
-    this.chatSessions.set(agentId, msgs);
-    saveChatHistory(agentId, msgs);
-  }
-
-  getChatMessages(agentId: string): ChatMessage[] {
-    return this.chatSessions.get(agentId) ?? [];
-  }
-
-  pushBubble(
-    agentId: string,
-    content: string,
-    isEmoji: boolean,
-    duration: number,
-  ): void {
-    this.bubbles.push({ agentId, content, timer: duration, isEmoji });
-  }
-
-  resize(width: number, height: number): void {
-    this.bounds = { x: width, y: height };
-  }
-
-  // Main tick: simple wander + bubble decay
-  doTick(): void {
-    this.tick++;
-    const groundY = this.bounds.y * GROUND_Y_RATIO;
-
-    for (const agent of this.agents) {
-      if (agent.state === "Chatting" || agent.state === "NeedsAttention")
-        continue;
-
-      agent.stateTimer -= TICK_RATE;
-
-      if (agent.stateTimer <= 0) {
-        // Pick new wander target
-        agent.velocity.x = (Math.random() - 0.5) * 60;
-        agent.stateTimer = 2 + Math.random() * 4;
-        agent.state = agent.velocity.x !== 0 ? "Walking" : "Idle";
-      }
-
-      agent.position.x += agent.velocity.x * TICK_RATE;
-      agent.position.y = groundY;
-      agent.direction = agent.velocity.x >= 0 ? "Right" : "Left";
-
-      // Clamp to bounds
-      if (agent.position.x < 20) {
-        agent.position.x = 20;
-        agent.velocity.x = Math.abs(agent.velocity.x);
-      }
-      if (agent.position.x > this.bounds.x - 20) {
-        agent.position.x = this.bounds.x - 20;
-        agent.velocity.x = -Math.abs(agent.velocity.x);
-      }
-    }
-
-    // Ball physics
-    if (this.ball?.active) {
-      this.ball.position.x += this.ball.velocity.x * TICK_RATE;
-      this.ball.position.y += this.ball.velocity.y * TICK_RATE;
-      this.ball.velocity.y += 400 * TICK_RATE; // gravity
-      this.ball.velocity.x *= 0.99;
-
-      if (this.ball.position.y >= groundY) {
-        this.ball.position.y = groundY;
-        this.ball.velocity.y *= -0.6;
-        if (Math.abs(this.ball.velocity.y) < 5) {
-          this.ball.active = false;
-          this.ball = null;
-        }
-      }
-    }
-
-    // Bubble decay
-    this.bubbles = this.bubbles.filter((b) => {
-      b.timer -= TICK_RATE;
-      return b.timer > 0;
-    });
-  }
-
-  getState(): SimWorldState {
-    return {
-      agents: this.agents.map((a) => ({ ...a })),
-      ball: this.ball ? { ...this.ball } : null,
-      bubbles: [...this.bubbles],
-      bounds: { ...this.bounds },
-      tick: this.tick,
-    };
-  }
-
-  loadFromConfig(config: AppConfig): void {
-    for (const ac of config.agents) {
-      const id = this.addAgent(ac.avatar, ac.name);
-      const agent = this.agents.find((a) => a.id === id);
-      if (agent) {
-        agent.gear = ac.gear;
-        if (ac.backendConfig) {
-          agent.backendConfig = ac.backendConfig;
-        }
-      }
-    }
-  }
-}
+import { World } from "./simulation/world.js";
+import { Vec2 } from "./simulation/types.js";
+import * as fs from "node:fs";
 
 // ── Webview provider ────────────────────────────────────────────────
 
@@ -275,18 +50,40 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
   private tickInterval?: ReturnType<typeof setInterval>;
   private world: World;
   private registry: BackendRegistry;
+  private secrets: vscode.SecretStorage;
+  private eventDispatcherInstance?: { start(): void; stop(): void };
 
-  constructor(private readonly extensionUri: vscode.Uri) {
-    this.world = new World();
+  constructor(
+    private readonly extensionUri: vscode.Uri,
+    private readonly context: vscode.ExtensionContext,
+  ) {
+    this.secrets = context.secrets;
+    this.world = new World(Vec2.new(300, 200));
     this.registry = new BackendRegistry();
     this.registry.register(new EchoBackend());
+
+    // Register optional backends
+    if (CopilotBackend) {
+      try { this.registry.register(new CopilotBackend()); } catch {}
+    }
+    if (OpenAIBackend) {
+      try { this.registry.register(new OpenAIBackend()); } catch {}
+    }
+
+    // Start event dispatcher if available
+    if (EventDispatcher) {
+      try {
+        this.eventDispatcherInstance = new EventDispatcher(this.world, this.registry);
+        this.eventDispatcherInstance.start();
+      } catch {}
+    }
 
     // Restore config
     const config = loadConfig();
     if (config) {
-      this.world.loadFromConfig(config);
+      this.world.loadFromConfig(config as unknown as import("./simulation/types.js").AppConfig);
     }
-    if (this.world.agents.length === 0) {
+    if (this.world.state.agents.length === 0) {
       this.world.addAgent("default", "Buddy");
     }
   }
@@ -315,7 +112,7 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
 
     // Start simulation tick loop (20 Hz = 50ms)
     this.tickInterval = setInterval(() => {
-      this.world.doTick();
+      this.world.tick();
       this.pushState();
     }, 50);
 
@@ -360,26 +157,72 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
       case "sendMessage": {
         const agentId = msg.agentId as string;
         const text = msg.text as string;
-        this.world.addUserMessage(agentId, text);
 
-        const agent = this.world.agents.find((a) => a.id === agentId);
-        const backendId = agent?.backendConfig?.backendId ?? "echo";
+        // Check for pending files — build context prefix for the backend (mirrors Rust lib.rs)
+        const pending = this.world.getPendingFiles(agentId);
+        let backendText: string;
+        if (pending.length > 0) {
+          const fileList = pending
+            .map(([name, filePath]) => `- ${name}: ${filePath}`)
+            .join("\n");
+          this.world.clearPendingFiles(agentId);
+          backendText = `[The user has shared the following file(s) with you:\n${fileList}\n]\n\n${text}`;
+        } else {
+          backendText = text;
+        }
+
+        // Add user message (display text only, without file context)
+        const simBackendConfig = this.world.addUserMessage(agentId, text);
+
+        const effectiveConfig: BackendConfig = simBackendConfig
+          ? {
+              backendId: simBackendConfig.backendId,
+              model: simBackendConfig.model ?? undefined,
+              awarenessModel: simBackendConfig.awarenessModel ?? undefined,
+              systemPrompt: simBackendConfig.systemPrompt ?? undefined,
+              customAgent: simBackendConfig.customAgent ?? undefined,
+              awarenessLevel: simBackendConfig.awarenessLevel,
+              ttsEnabled: simBackendConfig.ttsEnabled,
+              cwd: simBackendConfig.cwd ?? undefined,
+            }
+          : {
+              backendId: "echo",
+              awarenessLevel: 0,
+              ttsEnabled: false,
+            };
+        const backendId = effectiveConfig.backendId ?? "echo";
         const backend = this.registry.get(backendId) ?? this.registry.get("echo");
         if (backend) {
+          // Lazily load credential from SecretStorage if backend needs one
+          if (!(await backend.isAvailable())) {
+            const credKey = backend.credentialKey();
+            if (credKey) {
+              const key = await this.secrets.get(credKey);
+              if (key) {
+                await backend.setApiKey(key);
+              }
+            }
+          }
+
           const chatMsgs = this.world.getChatMessages(agentId);
           const backendMsgs: BackendMessage[] = chatMsgs.map((m) => ({
-            role: m.role,
-            content: m.content,
+            role: m.fromUser ? "user" as const : "assistant" as const,
+            content: m.text,
           }));
-          const config: BackendConfig = agent?.backendConfig ?? {
-            backendId: "echo",
-            awarenessLevel: 0,
-            ttsEnabled: false,
-          };
+          // Replace the last user message content with backendText (includes file context)
+          for (let i = backendMsgs.length - 1; i >= 0; i--) {
+            if (backendMsgs[i].role === "user") {
+              backendMsgs[i].content = backendText;
+              break;
+            }
+          }
+
           try {
-            const resp = await backend.respond(agentId, config, backendMsgs);
+            const resp = await backend.respond(agentId, effectiveConfig, backendMsgs);
             this.world.completeResponse(agentId, resp.content);
             this.world.pushBubble(agentId, resp.content, false, 5);
+            // Detach any claimed file now that the backend has responded
+            this.world.detachFile(agentId);
             if (resp.needsAttention) {
               this.world.requestAttention(agentId);
             }
@@ -425,12 +268,23 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
         this.world.dismissAttention(msg.agentId as string);
         break;
 
-      case "setBackendConfig":
+      case "setBackendConfig": {
+        const cfg = msg.config as BackendConfig;
         this.world.setBackendConfig(
           msg.agentId as string,
-          msg.config as BackendConfig,
+          {
+            backendId: cfg.backendId,
+            model: cfg.model ?? null,
+            awarenessModel: cfg.awarenessModel ?? null,
+            systemPrompt: cfg.systemPrompt ?? null,
+            customAgent: cfg.customAgent ?? null,
+            awarenessLevel: cfg.awarenessLevel,
+            ttsEnabled: cfg.ttsEnabled,
+            cwd: cfg.cwd ?? null,
+          },
         );
         break;
+      }
 
       case "pushBubble":
         this.world.pushBubble(
@@ -444,6 +298,188 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
       case "resize":
         this.world.resize(msg.width as number, msg.height as number);
         break;
+
+      // ── File drop handlers ──────────────────────────────────────────
+      case "dropFiles": {
+        const fileId = this.world.dropFiles(
+          msg.files as [string, string][],
+          msg.x as number,
+          msg.y as number,
+        );
+        this.view?.webview.postMessage({ type: "dropFilesResult", fileId });
+        break;
+      }
+
+      case "removeDroppedFile":
+        this.world.removeDroppedFile(msg.fileId as string);
+        break;
+
+      case "detachAgentFile":
+        this.world.detachFile(msg.agentId as string);
+        break;
+
+      case "setPendingFiles":
+        this.world.setPendingFiles(
+          msg.agentId as string,
+          msg.files as [string, string][],
+        );
+        break;
+
+      case "clearPendingFiles":
+        this.world.clearPendingFiles(msg.agentId as string);
+        break;
+
+      // ── Credential management ───────────────────────────────────────
+      case "setCredential":
+        await this.secrets.store(
+          msg.backendId as string,
+          msg.key as string,
+        );
+        break;
+
+      case "getCredential": {
+        const value = await this.secrets.get(msg.backendId as string);
+        this.view?.webview.postMessage({
+          type: "getCredentialResult",
+          backendId: msg.backendId,
+          key: value ?? null,
+        });
+        break;
+      }
+
+      case "deleteCredential":
+        await this.secrets.delete(msg.backendId as string);
+        break;
+
+      case "hasCredential": {
+        const val = await this.secrets.get(msg.backendId as string);
+        this.view?.webview.postMessage({
+          type: "hasCredentialResult",
+          backendId: msg.backendId,
+          exists: val !== undefined,
+        });
+        break;
+      }
+
+      // ── Backend listing ─────────────────────────────────────────────
+      case "listBackendModels": {
+        const be = this.registry.get(msg.backendId as string);
+        const models = be ? await be.listModels() : [];
+        this.view?.webview.postMessage({
+          type: "listBackendModelsResult",
+          backendId: msg.backendId,
+          models,
+        });
+        break;
+      }
+
+      case "listBackendAgents": {
+        const be2 = this.registry.get(msg.backendId as string);
+        const agents = be2
+          ? await be2.listAgents(msg.cwd as string | undefined)
+          : [];
+        this.view?.webview.postMessage({
+          type: "listBackendAgentsResult",
+          backendId: msg.backendId,
+          agents,
+        });
+        break;
+      }
+
+      // ── Utility handlers ────────────────────────────────────────────
+      case "saveConfig": {
+        const simAgentConfigs = this.world.getAgentConfigs();
+        const state = this.world.getState();
+        const configAgents: ConfigAgentConfig[] = simAgentConfigs.map((a) => ({
+          id: a.id,
+          name: a.name,
+          avatar: a.avatar,
+          gear: a.gear,
+          backendConfig: {
+            backendId: a.backendConfig.backendId,
+            model: a.backendConfig.model ?? undefined,
+            awarenessModel: a.backendConfig.awarenessModel ?? undefined,
+            systemPrompt: a.backendConfig.systemPrompt ?? undefined,
+            customAgent: a.backendConfig.customAgent ?? undefined,
+            awarenessLevel: a.backendConfig.awarenessLevel,
+            ttsEnabled: a.backendConfig.ttsEnabled,
+            cwd: a.backendConfig.cwd ?? undefined,
+          },
+        }));
+        const appConfig: AppConfig = {
+          theme: (msg.theme as string) ?? "default",
+          agents: configAgents,
+          ballMaxCaptures: state.ballMaxCaptures,
+          ballKickOnCapture: state.ballKickOnCapture,
+          attentionIntervalSecs: state.attentionIntervalSecs,
+          musicMuted: (msg.musicMuted as boolean) ?? false,
+          dynamicSky: (msg.dynamicSky as boolean) ?? false,
+        };
+        saveConfig(appConfig);
+        break;
+      }
+
+      case "loadConfig": {
+        const loaded = loadConfig();
+        this.view?.webview.postMessage({
+          type: "loadConfigResult",
+          config: loaded,
+        });
+        break;
+      }
+
+      case "loadUserPackages": {
+        let packages: string[] = [];
+        if (loadUserPackages) {
+          try { packages = loadUserPackages(); } catch {}
+        } else {
+          // Inline fallback: read JSON files from user packages dir
+          const dir = userPackagesDir();
+          try {
+            if (fs.existsSync(dir)) {
+              for (const entry of fs.readdirSync(dir)) {
+                const full = `${dir}/${entry}`;
+                if (entry.endsWith(".json") && fs.statSync(full).isFile()) {
+                  packages.push(fs.readFileSync(full, "utf-8"));
+                }
+              }
+            }
+          } catch {}
+        }
+        this.view?.webview.postMessage({
+          type: "loadUserPackagesResult",
+          packages,
+        });
+        break;
+      }
+
+      case "fetchLocation": {
+        if (fetchLocation) {
+          try {
+            const loc = await fetchLocation();
+            this.view?.webview.postMessage({ type: "fetchLocationResult", location: loc });
+          } catch (err) {
+            this.view?.webview.postMessage({ type: "fetchLocationResult", error: String(err) });
+          }
+        } else {
+          this.view?.webview.postMessage({ type: "fetchLocationResult", error: "Not available" });
+        }
+        break;
+      }
+
+      case "fetchWeather": {
+        if (fetchWeather) {
+          try {
+            const data = await fetchWeather(msg.lat as number, msg.lon as number);
+            this.view?.webview.postMessage({ type: "fetchWeatherResult", weather: data });
+          } catch (err) {
+            this.view?.webview.postMessage({ type: "fetchWeatherResult", error: String(err) });
+          }
+        } else {
+          this.view?.webview.postMessage({ type: "fetchWeatherResult", error: "Not available" });
+        }
+        break;
+      }
 
       case "ready":
         this.pushState();
@@ -482,6 +518,7 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
       clearInterval(this.tickInterval);
       this.tickInterval = undefined;
     }
+    this.eventDispatcherInstance?.stop();
   }
 }
 
@@ -500,7 +537,7 @@ function getNonce(): string {
 let provider: TerrariumViewProvider | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
-  provider = new TerrariumViewProvider(context.extensionUri);
+  provider = new TerrariumViewProvider(context.extensionUri, context);
 
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(

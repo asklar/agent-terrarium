@@ -27,9 +27,8 @@ export interface ModelOption {
 }
 
 export interface AgentOption {
-  id: string;
   name: string;
-  description?: string;
+  source: string;
 }
 
 export interface AgentBackend {

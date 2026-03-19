@@ -18,14 +18,20 @@ export class EchoBackend implements AgentBackend {
 
   async respond(
     _agentId: string,
-    _config: BackendConfig,
+    config: BackendConfig,
     messages: BackendMessage[],
   ): Promise<BackendResponse> {
     const lastUserMsg = [...messages]
       .reverse()
       .find((m) => m.role === "user");
-    const echo = lastUserMsg ? lastUserMsg.content : "...";
-    return { content: `Echo: ${echo}`, needsAttention: false };
+    const echo = lastUserMsg ? lastUserMsg.content : "";
+
+    const content =
+      config.systemPrompt && config.systemPrompt.length > 0
+        ? `${config.systemPrompt} Echo: ${echo}`
+        : `Echo: ${echo}`;
+
+    return { content, needsAttention: false };
   }
 
   async destroyChatSession(_agentId: string): Promise<void> {}
