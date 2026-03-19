@@ -26,6 +26,12 @@ const config = {
   jsx: "automatic",
   // Replace Tauri API imports with stubs
   alias: {
+    // Ensure all React imports resolve to the same copy (prevent duplicate React)
+    "react": path.join(__dirname, "node_modules", "react"),
+    "react-dom": path.join(__dirname, "node_modules", "react-dom"),
+    "react/jsx-runtime": path.join(__dirname, "node_modules", "react", "jsx-runtime"),
+    "react/jsx-dev-runtime": path.join(__dirname, "node_modules", "react", "jsx-dev-runtime"),
+    // Replace Tauri API imports with stubs
     "@tauri-apps/api/core": path.join(__dirname, "webview", "stubs", "tauri-core.ts"),
     "@tauri-apps/api/event": path.join(__dirname, "webview", "stubs", "tauri-event.ts"),
     "@tauri-apps/api/window": path.join(__dirname, "webview", "stubs", "tauri-event.ts"),
