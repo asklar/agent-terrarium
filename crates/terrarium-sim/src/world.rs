@@ -228,8 +228,8 @@ impl World {
                 state.agents[i].position.y = min_y;
                 state.agents[i].velocity.y = state.agents[i].velocity.y.abs();
             }
-            if state.agents[i].position.y > bounds.y - 16.0 {
-                state.agents[i].position.y = bounds.y - 16.0;
+            if state.agents[i].position.y > bounds.y - 8.0 {
+                state.agents[i].position.y = bounds.y - 8.0;
                 state.agents[i].velocity.y = -state.agents[i].velocity.y.abs();
             }
         }
@@ -685,7 +685,8 @@ fn create_agent(id: &str, name: &str, avatar: &str, bounds: &Vec2, ground_y: f64
 }
 
 fn pick_new_target(agent: &mut Agent, bounds: &Vec2, ground_y: f64) {
-    let margin = 32.0;
+    let x_margin = 32.0;
+    let y_margin = 8.0; // Small margin so agents use full ground depth
     // Float-style agents can go above ground, others walk on the ground plane
     let min_y = if agent.personality.movement_style == MovementStyle::Float {
         ground_y * 0.3
@@ -693,8 +694,8 @@ fn pick_new_target(agent: &mut Agent, bounds: &Vec2, ground_y: f64) {
         ground_y
     };
     agent.target = Some(Vec2::new(
-        margin + rand_f64() * (bounds.x - margin * 2.0),
-        min_y + rand_f64() * (bounds.y - min_y - margin),
+        x_margin + rand_f64() * (bounds.x - x_margin * 2.0),
+        min_y + rand_f64() * (bounds.y - min_y - y_margin),
     ));
     agent.state_timer = 3.0 + rand_f64() * 5.0;
 }
