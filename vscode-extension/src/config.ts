@@ -108,7 +108,41 @@ export function loadConfig(): AppConfig | null {
 }
 
 export function saveConfig(config: AppConfig): void {
-  fs.writeFileSync(configPath(), JSON.stringify(config, null, 2), "utf-8");
+  // Convert to snake_case for compatibility with the Tauri app's serde format
+  const raw = {
+    theme: config.theme,
+    agents: config.agents.map((a) => ({
+      id: a.id,
+      name: a.name,
+      avatar: a.avatar,
+      gear: a.gear,
+      personality: a.personality ? {
+        speed_min: a.personality.speedMin,
+        speed_max: a.personality.speedMax,
+        movement_style: a.personality.movementStyle,
+        interaction_chance: a.personality.interactionChance,
+        ball_interest: a.personality.ballInterest,
+        chat_emojis: a.personality.chatEmojis,
+      } : undefined,
+      backend_config: a.backendConfig ? {
+        backend_id: a.backendConfig.backendId,
+        model: a.backendConfig.model,
+        awareness_model: a.backendConfig.awarenessModel,
+        system_prompt: a.backendConfig.systemPrompt,
+        custom_agent: a.backendConfig.customAgent,
+        awareness_level: a.backendConfig.awarenessLevel,
+        tts_enabled: a.backendConfig.ttsEnabled,
+        cwd: a.backendConfig.cwd,
+      } : undefined,
+    })),
+    window: config.window,
+    ball_max_captures: config.ballMaxCaptures,
+    ball_kick_on_capture: config.ballKickOnCapture,
+    attention_interval_secs: config.attentionIntervalSecs,
+    music_muted: config.musicMuted,
+    dynamic_sky: config.dynamicSky,
+  };
+  fs.writeFileSync(configPath(), JSON.stringify(raw, null, 2), "utf-8");
 }
 
 function chatFilePath(agentId: string): string {

@@ -342,6 +342,28 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  private autoSaveConfig(): void {
+    const simAgentConfigs = this.world.getAgentConfigs();
+    const state = this.world.getState();
+    const appConfig: AppConfig = {
+      theme: state.theme ?? "meadow",
+      agents: simAgentConfigs.map((a) => ({
+        id: a.id,
+        name: a.name,
+        avatar: a.avatar,
+        gear: a.gear,
+        personality: a.personality,
+        backendConfig: a.backendConfig,
+      })),
+      ballMaxCaptures: state.ballMaxCaptures,
+      ballKickOnCapture: state.ballKickOnCapture,
+      attentionIntervalSecs: state.attentionIntervalSecs,
+      musicMuted: false,
+      dynamicSky: false,
+    };
+    saveConfig(appConfig);
+  }
+
   private reloadAndNotifyPackages(): void {
     let packages: string[] = [];
     if (loadUserPackages) {
@@ -632,10 +654,12 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
           (msg.avatar as string) ?? "default",
           (msg.name as string) ?? "Agent",
         );
+        this.autoSaveConfig();
         break;
 
       case "removeAgent":
         this.world.removeAgent(msg.agentId as string);
+        this.autoSaveConfig();
         break;
 
       case "renameAgent":
@@ -643,6 +667,7 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
           msg.agentId as string,
           msg.name as string,
         );
+        this.autoSaveConfig();
         break;
 
       case "setGear":
@@ -650,6 +675,7 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
           msg.agentId as string,
           msg.gearIds as string[],
         );
+        this.autoSaveConfig();
         break;
 
       case "requestAttention":
