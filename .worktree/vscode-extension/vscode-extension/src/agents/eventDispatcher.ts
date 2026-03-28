@@ -78,7 +78,7 @@ export class EventDispatcher {
         this.registry.get(backendId) ?? this.registry.get("echo");
       if (!backend) continue;
 
-      if (backendId === "copilot") {
+      if (backendId === "vscode-lm") {
         // Build context about terrarium state
         const others = this.world.getOtherAgentNames(agentId);
         const hasBall = this.world.hasBall();
@@ -114,8 +114,8 @@ export class EventDispatcher {
           agentName,
         );
 
-        // Fire-and-forget for copilot with tool-call parsing
-        this.dispatchCopilot(
+        // Fire-and-forget for vscode-lm with tool-call parsing
+        this.dispatchVsCodeLm(
           agentId,
           agentName,
           eventConfig,
@@ -155,14 +155,14 @@ export class EventDispatcher {
     }
   }
 
-  private async dispatchCopilot(
+  private async dispatchVsCodeLm(
     agentId: string,
     _agentName: string,
     config: BackendConfig,
     prompt: string,
     handlers: Map<string, ToolHandler>,
   ): Promise<void> {
-    const backend = this.registry.get("copilot");
+    const backend = this.registry.get("vscode-lm");
     if (!backend) return;
 
     const messages: BackendMessage[] = [

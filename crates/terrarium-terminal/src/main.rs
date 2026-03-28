@@ -70,26 +70,58 @@ async fn main() -> io::Result<()> {
     Ok(())
 }
 
+/// Create a solid background-colored Sixel block to erase old sprite positions
+/// Uses the terminal background color (black) to overwrite previous Sixel graphics
+fn make_bg_sixel(width: u16, height: u16) -> String {
+    let mut output = String::new();
+    output.push_str("\x1bP0;1;q");
+    // Define color 0 as black (terminal background)
+    output.push_str("#0;2;0;0;0");
+    output.push_str("#0");
+
+    let sixel_rows = (height + 5) / 6;
+    for row in 0..sixel_rows {
+        let remaining = height.saturating_sub(row * 6);
+        let bits = if remaining >= 6 { 0x3F } else { (1u8 << remaining) - 1 };
+        let ch = (0x3F + bits) as char;
+        for _ in 0..width {
+            output.push(ch);
+        }
+        if row < sixel_rows - 1 {
+            output.push('-');
+        }
+    }
+    output.push_str("\x1b\\");
+    output
+}
+
 async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<()> {
     let mut tick_interval = interval(Duration::from_millis(TICK_RATE_MS));
+    let mut prev_sprite_positions: Vec<(u16, u16)> = Vec::new();
+    // Background-colored Sixel block to overwrite old sprite positions
+    let bg_sixel = make_bg_sixel(16, 16);
 
     loop {
-        // Force full redraw to clear Sixel ghost artifacts
-        // (Sixel graphics persist in terminal framebuffer independently of text)
-        terminal.clear()?;
-
         // Draw the UI and collect Sixel sprites
         let mut sixel_sprites = Vec::new();
         terminal.draw(|frame| {
             sixel_sprites = app.render(frame);
         })?;
 
-        // Flush Sixel sprites to stdout after ratatui render
-        if !sixel_sprites.is_empty() {
+        // Erase old Sixel sprites by overwriting with background-colored block
+        {
             let mut stdout = io::stdout();
+            for (px, py) in &prev_sprite_positions {
+                execute!(stdout, cursor::MoveTo(*px, *py))?;
+                stdout.write_all(bg_sixel.as_bytes())?;
+            }
+
+            // Draw new sprites
+            prev_sprite_positions.clear();
             for sprite in &sixel_sprites {
                 execute!(stdout, cursor::MoveTo(sprite.x, sprite.y))?;
                 stdout.write_all(sprite.data.as_bytes())?;
+                prev_sprite_positions.push((sprite.x, sprite.y));
             }
             stdout.flush()?;
         }

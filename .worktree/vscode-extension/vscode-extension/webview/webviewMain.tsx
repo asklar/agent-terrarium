@@ -8,6 +8,7 @@ import { AnimatedBackground } from "../../src/components/AnimatedBackground";
 import { ContextMenu } from "../../src/components/ContextMenu";
 import { registry } from "../../src/themes";
 import { playAgentSound } from "../../src/audio/agentSounds";
+import { speak } from "./tts";
 import "../../src/App.css";
 
 // ── VS Code API ─────────────────────────────────────────────────────
@@ -153,6 +154,26 @@ function App() {
     };
   }, [dropFiles]);
 
+  // Mouse tracking (throttled to 50ms) for agent hover reactions
+  useEffect(() => {
+    let lastSent = 0;
+    const handleMouseMove = (e: MouseEvent) => {
+      const now = Date.now();
+      if (now - lastSent < 50) return;
+      lastSent = now;
+      updateMouse(e.clientX, e.clientY);
+    };
+    const handleMouseLeave = () => {
+      updateMouse(null, null);
+    };
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseleave", handleMouseLeave);
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseleave", handleMouseLeave);
+    };
+  }, [updateMouse]);
+
   // Handle file claims by agents
   const handledClaimsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
@@ -200,7 +221,13 @@ function App() {
     async (agentId: string, text: string): Promise<string> => {
       setThinkingAgentIds((prev) => new Set(prev).add(agentId));
       try {
-        return await sendMessage(agentId, text);
+        const reply = await sendMessage(agentId, text);
+        // TTS: speak the reply if the agent has TTS enabled
+        const agent = worldState?.agents.find((a) => a.id === agentId);
+        if (agent?.backend_config?.tts_enabled && reply) {
+          speak(reply);
+        }
+        return reply;
       } finally {
         setThinkingAgentIds((prev) => {
           const next = new Set(prev);
@@ -209,7 +236,7 @@ function App() {
         });
       }
     },
-    [sendMessage],
+    [sendMessage, worldState?.agents],
   );
 
   const playReplyChirp = useCallback(
@@ -300,9 +327,9 @@ function App() {
           onAddAgent={(avatar, name) => addAgent(avatar, name)}
           onRemoveAgent={(agentId) => removeAgent(agentId)}
           onSetGear={(agentId, gearIds) => setGear(agentId, gearIds)}
-          onToggleDebug={() => {}}
+          onToggleDebug={() => { vscode.postMessage({ type: "toggleDebug" }); }}
           debugOpen={false}
-          onAbout={() => {}}
+          onAbout={() => { vscode.postMessage({ type: "showAbout" }); }}
         />
       )}
     </div>

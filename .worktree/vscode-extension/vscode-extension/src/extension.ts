@@ -16,12 +16,20 @@ import { startPackageWatcher, stopPackageWatcher } from "./packageWatcher.js";
 import { getFileIconDataUrl } from "./fileIcons.js";
 
 // Optional imports for modules that may still be in progress
-let CopilotBackend: (new () => import("./agents/backend.js").AgentBackend) | undefined;
+let VsCodeLmBackend: (new () => import("./agents/backend.js").AgentBackend) | undefined;
 let OpenAIBackend: (new () => import("./agents/backend.js").AgentBackend) | undefined;
+let OllamaBackend: (new () => import("./agents/backend.js").AgentBackend) | undefined;
+let AnthropicBackend: (new () => import("./agents/backend.js").AgentBackend) | undefined;
+let ClaudeCodeBackend: (new () => import("./agents/backend.js").AgentBackend) | undefined;
+let CopilotSdkBackend: (new () => import("./agents/backend.js").AgentBackend) | undefined;
 let EventDispatcher: (new (world: World, registry: BackendRegistry) => { start(): void; stop(): void }) | undefined;
 
-try { CopilotBackend = require("./agents/copilot.js").CopilotBackend; } catch {}
+try { VsCodeLmBackend = require("./agents/vscodeLm.js").VsCodeLmBackend; } catch {}
 try { OpenAIBackend = require("./agents/openai.js").OpenAIBackend; } catch {}
+try { OllamaBackend = require("./agents/ollama.js").OllamaBackend; } catch {}
+try { AnthropicBackend = require("./agents/anthropic.js").AnthropicBackend; } catch {}
+try { ClaudeCodeBackend = require("./agents/claudeCode.js").ClaudeCodeBackend; } catch {}
+try { CopilotSdkBackend = require("./agents/copilotSdk.js").CopilotSdkBackend; } catch {}
 try { EventDispatcher = require("./eventDispatcher.js").EventDispatcher; } catch {}
 
 // Optional utility modules
@@ -40,7 +48,7 @@ try {
 } catch {}
 
 import { World } from "./simulation/world.js";
-import { Vec2 } from "./simulation/types.js";
+import { Vec2, AgentState } from "./simulation/types.js";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
@@ -65,6 +73,7 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
   private secrets: vscode.SecretStorage;
   private eventDispatcherInstance?: { start(): void; stop(): void };
   private popOutPanels: Map<string, vscode.WebviewPanel> = new Map();
+  private notifiedAttentionAgents: Set<string> = new Set();
   private packagesBaseUri = "";
   private userPackagesBaseUri = "";
 
@@ -80,11 +89,23 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
     log("Registered echo backend");
 
     // Register optional backends
-    if (CopilotBackend) {
-      try { this.registry.register(new CopilotBackend()); log("Registered copilot backend"); } catch (e) { log(`Failed to register copilot: ${e}`); }
+    if (CopilotSdkBackend) {
+      try { this.registry.register(new CopilotSdkBackend()); log("Registered copilot backend"); } catch (e) { log(`Failed to register copilot: ${e}`); }
+    }
+    if (VsCodeLmBackend) {
+      try { this.registry.register(new VsCodeLmBackend()); log("Registered vscode-lm backend"); } catch (e) { log(`Failed to register vscode-lm: ${e}`); }
     }
     if (OpenAIBackend) {
       try { this.registry.register(new OpenAIBackend()); log("Registered openai backend"); } catch (e) { log(`Failed to register openai: ${e}`); }
+    }
+    if (OllamaBackend) {
+      try { this.registry.register(new OllamaBackend()); log("Registered ollama backend"); } catch (e) { log(`Failed to register ollama: ${e}`); }
+    }
+    if (AnthropicBackend) {
+      try { this.registry.register(new AnthropicBackend()); log("Registered anthropic backend"); } catch (e) { log(`Failed to register anthropic: ${e}`); }
+    }
+    if (ClaudeCodeBackend) {
+      try { this.registry.register(new ClaudeCodeBackend()); log("Registered claude-code backend"); } catch (e) { log(`Failed to register claude-code: ${e}`); }
     }
 
     // Start event dispatcher if available
@@ -263,7 +284,7 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
     if (!agent) return;
 
     const action = await vscode.window.showQuickPick(
-      ["Rename agent", "Change backend"],
+      ["Rename agent", "Change backend", "Set working directory"],
       { placeHolder: `Configure ${agent.name}` },
     );
     if (!action) return;
@@ -277,7 +298,7 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
         this.world.renameAgent(agentId, newName);
       }
     } else if (action === "Change backend") {
-      const backends = ["echo", "copilot", "openai", "ollama"];
+      const backends = ["echo", "copilot", "vscode-lm", "openai", "ollama", "anthropic", "claude-code"];
       const currentBackend = agent.backendConfig?.backendId ?? "echo";
       const pick = await vscode.window.showQuickPick(
         backends.map((b) => ({ label: b, picked: b === currentBackend })),
@@ -294,6 +315,29 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
           ttsEnabled: agent.backendConfig?.ttsEnabled ?? false,
           cwd: agent.backendConfig?.cwd ?? null,
         });
+      }
+    } else if (action === "Set working directory") {
+      const uris = await vscode.window.showOpenDialog({
+        canSelectFolders: true,
+        canSelectFiles: false,
+        canSelectMany: false,
+        openLabel: "Select working directory",
+        defaultUri: agent.backendConfig?.cwd
+          ? vscode.Uri.file(agent.backendConfig.cwd)
+          : undefined,
+      });
+      if (uris && uris.length > 0) {
+        this.world.setBackendConfig(agentId, {
+          backendId: agent.backendConfig?.backendId ?? "echo",
+          model: agent.backendConfig?.model ?? null,
+          awarenessModel: agent.backendConfig?.awarenessModel ?? null,
+          systemPrompt: agent.backendConfig?.systemPrompt ?? null,
+          customAgent: agent.backendConfig?.customAgent ?? null,
+          awarenessLevel: agent.backendConfig?.awarenessLevel ?? 0,
+          ttsEnabled: agent.backendConfig?.ttsEnabled ?? false,
+          cwd: uris[0].fsPath,
+        });
+        log(`Set working directory for ${agent.name}: ${uris[0].fsPath}`);
       }
     }
   }
@@ -364,6 +408,7 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
     // Start simulation tick loop (20 Hz = 50ms)
     this.tickInterval = setInterval(() => {
       this.world.tick();
+      this.checkAttentionNotifications();
       this.pushState();
     }, 50);
     log("Simulation tick loop started (20 Hz)");
@@ -372,6 +417,34 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
       log("Webview disposed");
       if (this.tickInterval) clearInterval(this.tickInterval);
     });
+  }
+
+  private checkAttentionNotifications(): void {
+    for (const agent of this.world.state.agents) {
+      if (agent.state === AgentState.NeedsAttention) {
+        if (!this.notifiedAttentionAgents.has(agent.id)) {
+          this.notifiedAttentionAgents.add(agent.id);
+          vscode.window
+            .showInformationMessage(
+              `${agent.name} needs your attention!`,
+              "Open Chat",
+            )
+            .then((choice: string | undefined) => {
+              if (choice === "Open Chat") {
+                this.view?.webview.postMessage({
+                  type: "openAgentChat",
+                  agentId: agent.id,
+                });
+                this.world.dismissAttention(agent.id);
+                this.world.clickAgent(agent.id);
+              }
+            });
+        }
+      } else {
+        // Agent no longer needs attention — allow future notifications
+        this.notifiedAttentionAgents.delete(agent.id);
+      }
+    }
   }
 
   private pushState(): void {
@@ -816,7 +889,23 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
         break;
 
       case "updateMouse":
-        // Mouse position tracking (optional, for agent gaze)
+        this.world.updateMouse(
+          msg.x as number | null,
+          msg.y as number | null,
+        );
+        break;
+
+      // ── About dialog ────────────────────────────────────────────────
+      case "showAbout":
+        vscode.window.showInformationMessage(
+          "Agent Terrarium v0.1.0\n\nAI agents in an animated world in your editor.\n\nhttps://github.com/nicefiction/agent-terrarium",
+          "OK",
+        );
+        break;
+
+      // ── Debug panel (show Output channel) ───────────────────────────
+      case "toggleDebug":
+        outputChannel.show(true);
         break;
 
       // ── File drop via picker ────────────────────────────────────────
