@@ -1,0 +1,426 @@
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub struct Vec2 {
+    pub x: f64,
+    pub y: f64,
+}
+
+impl Vec2 {
+    pub fn new(x: f64, y: f64) -> Self {
+        Self { x, y }
+    }
+
+    pub fn zero() -> Self {
+        Self { x: 0.0, y: 0.0 }
+    }
+
+    pub fn distance_to(&self, other: &Vec2) -> f64 {
+        ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()
+    }
+
+    pub fn magnitude(&self) -> f64 {
+        (self.x.powi(2) + self.y.powi(2)).sqrt()
+    }
+
+    pub fn normalized(&self) -> Vec2 {
+        let mag = self.magnitude();
+        if mag < f64::EPSILON {
+            Vec2::zero()
+        } else {
+            Vec2::new(self.x / mag, self.y / mag)
+        }
+    }
+}
+
+impl std::ops::Add for Vec2 {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        Vec2::new(self.x + rhs.x, self.y + rhs.y)
+    }
+}
+
+impl std::ops::Sub for Vec2 {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        Vec2::new(self.x - rhs.x, self.y - rhs.y)
+    }
+}
+
+impl std::ops::Mul<f64> for Vec2 {
+    type Output = Self;
+    fn mul(self, rhs: f64) -> Self {
+        Vec2::new(self.x * rhs, self.y * rhs)
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum AgentState {
+    Idle,
+    Walking,
+    Running,
+    Sprinting,
+    Jumping,
+    Crawling,
+    Interacting,
+    Chatting,
+    NeedsAttention,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum MovementStyle {
+    Wander,
+    Patrol,
+    Bounce,
+    Float,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum Direction {
+    Left,
+    Right,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Personality {
+    pub speed_min: f64,
+    pub speed_max: f64,
+    pub movement_style: MovementStyle,
+    pub interaction_chance: f64,
+    pub ball_interest: f64,
+    pub chat_emojis: Vec<String>,
+}
+
+/// Configuration for an agent's backend
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BackendConfig {
+    /// Backend provider ID (e.g., "echo", "copilot", "claude")
+    pub backend_id: String,
+    /// Optional model override for chat (e.g., "gpt-4", "claude-3-opus")
+    #[serde(default)]
+    pub model: Option<String>,
+    /// Optional model for awareness events (defaults to fast/cheap model)
+    #[serde(default)]
+    pub awareness_model: Option<String>,
+    /// System prompt / personality instructions
+    #[serde(default)]
+    pub system_prompt: Option<String>,
+    /// Custom agent name within the backend (e.g., custom Copilot agent)
+    #[serde(default)]
+    pub custom_agent: Option<String>,
+    /// Awareness level: 0=chat only, 1=major events, 2=social, 3=full
+    #[serde(default)]
+    pub awareness_level: u8,
+    /// Enable text-to-speech for say tool responses
+    #[serde(default)]
+    pub tts_enabled: bool,
+    /// Working directory for the agent
+    #[serde(default)]
+    pub cwd: Option<String>,
+}
+
+impl Default for BackendConfig {
+    fn default() -> Self {
+        Self {
+            backend_id: "echo".to_string(),
+            model: None,
+            awareness_model: None,
+            system_prompt: None,
+            custom_agent: None,
+            awareness_level: 0,
+            tts_enabled: false,
+            cwd: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Agent {
+    pub id: String,
+    pub name: String,
+    pub avatar: String,
+    pub position: Vec2,
+    pub velocity: Vec2,
+    pub state: AgentState,
+    pub direction: Direction,
+    pub personality: Personality,
+    pub target: Option<Vec2>,
+    pub state_timer: f64,
+    pub interaction_cooldown: f64,
+    /// Equipped gear item ids
+    #[serde(default)]
+    pub gear: Vec<String>,
+    /// Backend configuration for this agent
+    #[serde(default)]
+    pub backend_config: BackendConfig,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Ball {
+    pub position: Vec2,
+    pub velocity: Vec2,
+    pub active: bool,
+    /// Number of times an agent has captured/kicked this ball
+    #[serde(default)]
+    pub captures: u32,
+    /// Height above the ground plane (0 = on ground, positive = in air)
+    #[serde(default)]
+    pub height: f64,
+    /// Vertical velocity for bouncing (positive = upward)
+    #[serde(default)]
+    pub height_velocity: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DroppedFile {
+    pub id: String,
+    /// All files in this drop group: (file_name, file_path)
+    pub files: Vec<(String, String)>,
+    /// Display label (e.g. "foo.txt" or "foo.txt + 2 files")
+    pub label: String,
+    /// System icon as a base64 PNG data URL (from first file in group)
+    #[serde(default)]
+    pub icon_data_url: Option<String>,
+    pub position: Vec2,
+    /// Agent ID that claimed this file (None = unclaimed, sitting on ground)
+    pub claimed_by: Option<String>,
+    /// Whether this file is still visible in the world
+    pub active: bool,
+    /// Height above the ground plane (for drop animation)
+    #[serde(default)]
+    pub height: f64,
+    /// Vertical velocity (positive = upward)
+    #[serde(default)]
+    pub height_velocity: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatBubble {
+    pub agent_id: String,
+    pub content: String,
+    pub timer: f64,
+    pub is_emoji: bool,
+    /// Whether this bubble was triggered by an awareness event (vs social interaction)
+    #[serde(default)]
+    pub is_event: bool,
+}
+
+/// Events that occur in the terrarium world
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum TerrariumEvent {
+    /// User threw a ball
+    BallThrown,
+    /// An agent caught/captured the ball
+    BallCaught { agent_name: String },
+    /// Ball disappeared (max captures reached)
+    BallGone,
+    /// Two agents had a social interaction
+    AgentInteraction { agent_a: String, agent_b: String, emoji: String },
+    /// A new agent was added to the terrarium
+    AgentArrived { agent_name: String },
+    /// An agent was removed from the terrarium
+    AgentLeft { agent_name: String },
+    /// User clicked on an agent to chat
+    UserClickedAgent { agent_name: String },
+    /// A file was dropped into the terrarium
+    FileDropped { file_name: String },
+    /// An agent picked up a dropped file
+    FileClaimed { agent_name: String, file_name: String },
+    /// An agent is nearby (within awareness radius)
+    AgentNearby { agent_name: String, other_name: String, distance: f64 },
+}
+
+impl TerrariumEvent {
+    /// Minimum awareness level required to receive this event
+    pub fn min_awareness_level(&self) -> u8 {
+        match self {
+            TerrariumEvent::BallThrown => 1,
+            TerrariumEvent::BallCaught { .. } => 1,
+            TerrariumEvent::BallGone => 2,
+            TerrariumEvent::AgentInteraction { .. } => 2,
+            TerrariumEvent::AgentArrived { .. } => 1,
+            TerrariumEvent::AgentLeft { .. } => 1,
+            TerrariumEvent::UserClickedAgent { .. } => 1,
+            TerrariumEvent::FileDropped { .. } => 1,
+            TerrariumEvent::FileClaimed { .. } => 1,
+            TerrariumEvent::AgentNearby { .. } => 3,
+        }
+    }
+
+    /// Convert to natural language for the agent prompt
+    pub fn to_natural_language(&self, observer: &str) -> String {
+        match self {
+            TerrariumEvent::BallThrown => "The user threw a ball into the terrarium!".to_string(),
+            TerrariumEvent::BallCaught { agent_name } => {
+                if agent_name == observer {
+                    "You caught the ball!".to_string()
+                } else {
+                    format!("{} caught the ball.", agent_name)
+                }
+            }
+            TerrariumEvent::BallGone => "The ball disappeared.".to_string(),
+            TerrariumEvent::AgentInteraction { agent_a, agent_b, emoji } => {
+                if agent_a == observer {
+                    format!("You bumped into {} and exchanged a {} emoji.", agent_b, emoji)
+                } else if agent_b == observer {
+                    format!("{} bumped into you and exchanged a {} emoji.", agent_a, emoji)
+                } else {
+                    format!("{} and {} bumped into each other ({}).", agent_a, agent_b, emoji)
+                }
+            }
+            TerrariumEvent::AgentArrived { agent_name } => format!("{} just arrived in the terrarium!", agent_name),
+            TerrariumEvent::AgentLeft { agent_name } => format!("{} left the terrarium.", agent_name),
+            TerrariumEvent::UserClickedAgent { agent_name } => {
+                if agent_name == observer {
+                    "The user clicked on you to start a conversation.".to_string()
+                } else {
+                    format!("The user started talking to {}.", agent_name)
+                }
+            }
+            TerrariumEvent::FileDropped { file_name } => {
+                format!("The user dropped a file into the terrarium: \"{}\"", file_name)
+            }
+            TerrariumEvent::FileClaimed { agent_name, file_name } => {
+                if agent_name == observer {
+                    format!("You picked up the file \"{}\"!", file_name)
+                } else {
+                    format!("{} picked up the file \"{}\".", agent_name, file_name)
+                }
+            }
+            TerrariumEvent::AgentNearby { agent_name, other_name, distance } => {
+                if agent_name == observer {
+                    format!("{} is nearby (about {:.0}px away).", other_name, distance)
+                } else {
+                    format!("{} is near {} (about {:.0}px away).", agent_name, other_name, distance)
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatMessage {
+    pub from_user: bool,
+    pub text: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatSession {
+    pub agent_id: String,
+    pub messages: Vec<ChatMessage>,
+    pub active: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WorldState {
+    pub agents: Vec<Agent>,
+    pub ball: Option<Ball>,
+    pub dropped_files: Vec<DroppedFile>,
+    pub bubbles: Vec<ChatBubble>,
+    pub chat_sessions: Vec<ChatSession>,
+    pub bounds: Vec2,
+    /// Fraction of window height where the ground starts (0.0 = top, 1.0 = bottom)
+    pub ground_y_ratio: f64,
+    pub tick: u64,
+    /// Current mouse position (for hover slowdown). None if mouse is outside window.
+    #[serde(skip)]
+    pub mouse_pos: Option<Vec2>,
+    /// Max captures before ball disappears
+    #[serde(default = "default_ball_max_captures")]
+    pub ball_max_captures: u32,
+    /// Whether the capturing agent kicks the ball away
+    #[serde(default = "default_true")]
+    pub ball_kick_on_capture: bool,
+    /// Seconds between attention sound repeats
+    #[serde(default = "default_attention_interval")]
+    pub attention_interval_secs: f64,
+    /// Event buffer — drained by the event dispatcher
+    #[serde(skip)]
+    pub events: Vec<TerrariumEvent>,
+    /// Pending file paths per agent (agent_id → [(name, path)])
+    /// Set by frontend on claim, read by both inline and pop-out chat windows
+    #[serde(default)]
+    pub pending_files: std::collections::HashMap<String, Vec<(String, String)>>,
+}
+
+impl Default for WorldState {
+    fn default() -> Self {
+        Self {
+            agents: Vec::new(),
+            ball: None,
+            dropped_files: Vec::new(),
+            bubbles: Vec::new(),
+            chat_sessions: Vec::new(),
+            bounds: Vec2::new(800.0, 400.0),
+            ground_y_ratio: 0.72,
+            tick: 0,
+            mouse_pos: None,
+            ball_max_captures: default_ball_max_captures(),
+            ball_kick_on_capture: default_true(),
+            attention_interval_secs: default_attention_interval(),
+            events: Vec::new(),
+            pending_files: std::collections::HashMap::new(),
+        }
+    }
+}
+
+impl WorldState {
+    pub fn with_bounds(bounds: Vec2) -> Self {
+        Self {
+            bounds,
+            ..Default::default()
+        }
+    }
+}
+
+/// Saved agent definition for config persistence
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentConfig {
+    pub id: String,
+    pub name: String,
+    pub avatar: String,
+    pub personality: Personality,
+    /// Equipped gear item ids
+    #[serde(default)]
+    pub gear: Vec<String>,
+    /// Backend configuration for this agent
+    #[serde(default)]
+    pub backend_config: BackendConfig,
+}
+
+/// Persisted app configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppConfig {
+    pub theme: String,
+    pub agents: Vec<AgentConfig>,
+    #[serde(default)]
+    pub window: Option<WindowConfig>,
+    /// Max captures before ball disappears (default: 3)
+    #[serde(default = "default_ball_max_captures")]
+    pub ball_max_captures: u32,
+    /// Whether the capturing agent kicks the ball away (default: true)
+    #[serde(default = "default_true")]
+    pub ball_kick_on_capture: bool,
+    /// Seconds between attention sound repeats (default: 5)
+    #[serde(default = "default_attention_interval")]
+    pub attention_interval_secs: f64,
+    /// Whether music is muted (default: false)
+    #[serde(default)]
+    pub music_muted: bool,
+    /// Whether dynamic sky is enabled (default: false)
+    #[serde(default)]
+    pub dynamic_sky: bool,
+}
+
+fn default_ball_max_captures() -> u32 { 3 }
+fn default_true() -> bool { true }
+fn default_attention_interval() -> f64 { 5.0 }
+
+/// Saved window position and size
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WindowConfig {
+    pub x: i32,
+    pub y: i32,
+    pub width: u32,
+    pub height: u32,
+}
