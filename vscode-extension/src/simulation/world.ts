@@ -801,7 +801,25 @@ export class World {
   }
 
   resize(width: number, height: number): void {
-    this.state.bounds = Vec2.new(width, height);
+    const s = this.state;
+    const oldGroundY = s.bounds.y * s.groundYRatio;
+    s.bounds = Vec2.new(width, height);
+    const newGroundY = s.bounds.y * s.groundYRatio;
+
+    // Reposition agents to the new ground line
+    for (const agent of s.agents) {
+      const dy = agent.position.y - oldGroundY;
+      agent.position = Vec2.new(
+        Math.min(agent.position.x, width - 10),
+        newGroundY + dy,
+      );
+      if (agent.target) {
+        agent.target = Vec2.new(
+          Math.min(agent.target.x, width - 10),
+          newGroundY,
+        );
+      }
+    }
   }
 
   addAgent(avatar: string, name: string): string {
