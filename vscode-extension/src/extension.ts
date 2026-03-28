@@ -16,11 +16,11 @@ import { startPackageWatcher, stopPackageWatcher } from "./packageWatcher.js";
 import { getFileIconDataUrl } from "./fileIcons.js";
 
 // Optional imports for modules that may still be in progress
-let CopilotBackend: (new () => import("./agents/backend.js").AgentBackend) | undefined;
+let VsCodeLmBackend: (new () => import("./agents/backend.js").AgentBackend) | undefined;
 let OpenAIBackend: (new () => import("./agents/backend.js").AgentBackend) | undefined;
 let EventDispatcher: (new (world: World, registry: BackendRegistry) => { start(): void; stop(): void }) | undefined;
 
-try { CopilotBackend = require("./agents/copilot.js").CopilotBackend; } catch {}
+try { VsCodeLmBackend = require("./agents/vscodeLm.js").VsCodeLmBackend; } catch {}
 try { OpenAIBackend = require("./agents/openai.js").OpenAIBackend; } catch {}
 try { EventDispatcher = require("./eventDispatcher.js").EventDispatcher; } catch {}
 
@@ -80,8 +80,8 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
     log("Registered echo backend");
 
     // Register optional backends
-    if (CopilotBackend) {
-      try { this.registry.register(new CopilotBackend()); log("Registered copilot backend"); } catch (e) { log(`Failed to register copilot: ${e}`); }
+    if (VsCodeLmBackend) {
+      try { this.registry.register(new VsCodeLmBackend()); log("Registered vscode-lm backend"); } catch (e) { log(`Failed to register vscode-lm: ${e}`); }
     }
     if (OpenAIBackend) {
       try { this.registry.register(new OpenAIBackend()); log("Registered openai backend"); } catch (e) { log(`Failed to register openai: ${e}`); }
@@ -277,7 +277,7 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
         this.world.renameAgent(agentId, newName);
       }
     } else if (action === "Change backend") {
-      const backends = ["echo", "copilot", "openai", "ollama"];
+      const backends = ["echo", "vscode-lm", "openai", "ollama"];
       const currentBackend = agent.backendConfig?.backendId ?? "echo";
       const pick = await vscode.window.showQuickPick(
         backends.map((b) => ({ label: b, picked: b === currentBackend })),

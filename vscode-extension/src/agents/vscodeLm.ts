@@ -8,13 +8,13 @@ import type {
   AgentOption,
 } from "./backend.js";
 
-export class CopilotBackend implements AgentBackend {
+export class VsCodeLmBackend implements AgentBackend {
   id(): string {
-    return "copilot";
+    return "vscode-lm";
   }
 
   displayName(): string {
-    return "GitHub Copilot";
+    return "VS Code Language Models";
   }
 
   async respond(
