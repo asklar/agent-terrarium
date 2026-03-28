@@ -10,9 +10,11 @@ mod sprites;
 mod widgets;
 
 use std::io;
+use std::io::Write;
 use std::time::Duration;
 
 use crossterm::{
+    cursor,
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -68,10 +70,22 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
     let mut tick_interval = interval(Duration::from_millis(TICK_RATE_MS));
 
     loop {
-        // Draw the UI
+        // Draw the UI and collect Sixel sprites
+        let mut sixel_sprites = Vec::new();
         terminal.draw(|frame| {
-            app.render(frame);
+            sixel_sprites = app.render(frame);
         })?;
+
+        // Flush Sixel sprites to stdout after ratatui render
+        if !sixel_sprites.is_empty() {
+            let mut stdout = io::stdout();
+            for sprite in &sixel_sprites {
+                // Move cursor to sprite position and write Sixel data
+                execute!(stdout, cursor::MoveTo(sprite.x, sprite.y))?;
+                stdout.write_all(sprite.data.as_bytes())?;
+            }
+            stdout.flush()?;
+        }
 
         // Handle events with timeout
         tokio::select! {

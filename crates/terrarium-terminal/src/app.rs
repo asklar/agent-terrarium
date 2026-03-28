@@ -4,7 +4,8 @@ use terrarium_sim::{AgentState, Vec2, World, WorldState};
 
 use crate::animation::AnimationState;
 use crate::render::RenderMode;
-use crate::widgets::terrarium::TerrariumWidget;
+use crate::render::sixel::SixelRenderer;
+use crate::widgets::terrarium::{TerrariumWidget, SixelSprite};
 use crate::widgets::status_bar::StatusBarWidget;
 
 use ratatui::prelude::*;
@@ -42,6 +43,8 @@ pub struct App {
     animation: AnimationState,
     /// Selected render mode
     render_mode: RenderMode,
+    /// Sixel renderer (if in Sixel mode)
+    sixel_renderer: Option<SixelRenderer>,
     /// Currently selected agent index (for keyboard navigation)
     selected_agent: Option<usize>,
     /// Counter for generating unique agent names
@@ -58,6 +61,10 @@ impl App {
 
         // Detect render mode
         let render_mode = RenderMode::detect();
+        let sixel_renderer = match render_mode {
+            RenderMode::Sixel => Some(SixelRenderer::new()),
+            RenderMode::Unicode => None,
+        };
         log::info!("Render mode: {:?}", render_mode);
 
         // Add some initial agents
@@ -72,6 +79,7 @@ impl App {
             state,
             animation: AnimationState::new(),
             render_mode,
+            sixel_renderer,
             selected_agent: None,
             agent_counter: 3,
             terminal_size: (120, 40),
@@ -85,8 +93,8 @@ impl App {
         self.animation.tick();
     }
 
-    /// Render the application
-    pub fn render(&self, frame: &mut Frame) {
+    /// Render the application. Returns any pending Sixel sprites to flush to stdout.
+    pub fn render(&self, frame: &mut Frame) -> Vec<SixelSprite> {
         let area = frame.area();
 
         // Main layout: terrarium area + status bar
@@ -98,13 +106,20 @@ impl App {
             ])
             .split(area);
 
+        let sixel_sprites = std::cell::RefCell::new(Vec::new());
+
         // Render terrarium
-        let terrarium = TerrariumWidget::new(&self.state, &self.animation, self.selected_agent);
+        let mut terrarium = TerrariumWidget::new(&self.state, &self.animation, self.selected_agent);
+        if let Some(ref renderer) = self.sixel_renderer {
+            terrarium = terrarium.with_sixel(renderer, &sixel_sprites);
+        }
         frame.render_widget(terrarium, chunks[0]);
 
         // Render status bar
         let status = StatusBarWidget::new(&self.state, &self.render_mode, self.selected_agent);
         frame.render_widget(status, chunks[1]);
+
+        sixel_sprites.into_inner()
     }
 
     /// Handle terminal resize
