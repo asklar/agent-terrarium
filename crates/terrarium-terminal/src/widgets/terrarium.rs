@@ -103,6 +103,10 @@ impl<'a> TerrariumWidget<'a> {
     fn render_agent_unicode(&self, agent: &Agent, agent_idx: usize, buf: &mut Buffer, area: Rect) {
         let (term_x, term_y) = self.to_terminal_coords(agent.position.x, agent.position.y, area);
 
+        // Clamp Y so agents never render above the ground
+        let ground_start = (area.height as f64 * self.state.ground_y_ratio) as u16 + 1;
+        let term_y = term_y.max(ground_start);
+
         // Get animation frame
         let frame = self.animation.frame_for_state(agent.state, agent_idx);
 
@@ -159,6 +163,10 @@ impl<'a> TerrariumWidget<'a> {
     /// Render an agent at its position (Sixel mode)
     fn render_agent_sixel(&self, agent: &Agent, agent_idx: usize, buf: &mut Buffer, area: Rect) {
         let (term_x, term_y) = self.to_terminal_coords(agent.position.x, agent.position.y, area);
+
+        // Clamp Y so agents never render above the ground
+        let ground_start = (area.height as f64 * self.state.ground_y_ratio) as u16 + 1;
+        let term_y = term_y.max(ground_start);
 
         // Get animation frame
         let frame = self.animation.frame_for_state(agent.state, agent_idx);
