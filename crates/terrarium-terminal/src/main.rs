@@ -70,64 +70,48 @@ async fn main() -> io::Result<()> {
     Ok(())
 }
 
-/// Create a solid background-colored Sixel block to erase old sprite positions
-/// Uses the terminal background color (black) to overwrite previous Sixel graphics
-fn make_bg_sixel(width: u16, height: u16) -> String {
-    // Use ground color (40, 80, 40) as most sprites are on the ground
-    let r_pct = (40u32 * 100) / 255;
-    let g_pct = (80u32 * 100) / 255;
-    let b_pct = (40u32 * 100) / 255;
-    let mut output = String::new();
-    output.push_str("\x1bP0;1;q");
-    // Define color 0 as ground color
-    output.push_str(&format!("#0;2;{};{};{}", r_pct, g_pct, b_pct));
-    output.push_str("#0");
-
-    let sixel_rows = (height + 5) / 6;
-    for row in 0..sixel_rows {
-        let remaining = height.saturating_sub(row * 6);
-        let bits = if remaining >= 6 { 0x3F } else { (1u8 << remaining) - 1 };
-        let ch = (0x3F + bits) as char;
-        for _ in 0..width {
-            output.push(ch);
-        }
-        if row < sixel_rows - 1 {
-            output.push('-');
-        }
-    }
-    output.push_str("\x1b\\");
-    output
-}
-
-async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<()> {
+async fn run_app<B: Backend + std::io::Write>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<()> {
     let mut tick_interval = interval(Duration::from_millis(TICK_RATE_MS));
-    let mut prev_sprite_positions: Vec<(u16, u16)> = Vec::new();
-    // Background-colored Sixel block to overwrite old sprite positions
-    let bg_sixel = make_bg_sixel(16, 16);
+    let mut prev_sprite_positions: Vec<(u16, u16, u16, u16)> = Vec::new(); // (x, y, cols, rows)
 
     loop {
+        // Invalidate cells where previous Sixel sprites were drawn
+        // This forces ratatui to redraw the ground/background there
+        if !prev_sprite_positions.is_empty() {
+            let buf = terminal.current_buffer_mut();
+            for &(sx, sy, cols, rows) in &prev_sprite_positions {
+                for dy in 0..rows {
+                    for dx in 0..cols {
+                        let x = sx + dx;
+                        let y = sy + dy;
+                        if let Some(cell) = buf.cell_mut((x, y)) {
+                            // Reset cell to force ratatui to re-render it
+                            cell.reset();
+                        }
+                    }
+                }
+            }
+        }
+
         // Draw the UI and collect Sixel sprites
         let mut sixel_sprites = Vec::new();
         terminal.draw(|frame| {
             sixel_sprites = app.render(frame);
         })?;
 
-        // Erase old Sixel sprites by overwriting with background-colored block
-        {
-            let mut stdout = io::stdout();
-            for (px, py) in &prev_sprite_positions {
-                execute!(stdout, cursor::MoveTo(*px, *py))?;
-                stdout.write_all(bg_sixel.as_bytes())?;
-            }
-
-            // Draw new sprites
-            prev_sprite_positions.clear();
+        // Flush Sixel sprites to stdout after ratatui render
+        prev_sprite_positions.clear();
+        if !sixel_sprites.is_empty() {
+            let backend = terminal.backend_mut();
             for sprite in &sixel_sprites {
-                execute!(stdout, cursor::MoveTo(sprite.x, sprite.y))?;
-                stdout.write_all(sprite.data.as_bytes())?;
-                prev_sprite_positions.push((sprite.x, sprite.y));
+                execute!(backend, cursor::MoveTo(sprite.x, sprite.y))?;
+                backend.write_all(sprite.data.as_bytes())?;
+                // Track position and size for next frame's invalidation
+                let cols = 2u16; // 16px / ~8px per cell
+                let rows = 1u16; // 16px / ~16px per cell
+                prev_sprite_positions.push((sprite.x, sprite.y, cols.max(3), rows.max(2)));
             }
-            stdout.flush()?;
+            std::io::Write::flush(backend)?;
         }
 
         // Handle events with timeout
