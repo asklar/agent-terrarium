@@ -18,10 +18,18 @@ import { getFileIconDataUrl } from "./fileIcons.js";
 // Optional imports for modules that may still be in progress
 let VsCodeLmBackend: (new () => import("./agents/backend.js").AgentBackend) | undefined;
 let OpenAIBackend: (new () => import("./agents/backend.js").AgentBackend) | undefined;
+let OllamaBackend: (new () => import("./agents/backend.js").AgentBackend) | undefined;
+let AnthropicBackend: (new () => import("./agents/backend.js").AgentBackend) | undefined;
+let ClaudeCodeBackend: (new () => import("./agents/backend.js").AgentBackend) | undefined;
+let CopilotSdkBackend: (new () => import("./agents/backend.js").AgentBackend) | undefined;
 let EventDispatcher: (new (world: World, registry: BackendRegistry) => { start(): void; stop(): void }) | undefined;
 
 try { VsCodeLmBackend = require("./agents/vscodeLm.js").VsCodeLmBackend; } catch {}
 try { OpenAIBackend = require("./agents/openai.js").OpenAIBackend; } catch {}
+try { OllamaBackend = require("./agents/ollama.js").OllamaBackend; } catch {}
+try { AnthropicBackend = require("./agents/anthropic.js").AnthropicBackend; } catch {}
+try { ClaudeCodeBackend = require("./agents/claudeCode.js").ClaudeCodeBackend; } catch {}
+try { CopilotSdkBackend = require("./agents/copilotSdk.js").CopilotSdkBackend; } catch {}
 try { EventDispatcher = require("./eventDispatcher.js").EventDispatcher; } catch {}
 
 // Optional utility modules
@@ -81,11 +89,23 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
     log("Registered echo backend");
 
     // Register optional backends
+    if (CopilotSdkBackend) {
+      try { this.registry.register(new CopilotSdkBackend()); log("Registered copilot backend"); } catch (e) { log(`Failed to register copilot: ${e}`); }
+    }
     if (VsCodeLmBackend) {
       try { this.registry.register(new VsCodeLmBackend()); log("Registered vscode-lm backend"); } catch (e) { log(`Failed to register vscode-lm: ${e}`); }
     }
     if (OpenAIBackend) {
       try { this.registry.register(new OpenAIBackend()); log("Registered openai backend"); } catch (e) { log(`Failed to register openai: ${e}`); }
+    }
+    if (OllamaBackend) {
+      try { this.registry.register(new OllamaBackend()); log("Registered ollama backend"); } catch (e) { log(`Failed to register ollama: ${e}`); }
+    }
+    if (AnthropicBackend) {
+      try { this.registry.register(new AnthropicBackend()); log("Registered anthropic backend"); } catch (e) { log(`Failed to register anthropic: ${e}`); }
+    }
+    if (ClaudeCodeBackend) {
+      try { this.registry.register(new ClaudeCodeBackend()); log("Registered claude-code backend"); } catch (e) { log(`Failed to register claude-code: ${e}`); }
     }
 
     // Start event dispatcher if available
@@ -278,7 +298,7 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
         this.world.renameAgent(agentId, newName);
       }
     } else if (action === "Change backend") {
-      const backends = ["echo", "vscode-lm", "openai", "ollama"];
+      const backends = ["echo", "copilot", "vscode-lm", "openai", "ollama", "anthropic", "claude-code"];
       const currentBackend = agent.backendConfig?.backendId ?? "echo";
       const pick = await vscode.window.showQuickPick(
         backends.map((b) => ({ label: b, picked: b === currentBackend })),
