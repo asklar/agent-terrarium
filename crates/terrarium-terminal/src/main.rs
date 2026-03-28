@@ -70,30 +70,14 @@ async fn main() -> io::Result<()> {
     Ok(())
 }
 
-/// Create a blank (transparent) Sixel block to erase previous sprite positions
-fn make_blank_sixel(width: u16, height: u16) -> String {
-    let mut output = String::new();
-    output.push_str("\x1bP0;1;q");
-    // No color definitions — all pixels off
-    let sixel_rows = (height + 5) / 6;
-    for row in 0..sixel_rows {
-        // '?' (0x3F) = all 6 pixels OFF
-        for _ in 0..width {
-            output.push('?');
-        }
-        if row < sixel_rows - 1 {
-            output.push('-');
-        }
-    }
-    output.push_str("\x1b\\");
-    output
-}
-
 async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<()> {
     let mut tick_interval = interval(Duration::from_millis(TICK_RATE_MS));
-    let mut prev_sprite_positions: Vec<(u16, u16)> = Vec::new();
 
     loop {
+        // Force full redraw to clear Sixel ghost artifacts
+        // (Sixel graphics persist in terminal framebuffer independently of text)
+        terminal.clear()?;
+
         // Draw the UI and collect Sixel sprites
         let mut sixel_sprites = Vec::new();
         terminal.draw(|frame| {
@@ -101,23 +85,11 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
         })?;
 
         // Flush Sixel sprites to stdout after ratatui render
-        if !sixel_sprites.is_empty() || !prev_sprite_positions.is_empty() {
+        if !sixel_sprites.is_empty() {
             let mut stdout = io::stdout();
-
-            // Erase previous sprite positions by overwriting with a blank Sixel
-            // (transparent 16x16 block — all pixels "off")
-            let blank_sixel = make_blank_sixel(16, 16);
-            for (px, py) in &prev_sprite_positions {
-                execute!(stdout, cursor::MoveTo(*px, *py))?;
-                stdout.write_all(blank_sixel.as_bytes())?;
-            }
-
-            // Draw new sprites
-            prev_sprite_positions.clear();
             for sprite in &sixel_sprites {
                 execute!(stdout, cursor::MoveTo(sprite.x, sprite.y))?;
                 stdout.write_all(sprite.data.as_bytes())?;
-                prev_sprite_positions.push((sprite.x, sprite.y));
             }
             stdout.flush()?;
         }
