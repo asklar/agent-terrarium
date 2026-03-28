@@ -56,7 +56,8 @@ pub struct App {
 impl App {
     pub fn new() -> Self {
         // Default terminal size, will be updated on first render
-        let bounds = Vec2::new(120.0, 40.0);
+        // Use multiplied bounds matching resize() so ground plane math works
+        let bounds = Vec2::new(120.0 * 2.0, 40.0 * 4.0);
         let world = World::new(bounds);
 
         // Detect render mode
