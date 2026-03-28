@@ -109,9 +109,9 @@ impl<'a> TerrariumWidget<'a> {
         // Get sprite for this agent
         let sprite = sprites::get_sprite(&agent.avatar, agent.state, agent.direction, frame);
 
-        // Calculate sprite position (center on agent position)
+        // Calculate sprite position (center on agent position, feet at term_y)
         let sprite_x = term_x.saturating_sub(sprite.width / 2);
-        let sprite_y = term_y.saturating_sub(sprite.lines.len() as u16);
+        let sprite_y = term_y;
 
         // Get colors
         let main_color = unicode::avatar_color(&agent.avatar);
@@ -190,7 +190,7 @@ impl<'a> TerrariumWidget<'a> {
                 let sprite_rows = renderer.rows_for_height(16);
 
                 let sprite_x = area.x + term_x.saturating_sub(sprite_cols / 2);
-                let sprite_y = area.y + term_y.saturating_sub(sprite_rows);
+                let sprite_y = area.y + term_y;
 
                 // Store the Sixel sprite for later rendering
                 if let Some(output) = self.sixel_output {
