@@ -1,0 +1,149 @@
+import { useEffect, useRef, useState, useCallback } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { log } from "../utils/log";
+import type { WorldState } from "../types/world";
+
+export function useWorldState() {
+  const [worldState, setWorldState] = useState<WorldState | null>(null);
+  const animFrameRef = useRef<number>(0);
+
+  const pollState = useCallback(async () => {
+    try {
+      const state = await invoke<WorldState>("get_world_state");
+      setWorldState(state);
+    } catch (e) {
+      log.error("Failed to get world state:", e);
+    }
+    animFrameRef.current = requestAnimationFrame(pollState);
+  }, []);
+
+  useEffect(() => {
+    animFrameRef.current = requestAnimationFrame(pollState);
+    return () => cancelAnimationFrame(animFrameRef.current);
+  }, [pollState]);
+
+  const throwBall = useCallback(
+    async (x: number, y: number, vx: number, vy: number) => {
+      await invoke("throw_ball", { x, y, vx, vy });
+    },
+    [],
+  );
+
+  const dropFiles = useCallback(
+    async (files: [string, string][], x: number, y: number): Promise<string> => {
+      return await invoke<string>("drop_files", { files, x, y });
+    },
+    [],
+  );
+
+  const removeDroppedFile = useCallback(
+    async (fileId: string) => {
+      await invoke("remove_dropped_file", { fileId });
+    },
+    [],
+  );
+
+  const detachAgentFile = useCallback(
+    async (agentId: string) => {
+      await invoke("detach_agent_file", { agentId });
+    },
+    [],
+  );
+
+  const clickAgent = useCallback(async (agentId: string) => {
+    await invoke("click_agent", { agentId });
+  }, []);
+
+  const sendMessage = useCallback(
+    async (agentId: string, text: string): Promise<string> => {
+      return await invoke<string>("send_message", { agentId, text });
+    },
+    [],
+  );
+
+  const dismissChat = useCallback(async (agentId: string) => {
+    await invoke("dismiss_chat", { agentId });
+  }, []);
+
+  const resizeWorld = useCallback(async (width: number, height: number) => {
+    await invoke("resize_world", { width, height });
+  }, []);
+
+  const addAgent = useCallback(async (avatar: string, name: string): Promise<string> => {
+    return await invoke<string>("add_agent", { avatar, name });
+  }, []);
+
+  const removeAgent = useCallback(async (agentId: string) => {
+    await invoke("remove_agent", { agentId });
+  }, []);
+
+  const setGear = useCallback(async (agentId: string, gearIds: string[]) => {
+    await invoke("set_gear", { agentId, gearIds });
+  }, []);
+
+  const requestAttention = useCallback(async (agentId: string) => {
+    await invoke("request_attention", { agentId });
+  }, []);
+
+  const setBackendConfig = useCallback(async (agentId: string, backendConfig: { backend_id: string; model?: string; system_prompt?: string; custom_agent?: string; awareness_level?: number; cwd?: string }) => {
+    await invoke("set_backend_config", { agentId, backendConfig });
+  }, []);
+
+  const renameAgent = useCallback(async (agentId: string, name: string) => {
+    await invoke("rename_agent", { agentId, name });
+  }, []);
+
+  const dismissAttention = useCallback(async (agentId: string) => {
+    await invoke("dismiss_attention", { agentId });
+  }, []);
+
+  const updateMouse = useCallback(async (x: number | null, y: number | null) => {
+    await invoke("update_mouse", { x, y });
+  }, []);
+
+  const saveConfig = useCallback(async (theme: string, windowBounds?: { x: number; y: number; width: number; height: number }, musicMuted?: boolean, dynamicSky?: boolean) => {
+    try {
+      await invoke("save_config", {
+        theme,
+        windowX: windowBounds?.x ?? null,
+        windowY: windowBounds?.y ?? null,
+        windowWidth: windowBounds?.width ?? null,
+        windowHeight: windowBounds?.height ?? null,
+        musicMuted: musicMuted ?? null,
+        dynamicSky: dynamicSky ?? null,
+      });
+    } catch (e) {
+      log.error("Failed to save config:", e);
+    }
+  }, []);
+
+  const loadConfig = useCallback(async () => {
+    try {
+      return await invoke<{ theme: string; agents: unknown[] }>("load_config");
+    } catch {
+      return null;
+    }
+  }, []);
+
+  return {
+    worldState,
+    throwBall,
+    dropFiles,
+    removeDroppedFile,
+    detachAgentFile,
+    clickAgent,
+    sendMessage,
+    dismissChat,
+    resizeWorld,
+    addAgent,
+    removeAgent,
+    setGear,
+    requestAttention,
+    dismissAttention,
+    setBackendConfig,
+    renameAgent,
+    updateMouse,
+    saveConfig,
+    loadConfig,
+  };
+}

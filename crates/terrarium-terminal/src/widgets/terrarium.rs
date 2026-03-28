@@ -7,13 +7,27 @@ use terrarium_sim::{Agent, AgentState, Ball, WorldState};
 
 use crate::animation::AnimationState;
 use crate::render::unicode;
+use crate::render::sixel::SixelRenderer;
+use crate::render::RenderMode;
 use crate::sprites;
+
+/// Sixel sprite to render after ratatui finishes
+#[derive(Clone)]
+pub struct SixelSprite {
+    pub x: u16,
+    pub y: u16,
+    pub data: String,
+}
 
 /// Widget for rendering the terrarium world
 pub struct TerrariumWidget<'a> {
     state: &'a WorldState,
     animation: &'a AnimationState,
     selected_agent: Option<usize>,
+    render_mode: RenderMode,
+    sixel_renderer: Option<&'a SixelRenderer>,
+    /// Collected Sixel sprites to be rendered after ratatui (shared via RefCell for Widget trait)
+    sixel_output: Option<&'a std::cell::RefCell<Vec<SixelSprite>>>,
 }
 
 impl<'a> TerrariumWidget<'a> {
@@ -22,7 +36,22 @@ impl<'a> TerrariumWidget<'a> {
             state,
             animation,
             selected_agent,
+            render_mode: RenderMode::Unicode,
+            sixel_renderer: None,
+            sixel_output: None,
         }
+    }
+
+    /// Enable Sixel rendering mode
+    pub fn with_sixel(
+        mut self,
+        renderer: &'a SixelRenderer,
+        output: &'a std::cell::RefCell<Vec<SixelSprite>>,
+    ) -> Self {
+        self.render_mode = RenderMode::Sixel;
+        self.sixel_renderer = Some(renderer);
+        self.sixel_output = Some(output);
+        self
     }
 
     /// Convert simulation coordinates to terminal coordinates
@@ -70,8 +99,8 @@ impl<'a> TerrariumWidget<'a> {
         }
     }
 
-    /// Render an agent at its position
-    fn render_agent(&self, agent: &Agent, agent_idx: usize, buf: &mut Buffer, area: Rect) {
+    /// Render an agent at its position (Unicode mode)
+    fn render_agent_unicode(&self, agent: &Agent, agent_idx: usize, buf: &mut Buffer, area: Rect) {
         let (term_x, term_y) = self.to_terminal_coords(agent.position.x, agent.position.y, area);
 
         // Get animation frame
@@ -121,21 +150,97 @@ impl<'a> TerrariumWidget<'a> {
         }
 
         // Draw name below sprite
-        let name_x = sprite_x;
-        let name_y = area.y + sprite_y + sprite.lines.len() as u16;
-        if name_y < area.y + area.height {
+        self.render_agent_name(agent, sprite_x, sprite_y + sprite.lines.len() as u16, is_selected, buf, area);
+
+        // Draw state indicator for special states
+        self.render_state_indicator(agent, term_x, sprite_y, buf, area);
+    }
+
+    /// Render an agent at its position (Sixel mode)
+    fn render_agent_sixel(&self, agent: &Agent, agent_idx: usize, buf: &mut Buffer, area: Rect) {
+        let (term_x, term_y) = self.to_terminal_coords(agent.position.x, agent.position.y, area);
+
+        // Get animation frame
+        let frame = self.animation.frame_for_state(agent.state, agent_idx);
+
+        let is_selected = self.selected_agent == Some(agent_idx);
+
+        // Get the Sixel renderer
+        if let Some(renderer) = self.sixel_renderer {
+            if let Some(sixel_data) = renderer.render_sprite(
+                &agent.avatar,
+                agent.state,
+                agent.direction,
+                frame,
+            ) {
+                // Calculate position for the Sixel sprite
+                // Sixel sprites are 16x16 pixels, which is roughly 2 chars wide, 1 char tall in most terminals
+                // (assuming ~8x16 pixel cell size)
+                let sprite_cols = renderer.cols_for_width(16);
+                let sprite_rows = renderer.rows_for_height(16);
+
+                let sprite_x = area.x + term_x.saturating_sub(sprite_cols / 2);
+                let sprite_y = area.y + term_y.saturating_sub(sprite_rows);
+
+                // Store the Sixel sprite for later rendering
+                if let Some(output) = self.sixel_output {
+                    output.borrow_mut().push(SixelSprite {
+                        x: sprite_x,
+                        y: sprite_y,
+                        data: sixel_data,
+                    });
+                }
+
+                // Clear the cells where the sprite will be rendered
+                // This ensures ratatui doesn't overwrite our Sixel graphics
+                for dy in 0..sprite_rows {
+                    for dx in 0..sprite_cols {
+                        let x = sprite_x + dx;
+                        let y = sprite_y + dy;
+                        if x < area.x + area.width && y < area.y + area.height {
+                            if let Some(cell) = buf.cell_mut((x, y)) {
+                                cell.set_char(' ');
+                                if is_selected {
+                                    cell.set_bg(Color::Rgb(60, 60, 80));
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Draw name below sprite
+                let name_y = sprite_y + sprite_rows;
+                self.render_agent_name(agent, term_x.saturating_sub(sprite_cols / 2), name_y - area.y, is_selected, buf, area);
+
+                // Draw state indicator
+                self.render_state_indicator(agent, term_x, sprite_y - area.y, buf, area);
+
+                return;
+            }
+        }
+
+        // Fall back to Unicode if Sixel fails
+        self.render_agent_unicode(agent, agent_idx, buf, area);
+    }
+
+    /// Render agent name below sprite
+    fn render_agent_name(&self, agent: &Agent, name_x: u16, name_y: u16, is_selected: bool, buf: &mut Buffer, area: Rect) {
+        let y = area.y + name_y;
+        if y < area.y + area.height {
             for (i, ch) in agent.name.chars().take(10).enumerate() {
                 let x = area.x + name_x + i as u16;
                 if x < area.x + area.width {
-                    if let Some(cell) = buf.cell_mut((x, name_y)) {
+                    if let Some(cell) = buf.cell_mut((x, y)) {
                         cell.set_char(ch);
                         cell.set_fg(if is_selected { Color::Yellow } else { Color::White });
                     }
                 }
             }
         }
+    }
 
-        // Draw state indicator for special states
+    /// Render state indicator for special states
+    fn render_state_indicator(&self, agent: &Agent, term_x: u16, sprite_y: u16, buf: &mut Buffer, area: Rect) {
         if agent.state == AgentState::NeedsAttention {
             // Draw "!" above head
             let indicator_y = area.y + sprite_y.saturating_sub(1);
@@ -234,7 +339,10 @@ impl<'a> Widget for TerrariumWidget<'a> {
         agents_with_idx.sort_by(|a, b| a.1.position.y.partial_cmp(&b.1.position.y).unwrap());
 
         for (idx, agent) in agents_with_idx {
-            self.render_agent(agent, idx, buf, inner);
+            match self.render_mode {
+                RenderMode::Sixel => self.render_agent_sixel(agent, idx, buf, inner),
+                RenderMode::Unicode => self.render_agent_unicode(agent, idx, buf, inner),
+            }
         }
 
         // Render bubbles on top

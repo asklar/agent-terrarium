@@ -3,6 +3,9 @@
 //! Sixel is a bitmap graphics format supported by terminals like xterm, mlterm,
 //! WezTerm, foot, and mintty. This module provides detection and rendering.
 
+use super::sprites::{get_pixel_sprite, PixelSprite};
+use std::collections::HashMap;
+
 /// Check if the current terminal supports Sixel graphics
 pub fn detect_sixel_support() -> bool {
     // Check environment hints first
@@ -209,17 +212,113 @@ impl SixelRenderer {
         output
     }
 
-    /// Render agent sprite as Sixel (placeholder - would need actual sprite data)
+    /// Render agent sprite as Sixel
+    ///
+    /// Returns a Sixel escape sequence string that renders the sprite.
     pub fn render_sprite(
         &self,
-        _avatar: &str,
-        _state: terrarium_sim::AgentState,
-        _direction: terrarium_sim::Direction,
-        _frame: usize,
+        avatar: &str,
+        state: terrarium_sim::AgentState,
+        direction: terrarium_sim::Direction,
+        frame: usize,
     ) -> Option<String> {
-        // TODO: Load and render actual sprite PNG data
-        // For now, return None to fall back to Unicode
-        None
+        let sprite = get_pixel_sprite(avatar, state, direction, frame);
+        Some(self.sprite_to_sixel(sprite))
+    }
+
+    /// Convert a pixel sprite to Sixel escape sequence
+    fn sprite_to_sixel(&self, sprite: &PixelSprite) -> String {
+        // Collect unique colors (ignoring transparent pixels)
+        let mut color_map: HashMap<[u8; 3], u8> = HashMap::new();
+        let mut color_index: u8 = 1; // Start at 1, 0 is often transparent
+
+        for row in &sprite.pixels {
+            for pixel in row {
+                if pixel[3] > 0 {
+                    // Not transparent
+                    let rgb = [pixel[0], pixel[1], pixel[2]];
+                    if !color_map.contains_key(&rgb) {
+                        color_map.insert(rgb, color_index);
+                        color_index += 1;
+                        if color_index > 254 {
+                            break; // Sixel supports up to 256 colors
+                        }
+                    }
+                }
+            }
+        }
+
+        let mut output = String::with_capacity(2048);
+
+        // Start Sixel sequence with raster attributes
+        // P0;1;q sets aspect ratio to 1:1
+        output.push_str("\x1bP0;1;q");
+
+        // Define colors: #n;2;r%;g%;b%
+        for (rgb, idx) in &color_map {
+            let r_pct = (rgb[0] as u32 * 100) / 255;
+            let g_pct = (rgb[1] as u32 * 100) / 255;
+            let b_pct = (rgb[2] as u32 * 100) / 255;
+            output.push_str(&format!("#{};2;{};{};{}", idx, r_pct, g_pct, b_pct));
+        }
+
+        // Convert pixels to Sixel data
+        // Sixel encodes 6 vertical pixels per character
+        let height = sprite.height as usize;
+        let width = sprite.width as usize;
+        let sixel_rows = (height + 5) / 6;
+
+        for sixel_row in 0..sixel_rows {
+            let y_start = sixel_row * 6;
+
+            // For each color, output pixels in this row
+            // We need to iterate colors in order for proper layering
+            let mut sorted_colors: Vec<_> = color_map.iter().collect();
+            sorted_colors.sort_by_key(|(_, idx)| *idx);
+
+            for (color_idx, (rgb, idx)) in sorted_colors.iter().enumerate() {
+                // Switch to this color
+                output.push('#');
+                output.push_str(&idx.to_string());
+
+                // Output pixels for this color in this sixel row
+                for x in 0..width {
+                    let mut bits: u8 = 0;
+
+                    for y_offset in 0..6 {
+                        let y = y_start + y_offset;
+                        if y < height {
+                            let pixel = &sprite.pixels[y][x];
+                            if pixel[3] > 0 {
+                                // Not transparent
+                                let pixel_rgb = [pixel[0], pixel[1], pixel[2]];
+                                if &pixel_rgb == *rgb {
+                                    bits |= 1 << y_offset;
+                                }
+                            }
+                        }
+                    }
+
+                    // Sixel character: 0x3F (?) + bits
+                    output.push((0x3F + bits) as char);
+                }
+
+                // Return to start of line for next color (carriage return in Sixel)
+                if color_idx < sorted_colors.len() - 1 {
+                    output.push('$');
+                }
+            }
+
+            // Move to next sixel row (newline in Sixel)
+            if sixel_row < sixel_rows - 1 {
+                output.push('-');
+            }
+        }
+
+        // End Sixel sequence
+        output.push_str("\x1b\\");
+
+        output
     }
 }
 

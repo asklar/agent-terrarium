@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "name": "Shanghai Theme",
+  "author": "Agent Terrarium",
+  "themes": [
+    {
+      "id": "shanghai",
+      "name": "Shanghai",
+      "icon": "🏙️",
+      "sky": ["#1a237e", "#283593", "#5c6bc0", "#ef9a9a"],
+      "ground": "#455A64",
+      "groundAccent": "#37474F",
+      "groundWave": 1,
+      "grass": { "color": "#546E7A", "accent": "#455A64" },
+      "particles": { "type": "star", "color": "#FFD54F", "count": 15 },
+      "decorators": ["stars", "pudong_skyline", "huangpu_river", "oriental_pearl", "lantern", "lantern2"],
+      "customDecorators": [
+        {
+          "name": "pudong_skyline",
+          "file": "shanghai/pudong-skyline.svg",
+          "fileX": 0.5,
+          "fileY": 0.72,
+          "fileWidth": 550,
+          "fileHeight": 160,
+          "fileOpacity": 0.7,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "huangpu_river",
+          "file": "shanghai/huangpu-river.svg",
+          "fileX": 0.5,
+          "fileY": 0.72,
+          "fileWidth": 550,
+          "fileHeight": 35,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "oriental_pearl",
+          "file": "shanghai/oriental-pearl.svg",
+          "fileX": 0.4,
+          "fileY": 0.72,
+          "fileWidth": 55,
+          "fileHeight": 220,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "lantern",
+          "file": "shanghai/lantern.svg",
+          "fileWidth": 18,
+          "fileHeight": 22,
+          "animation": {
+            "waypoints": [[0.12, 0.18], [0.15, 0.15], [0.18, 0.18]],
+            "duration": 8,
+            "pingPong": true
+          }
+        },
+        {
+          "name": "lantern2",
+          "file": "shanghai/lantern.svg",
+          "fileWidth": 15,
+          "fileHeight": 18,
+          "fileOpacity": 0.7,
+          "animation": {
+            "waypoints": [[0.82, 0.2], [0.85, 0.17], [0.88, 0.2]],
+            "duration": 10,
+            "pingPong": true
+          }
+        }
+      ],
+      "music": {
+        "bpm": 76,
+        "key": 64,
+        "scale": [0, 2, 4, 7, 9],
+        "wave": "sine",
+        "bassWave": "triangle",
+        "volume": 0.1,
+        "chords": [[0, 4, 7], [7, 11, 14], [5, 9, 12], [0, 4, 7]]
+      }
+    }
+  ]
+}

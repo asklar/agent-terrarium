@@ -17,6 +17,7 @@ crossterm = "0.28"
 tokio = { version = "1", features = ["rt-multi-thread", "time", "macros", "sync"] }
 log = "0.4"
 env_logger = "0.11"
+image = { version = "0.25", default-features = false, features = ["png"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

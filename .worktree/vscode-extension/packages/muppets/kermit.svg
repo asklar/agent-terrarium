@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-16 -28 32 46">
+  <!-- Kermit the Frog -->
+  <!-- Thin body -->
+  <ellipse cx="0" cy="6" rx="5" ry="7" fill="#4CAF50"/>
+  <!-- Arms -->
+  <path d="M -5,2 Q -10,0 -12,3" stroke="#4CAF50" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+  <path d="M 5,2 Q 10,0 12,3" stroke="#4CAF50" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+  <!-- Jagged pointed collar -->
+  <path d="M -8,-1 L -5,-4 L -2.5,-1 L 0,-4.5 L 2.5,-1 L 5,-4 L 8,-1 L 6,0 L 4,-2 L 2,0.5 L 0,-2.5 L -2,0.5 L -4,-2 L -6,0 Z"
+        fill="#FFFFFF" stroke="#D0D0D0" stroke-width="0.4"/>
+  <!-- Thin neck -->
+  <rect x="-2.5" y="-5" width="5" height="4" rx="2" fill="#4CAF50"/>
+  <!-- Wide flat frog head -->
+  <ellipse cx="0" cy="-10" rx="13" ry="6" fill="#66BB6A"/>
+  <!-- HUGE protruding ping-pong ball eyes ON TOP of head -->
+  <circle cx="-6" cy="-17" r="7" fill="white" stroke="#4CAF50" stroke-width="0.8"/>
+  <circle cx="6" cy="-17" r="7" fill="white" stroke="#4CAF50" stroke-width="0.8"/>
+  <!-- Green eyelid arcs on top half -->
+  <path d="M -13,-18 Q -6,-24 1,-18" fill="#66BB6A" stroke="none"/>
+  <path d="M -1,-18 Q 6,-24 13,-18" fill="#66BB6A" stroke="none"/>
+  <!-- Pupils (looking slightly inward) -->
+  <circle cx="-4.5" cy="-16.5" r="3" fill="#1B5E20"/>
+  <circle cx="4.5" cy="-16.5" r="3" fill="#1B5E20"/>
+  <circle cx="-4.5" cy="-16.5" r="1.5" fill="#111"/>
+  <circle cx="4.5" cy="-16.5" r="1.5" fill="#111"/>
+  <!-- Eye highlights -->
+  <circle cx="-6.5" cy="-18.5" r="1.3" fill="white" opacity="0.85"/>
+  <circle cx="4" cy="-18.5" r="1.3" fill="white" opacity="0.85"/>
+  <!-- Wide OPEN mouth - Kermit's signature grin -->
+  <path d="M -12,-7.5 Q -6,-1 0,-2 Q 6,-1 12,-7.5" fill="#2E7D32" stroke="#1B5E20" stroke-width="0.7"/>
+  <!-- Mouth interior - shows it's open -->
+  <path d="M -10,-7.5 Q -5,-3 0,-3.5 Q 5,-3 10,-7.5" fill="#1B5E20"/>
+  <!-- Red mouth lining visible -->
+  <path d="M -8,-7 Q -4,-4.5 0,-5 Q 4,-4.5 8,-7" fill="#C62828" opacity="0.4"/>
+  <!-- Nostrils -->
+  <circle cx="-2.5" cy="-10" r="0.7" fill="#388E3C"/>
+  <circle cx="2.5" cy="-10" r="0.7" fill="#388E3C"/>
+  <!-- Legs with flipper feet -->
+  <path d="M -3,12 L -4,15 L -8,16 L -4,16.5 L -2,15" stroke="#4CAF50" stroke-width="1.8" stroke-linecap="round" fill="#388E3C"/>
+  <path d="M 3,12 L 4,15 L 8,16 L 4,16.5 L 2,15" stroke="#4CAF50" stroke-width="1.8" stroke-linecap="round" fill="#388E3C"/>
+</svg>

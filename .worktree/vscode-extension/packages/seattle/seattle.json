@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "name": "Seattle Theme",
+  "author": "Agent Terrarium",
+  "themes": [
+    {
+      "id": "seattle",
+      "name": "Seattle",
+      "icon": "🌧️",
+      "sky": ["#546E7A", "#78909C", "#90A4AE", "#B0BEC5"],
+      "ground": "#5D6B5E",
+      "groundAccent": "#4A564A",
+      "groundWave": 2,
+      "grass": { "color": "#6B8C5A", "accent": "#5A7A4A" },
+      "particles": { "type": "leaf", "color": "#90A4AE", "count": 10 },
+      "decorators": ["clouds", "mt_rainier", "puget_sound", "sailboat", "sailboat_orange", "orca", "orca_splash", "space_needle", "fremont_troll", "mist", "grass"],
+      "customDecorators": [
+        {
+          "name": "mt_rainier",
+          "file": "seattle/mt-rainier.svg",
+          "fileX": 0.72,
+          "fileY": 0.72,
+          "fileWidth": 600,
+          "fileHeight": 225,
+          "fileOpacity": 0.7,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "puget_sound",
+          "file": "seattle/puget-sound.svg",
+          "fileX": 0.5,
+          "fileY": 0.72,
+          "fileWidth": 600,
+          "fileHeight": 45
+        },
+        {
+          "name": "sailboat",
+          "file": "seattle/sailboat.svg",
+          "fileWidth": 24,
+          "fileHeight": 21,
+          "animation": {
+            "waypoints": [[0.3, 0.715], [0.45, 0.71], [0.55, 0.71], [0.7, 0.715]],
+            "duration": 150,
+            "pingPong": true
+          }
+        },
+        {
+          "name": "sailboat_orange",
+          "file": "seattle/sailboat-orange.svg",
+          "fileWidth": 15,
+          "fileHeight": 13,
+          "fileOpacity": 0.6,
+          "animation": {
+            "waypoints": [[0.62, 0.708], [0.5, 0.705], [0.38, 0.708]],
+            "duration": 120,
+            "pingPong": true
+          }
+        },
+        {
+          "name": "orca",
+          "file": "seattle/orca.svg",
+          "fileWidth": 30,
+          "fileHeight": 20,
+          "animation": {
+            "type": "jump",
+            "origin": [0.4, 0.715],
+            "dx": 0.08,
+            "height": 0.06,
+            "duration": 2,
+            "interval": 45,
+            "rotate": true
+          }
+        },
+        {
+          "name": "orca_splash",
+          "file": "seattle/splash.svg",
+          "fileX": 0.48,
+          "fileY": 0.715,
+          "fileWidth": 40,
+          "fileHeight": 30,
+          "fileAnchor": "bottom",
+          "animation": {
+            "waypoints": [[0.48, 0.715], [0.48, 0.695], [0.48, 0.715]],
+            "duration": 1.2,
+            "interval": 45,
+            "visibleDuration": 1.2,
+            "delay": 1.7
+          }
+        },
+        {
+          "name": "space_needle",
+          "file": "seattle/space-needle.svg",
+          "fileX": 0.25,
+          "fileY": 0.72,
+          "fileWidth": 55,
+          "fileHeight": 260,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "fremont_troll",
+          "file": "seattle/fremont-troll.svg",
+          "fileX": 0.85,
+          "fileY": 0.74,
+          "fileWidth": 130,
+          "fileHeight": 78,
+          "fileAnchor": "bottom"
+        }
+      ],
+      "music": {
+        "bpm": 70,
+        "key": 58,
+        "scale": [0, 2, 3, 5, 7, 8, 10],
+        "wave": "sine",
+        "bassWave": "triangle",
+        "volume": 0.1,
+        "chords": [[0, 3, 7], [5, 8, 12], [3, 7, 10], [0, 3, 7]]
+      }
+    }
+  ]
+}

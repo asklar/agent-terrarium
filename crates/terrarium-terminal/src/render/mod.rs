@@ -2,6 +2,7 @@
 
 pub mod unicode;
 pub mod sixel;
+pub mod sprites;
 
 /// Render mode selection
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

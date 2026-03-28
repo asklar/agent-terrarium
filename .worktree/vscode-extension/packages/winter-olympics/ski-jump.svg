@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 100">
+  <!-- Main hillside mass - tapers on both sides -->
+  <path d="M0 100 Q5 90 15 75 Q25 50 40 35 Q55 24 70 30 Q82 36 90 50 Q98 65 105 80 Q112 92 120 100Z" fill="#78909C"/>
+  <!-- Hill shading layer -->
+  <path d="M10 100 Q18 80 28 62 Q38 42 50 34 Q62 28 72 34 Q82 42 88 55 Q95 72 100 100Z" fill="#90A4AE"/>
+  <!-- Snow covering on hillside -->
+  <path d="M15 75 Q25 50 40 35 Q55 24 70 30 Q82 36 90 50 Q85 45 72 34 Q62 28 50 34 Q38 42 28 62Z" fill="#ECEFF1" opacity="0.7"/>
+  <!-- Ramp track -->
+  <path d="M32 75 L48 52 Q53 46 58 44 L61 44 L61 48 Q56 49 53 52 L38 75Z" fill="#546E7A"/>
+  <!-- Ramp surface (icy) -->
+  <path d="M34 73 L49 53 Q53 48 57 46 L59 46 L59 49 Q55 50 52 53 L38 73Z" fill="#B0BEC5"/>
+  <!-- Takeoff lip -->
+  <path d="M32 77 Q30 73 34 73 L38 73 L36 77Z" fill="#455A64"/>
+  <!-- Landing slope -->
+  <path d="M30 79 Q34 88 42 94 L48 100 L22 100 Q24 92 27 84Z" fill="#607D8B" opacity="0.5"/>
+  <!-- Snow patches -->
+  <path d="M65 37 Q70 32 75 36 Q70 40 65 42Z" fill="#ECEFF1" opacity="0.5"/>
+  <path d="M18 82 Q23 77 28 80 Q23 84 18 86Z" fill="#ECEFF1" opacity="0.4"/>
+  <!-- Trees -->
+  <polygon points="75,60 78,47 81,60" fill="#2E7D32" opacity="0.6"/>
+  <polygon points="83,65 86,53 89,65" fill="#388E3C" opacity="0.5"/>
+</svg>

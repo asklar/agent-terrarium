@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "name": "Built-in Themes",
+  "themes": [
+    {
+      "id": "meadow",
+      "name": "Meadow",
+      "icon": "🌿",
+      "sky": ["#87CEEB", "#B4E4FF", "#E8F5E9"],
+      "ground": "#7CB342",
+      "groundAccent": "#689F38",
+      "grass": { "color": "#66BB6A", "accent": "#43A047" },
+      "particles": { "type": "leaf", "color": "#A5D6A7", "count": 12 },
+      "decorators": ["clouds", "flowers", "grass"],
+      "music": {
+        "bpm": 88,
+        "key": 60,
+        "scale": [0, 2, 4, 7, 9],
+        "wave": "triangle",
+        "bassWave": "sine",
+        "volume": 0.12,
+        "chords": [[0, 4, 7], [5, 9, 12], [7, 11, 14], [0, 4, 7]]
+      }
+    },
+    {
+      "id": "night",
+      "name": "Night",
+      "icon": "🌙",
+      "sky": ["#0D1B2A", "#1B2838", "#1A237E"],
+      "ground": "#1B5E20",
+      "groundAccent": "#2E7D32",
+      "grass": { "color": "#2E7D32", "accent": "#1B5E20" },
+      "particles": { "type": "star", "color": "#FFECB3", "count": 30 },
+      "decorators": ["stars", "shooting_stars", "moon", "grass"],
+      "music": {
+        "bpm": 72,
+        "key": 57,
+        "scale": [0, 2, 3, 5, 7, 8, 10],
+        "wave": "sine",
+        "bassWave": "triangle",
+        "volume": 0.1,
+        "chords": [[0, 3, 7], [5, 8, 12], [3, 7, 10], [0, 3, 7]]
+      }
+    },
+    {
+      "id": "desert",
+      "name": "Desert",
+      "icon": "🏜️",
+      "sky": ["#FF8F00", "#FFB74D", "#FFF8E1"],
+      "ground": "#D4A053",
+      "groundAccent": "#C49040",
+      "particles": { "type": "sand", "color": "#FFE0B2", "count": 8 },
+      "decorators": ["clouds", "cactus"],
+      "music": {
+        "bpm": 80,
+        "key": 62,
+        "scale": [0, 1, 4, 5, 7, 8, 11],
+        "wave": "square",
+        "bassWave": "triangle",
+        "volume": 0.1,
+        "chords": [[0, 4, 7], [1, 5, 8], [7, 11, 14], [0, 4, 7]]
+      }
+    },
+    {
+      "id": "ocean",
+      "name": "Ocean",
+      "icon": "🌊",
+      "sky": ["#0277BD", "#4FC3F7", "#B3E5FC"],
+      "ground": "#0277BD",
+      "groundAccent": "#01579B",
+      "particles": { "type": "bubble", "color": "#B3E5FC", "count": 15 },
+      "decorators": ["waves", "seaweed", "swordfish"],
+      "customDecorators": [
+        {
+          "name": "swordfish",
+          "file": "swordfish.svg",
+          "fileWidth": 65,
+          "fileHeight": 20,
+          "animation": {
+            "type": "jump",
+            "origin": [0.25, 0.72],
+            "dx": 0.2,
+            "height": 0.15,
+            "duration": 1.8,
+            "interval": 25,
+            "rotate": true
+          }
+        }
+      ],
+      "music": {
+        "bpm": 76,
+        "key": 55,
+        "scale": [0, 2, 4, 5, 7, 9, 11],
+        "wave": "sine",
+        "bassWave": "sine",
+        "volume": 0.1,
+        "chords": [[0, 4, 7], [5, 9, 12], [9, 12, 16], [7, 11, 14]]
+      }
+    },
+    {
+      "id": "forest_dawn",
+      "name": "Forest",
+      "icon": "🌅",
+      "sky": ["#1A0A2E", "#4A1942", "#B85C38", "#F0A500", "#FFF3CD"],
+      "ground": "#2E4A1E",
+      "groundAccent": "#1B3A0E",
+      "grass": { "color": "#3E6B2F", "accent": "#2E5A1F" },
+      "particles": { "type": "leaf", "color": "#FFECB3", "count": 18 },
+      "decorators": ["trees", "mist", "fireflies", "grass"],
+      "music": {
+        "bpm": 68,
+        "key": 64,
+        "scale": [0, 2, 4, 7, 9],
+        "wave": "triangle",
+        "bassWave": "sine",
+        "volume": 0.08,
+        "chords": [[0, 4, 7], [7, 11, 14], [5, 9, 12], [0, 4, 7]]
+      }
+    },
+    {
+      "id": "castle",
+      "name": "Castle",
+      "icon": "🏰",
+      "sky": ["#1A1A2E", "#16213E", "#2C3E6B"],
+      "ground": "#5D4E37",
+      "groundAccent": "#4A3C2A",
+      "particles": { "type": "sand", "color": "#FF9800", "count": 6 },
+      "decorators": ["castle_walls", "torches", "banners"],
+      "music": {
+        "bpm": 84,
+        "key": 52,
+        "scale": [0, 2, 3, 5, 7, 8, 11],
+        "wave": "square",
+        "bassWave": "sawtooth",
+        "volume": 0.1,
+        "chords": [[0, 3, 7], [8, 11, 15], [5, 8, 12], [0, 3, 7]]
+      }
+    }
+  ]
+}

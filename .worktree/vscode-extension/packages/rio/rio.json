@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "name": "Rio Theme",
+  "author": "Agent Terrarium",
+  "themes": [
+    {
+      "id": "rio",
+      "name": "Rio de Janeiro",
+      "icon": "🌴",
+      "sky": ["#0277BD", "#039BE5", "#4FC3F7", "#B3E5FC"],
+      "ground": "#F9A825",
+      "groundAccent": "#F57F17",
+      "groundWave": 3,
+      "grass": { "color": "#FFD54F", "accent": "#FFC107" },
+      "particles": { "type": "leaf", "color": "#66BB6A", "count": 8 },
+      "decorators": ["clouds", "copacabana", "sugarloaf", "christ_redeemer", "parrot", "flowers"],
+      "customDecorators": [
+        {
+          "name": "copacabana",
+          "file": "rio/copacabana.svg",
+          "fileX": 0.5,
+          "fileY": 0.72,
+          "fileWidth": 500,
+          "fileHeight": 50,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "sugarloaf",
+          "file": "rio/sugarloaf.svg",
+          "fileX": 0.68,
+          "fileY": 0.72,
+          "fileWidth": 160,
+          "fileHeight": 130,
+          "fileOpacity": 1,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "christ_redeemer",
+          "file": "rio/christ-redeemer.svg",
+          "fileX": 0.3,
+          "fileY": 0.72,
+          "fileWidth": 130,
+          "fileHeight": 160,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "parrot",
+          "file": "rio/parrot.svg",
+          "fileWidth": 25,
+          "fileHeight": 20,
+          "animation": {
+            "waypoints": [[0.1, 0.25], [0.3, 0.2], [0.5, 0.22], [0.7, 0.18], [0.9, 0.25]],
+            "duration": 40,
+            "pingPong": true
+          }
+        }
+      ],
+      "music": {
+        "bpm": 110,
+        "key": 65,
+        "scale": [0, 2, 4, 5, 7, 9, 10],
+        "wave": "triangle",
+        "bassWave": "sine",
+        "volume": 0.12,
+        "chords": [[0, 4, 7], [5, 9, 12], [7, 10, 14], [0, 4, 7]]
+      }
+    }
+  ]
+}

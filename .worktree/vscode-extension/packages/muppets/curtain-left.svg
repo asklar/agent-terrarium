@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 300" width="120" height="300">
+  <defs>
+    <linearGradient id="velvet" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#5B0000"/>
+      <stop offset="30%" stop-color="#8B0000"/>
+      <stop offset="60%" stop-color="#A00000"/>
+      <stop offset="80%" stop-color="#8B0000"/>
+      <stop offset="100%" stop-color="#6B0000"/>
+    </linearGradient>
+    <linearGradient id="gold-trim" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#B8860B"/>
+      <stop offset="50%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#B8860B"/>
+    </linearGradient>
+  </defs>
+  <!-- Curtain body -->
+  <path d="M0,0 L120,0 L120,20 Q100,40 110,80 Q120,120 105,160 Q95,200 108,240 Q115,270 110,300 L0,300 Z"
+        fill="url(#velvet)" opacity="0.95"/>
+  <!-- Folds/draping -->
+  <path d="M40,0 Q30,50 45,100 Q55,150 40,200 Q30,250 42,300"
+        fill="none" stroke="#5B0000" stroke-width="3" opacity="0.5"/>
+  <path d="M70,0 Q60,60 75,120 Q85,180 70,240 Q62,270 68,300"
+        fill="none" stroke="#5B0000" stroke-width="2" opacity="0.4"/>
+  <!-- Gold trim along right edge -->
+  <path d="M115,20 Q100,40 110,80 Q120,120 105,160 Q95,200 108,240 Q115,270 110,300"
+        fill="none" stroke="url(#gold-trim)" stroke-width="4" opacity="0.8"/>
+  <!-- Gold tassel at top -->
+  <circle cx="110" cy="25" r="6" fill="#FFD700" opacity="0.9"/>
+  <path d="M110,31 L106,50 M110,31 L110,52 M110,31 L114,50" stroke="#DAA520" stroke-width="1.5" fill="none"/>
+  <!-- Valance at top -->
+  <path d="M0,0 L120,0 L120,25 Q100,35 80,25 Q60,15 40,25 Q20,35 0,25 Z"
+        fill="url(#velvet)" stroke="url(#gold-trim)" stroke-width="2"/>
+</svg>

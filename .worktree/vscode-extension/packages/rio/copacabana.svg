@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 50">
+  <!-- Ocean water — more natural wave rhythm -->
+  <path d="M0 22 Q12 18 25 22 Q38 26 55 22 Q68 18 85 23 Q100 27 120 22 Q135 17 155 23 Q172 28 190 23 Q205 18 225 23 Q240 27 260 22 Q275 17 295 23 Q312 28 330 23 Q345 18 365 23 Q380 27 400 22 L400 50 L0 50Z" fill="#0288D1" opacity="0.45"/>
+  <path d="M0 26 Q20 23 40 27 Q60 31 80 26 Q100 22 125 27 Q145 31 170 27 Q190 23 215 27 Q235 31 260 27 Q280 23 305 27 Q325 31 350 27 Q370 23 400 27 L400 50 L0 50Z" fill="#0277BD" opacity="0.25"/>
+  <!-- Beach sand -->
+  <path d="M0 30 Q50 28 100 32 Q150 35 200 32 Q250 28 300 32 Q350 35 400 30 L400 50 L0 50Z" fill="#FFD54F"/>
+  <!-- Wave foam lines — natural irregular rhythm -->
+  <path d="M0 29 Q15 26 35 30 Q55 33 80 29 Q100 25 125 30 Q148 34 170 30 Q190 26 215 30 Q238 34 260 30 Q280 26 305 30 Q328 34 350 30 Q370 26 400 30" fill="none" stroke="#E1F5FE" stroke-width="1.2" opacity="0.6"/>
+  <path d="M0 31 Q25 28 50 32 Q75 35 100 31 Q130 27 155 31 Q180 35 205 31 Q230 27 255 31 Q280 35 305 31 Q330 27 360 32 Q385 35 400 31" fill="none" stroke="white" stroke-width="0.6" opacity="0.35"/>
+  <path d="M10 27 Q30 24 55 28 Q75 31 95 27 Q115 24 140 28 Q165 32 185 28 Q205 24 230 28 Q255 32 275 28 Q295 24 320 28 Q345 32 370 28 Q390 24 400 28" fill="none" stroke="#B3E5FC" stroke-width="0.5" opacity="0.3"/>
+  <!-- Beach umbrella 1 — red with white stripe -->
+  <line x1="140" y1="40" x2="140" y2="30" stroke="#795548" stroke-width="1.2"/>
+  <path d="M131 31 Q135 25 140 29 Q145 25 149 31Z" fill="#E53935"/>
+  <path d="M135.5 28.5 Q138 26 140 29 Q142 26 144.5 28.5" fill="#FFCDD2" opacity="0.4"/>
+  <!-- Beach umbrella 2 — yellow -->
+  <line x1="270" y1="41" x2="270" y2="32" stroke="#795548" stroke-width="1.2"/>
+  <path d="M261 33 Q265 27 270 31 Q275 27 279 33Z" fill="#FDD835"/>
+  <path d="M265.5 30.5 Q268 28 270 31 Q272 28 274.5 30.5" fill="#FFF9C4" opacity="0.4"/>
+  <!-- Palm tree 1 -->
+  <line x1="60" y1="35" x2="58" y2="10" stroke="#795548" stroke-width="2.5"/>
+  <path d="M58 10 Q50 5 42 12" stroke="#4CAF50" stroke-width="2" fill="none"/>
+  <path d="M58 10 Q55 3 48 6" stroke="#66BB6A" stroke-width="1.8" fill="none"/>
+  <path d="M58 10 Q62 3 68 7" stroke="#4CAF50" stroke-width="2" fill="none"/>
+  <path d="M58 10 Q65 6 72 13" stroke="#66BB6A" stroke-width="1.8" fill="none"/>
+  <!-- Palm tree 2 -->
+  <line x1="320" y1="35" x2="322" y2="12" stroke="#795548" stroke-width="2.5"/>
+  <path d="M322 12 Q315 7 308 14" stroke="#4CAF50" stroke-width="2" fill="none"/>
+  <path d="M322 12 Q318 4 312 8" stroke="#66BB6A" stroke-width="1.8" fill="none"/>
+  <path d="M322 12 Q328 5 335 9" stroke="#4CAF50" stroke-width="2" fill="none"/>
+  <path d="M322 12 Q330 8 336 15" stroke="#66BB6A" stroke-width="1.8" fill="none"/>
+  <!-- Palm tree 3 (small) -->
+  <line x1="185" y1="37" x2="186" y2="18" stroke="#795548" stroke-width="2"/>
+  <path d="M186 18 Q180 14 175 19" stroke="#4CAF50" stroke-width="1.5" fill="none"/>
+  <path d="M186 18 Q190 13 196 17" stroke="#66BB6A" stroke-width="1.5" fill="none"/>
+</svg>

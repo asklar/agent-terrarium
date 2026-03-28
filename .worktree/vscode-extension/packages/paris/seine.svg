@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 40">
+  <!-- Far bank building silhouettes — more varied skyline -->
+  <rect x="8" y="4" width="8" height="8" fill="#90A4AE" opacity="0.3"/>
+  <rect x="17" y="2" width="5" height="10" fill="#90A4AE" opacity="0.25"/>
+  <rect x="23" y="5" width="10" height="7" fill="#90A4AE" opacity="0.3"/>
+  <rect x="34" y="3" width="6" height="9" fill="#90A4AE" opacity="0.25"/>
+  <rect x="41" y="6" width="12" height="6" fill="#90A4AE" opacity="0.28"/>
+  <!-- Church spire silhouette -->
+  <path d="M48 6 L49.5 1 L51 6" fill="#90A4AE" opacity="0.3"/>
+  <rect x="235" y="3" width="8" height="9" fill="#90A4AE" opacity="0.25"/>
+  <rect x="245" y="1" width="5" height="11" fill="#90A4AE" opacity="0.3"/>
+  <rect x="252" y="4" width="12" height="8" fill="#90A4AE" opacity="0.25"/>
+  <rect x="266" y="2" width="7" height="10" fill="#90A4AE" opacity="0.28"/>
+  <rect x="275" y="5" width="9" height="7" fill="#90A4AE" opacity="0.22"/>
+  <rect x="415" y="3" width="9" height="9" fill="#90A4AE" opacity="0.25"/>
+  <rect x="426" y="5" width="6" height="7" fill="#90A4AE" opacity="0.3"/>
+  <rect x="434" y="1" width="8" height="11" fill="#90A4AE" opacity="0.25"/>
+  <rect x="444" y="4" width="12" height="8" fill="#90A4AE" opacity="0.28"/>
+  <rect x="458" y="3" width="7" height="9" fill="#90A4AE" opacity="0.22"/>
+
+  <!-- River water — tapers down at edges -->
+  <path d="M 0 40 Q 30 35 60 20 Q 90 8 125 8 Q 190 2 250 6 Q 310 2 375 8 Q 410 8 440 20 Q 470 35 500 40 Z" fill="#5C8FB8"/>
+  <!-- Deeper water -->
+  <path d="M 60 24 Q 125 12 250 15 Q 375 12 440 24 L 438 36 Q 375 33 250 35 Q 125 33 62 36 Z" fill="#4A7FA8" opacity="0.6"/>
+
+  <!-- Stone bridge - first arch -->
+  <path d="M 140 10 Q 140 -4 162 -4 Q 184 -4 184 10" fill="none" stroke="#8D6E63" stroke-width="3"/>
+  <path d="M 138 10 L 138 5 Q 138 -6 162 -6 Q 186 -6 186 5 L 186 10" fill="none" stroke="#795548" stroke-width="1.5"/>
+  <!-- Stone bridge - second arch -->
+  <path d="M 186 10 Q 186 -4 206 -4 Q 226 -4 226 10" fill="none" stroke="#8D6E63" stroke-width="3"/>
+  <path d="M 184 10 L 184 5 Q 184 -6 206 -6 Q 228 -6 228 5 L 228 10" fill="none" stroke="#795548" stroke-width="1.5"/>
+  <!-- Bridge road surface -->
+  <rect x="130" y="-8" width="106" height="4" rx="1" fill="#A1887F"/>
+  <!-- Bridge pillars -->
+  <rect x="135" y="-4" width="6" height="16" fill="#8D6E63"/>
+  <rect x="181" y="-4" width="6" height="16" fill="#8D6E63"/>
+  <rect x="225" y="-4" width="6" height="16" fill="#8D6E63"/>
+  <!-- Bridge lampposts -->
+  <line x1="150" y1="-8" x2="150" y2="-12" stroke="#6D4C41" stroke-width="0.6"/>
+  <circle cx="150" cy="-12.5" r="0.8" fill="#FFD54F" opacity="0.5"/>
+  <line x1="210" y1="-8" x2="210" y2="-12" stroke="#6D4C41" stroke-width="0.6"/>
+  <circle cx="210" cy="-12.5" r="0.8" fill="#FFD54F" opacity="0.5"/>
+
+  <!-- Near bank building silhouettes -->
+  <rect x="55" y="36" width="12" height="6" fill="#78909C" opacity="0.2"/>
+  <rect x="69" y="37" width="8" height="5" fill="#78909C" opacity="0.15"/>
+  <rect x="80" y="36" width="10" height="6" fill="#78909C" opacity="0.18"/>
+  <rect x="325" y="36" width="10" height="6" fill="#78909C" opacity="0.2"/>
+  <rect x="337" y="37" width="7" height="5" fill="#78909C" opacity="0.15"/>
+  <rect x="346" y="36" width="12" height="6" fill="#78909C" opacity="0.18"/>
+
+  <!-- Water shimmer -->
+  <path d="M 50 14 Q 80 11 120 14 L 118 16 Q 78 13 52 16 Z" fill="#7EB5D6" opacity="0.3"/>
+  <path d="M 260 12 Q 310 9 360 12 L 358 14 Q 308 11 262 14 Z" fill="#7EB5D6" opacity="0.3"/>
+  <path d="M 400 14 Q 430 11 470 14 L 468 16 Q 428 13 402 16 Z" fill="#7EB5D6" opacity="0.25"/>
+  <!-- Additional shimmer for depth -->
+  <path d="M 150 18 Q 180 15 220 18 L 218 20 Q 178 17 152 20 Z" fill="#7EB5D6" opacity="0.15"/>
+</svg>
