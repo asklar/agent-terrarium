@@ -28,9 +28,13 @@ const TICK_RATE_MS: u64 = 50; // 20 Hz simulation tick
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
-    // Initialize logging
+    // Initialize logging to file (avoid polluting TUI display)
+    let log_file = std::fs::File::create("terrarium-tui.log").unwrap_or_else(|_| {
+        std::fs::File::create("/dev/null").expect("Failed to open /dev/null")
+    });
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .format_timestamp_millis()
+        .target(env_logger::Target::Pipe(Box::new(log_file)))
         .init();
 
     log::info!("Starting Agent Terrarium TUI");
@@ -66,8 +70,28 @@ async fn main() -> io::Result<()> {
     Ok(())
 }
 
+/// Create a blank (transparent) Sixel block to erase previous sprite positions
+fn make_blank_sixel(width: u16, height: u16) -> String {
+    let mut output = String::new();
+    output.push_str("\x1bP0;1;q");
+    // No color definitions — all pixels off
+    let sixel_rows = (height + 5) / 6;
+    for row in 0..sixel_rows {
+        // '?' (0x3F) = all 6 pixels OFF
+        for _ in 0..width {
+            output.push('?');
+        }
+        if row < sixel_rows - 1 {
+            output.push('-');
+        }
+    }
+    output.push_str("\x1b\\");
+    output
+}
+
 async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<()> {
     let mut tick_interval = interval(Duration::from_millis(TICK_RATE_MS));
+    let mut prev_sprite_positions: Vec<(u16, u16)> = Vec::new();
 
     loop {
         // Draw the UI and collect Sixel sprites
@@ -77,12 +101,23 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::R
         })?;
 
         // Flush Sixel sprites to stdout after ratatui render
-        if !sixel_sprites.is_empty() {
+        if !sixel_sprites.is_empty() || !prev_sprite_positions.is_empty() {
             let mut stdout = io::stdout();
+
+            // Erase previous sprite positions by overwriting with a blank Sixel
+            // (transparent 16x16 block — all pixels "off")
+            let blank_sixel = make_blank_sixel(16, 16);
+            for (px, py) in &prev_sprite_positions {
+                execute!(stdout, cursor::MoveTo(*px, *py))?;
+                stdout.write_all(blank_sixel.as_bytes())?;
+            }
+
+            // Draw new sprites
+            prev_sprite_positions.clear();
             for sprite in &sixel_sprites {
-                // Move cursor to sprite position and write Sixel data
                 execute!(stdout, cursor::MoveTo(sprite.x, sprite.y))?;
                 stdout.write_all(sprite.data.as_bytes())?;
+                prev_sprite_positions.push((sprite.x, sprite.y));
             }
             stdout.flush()?;
         }
