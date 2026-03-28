@@ -40,7 +40,7 @@ try {
 } catch {}
 
 import { World } from "./simulation/world.js";
-import { Vec2 } from "./simulation/types.js";
+import { Vec2, AgentState } from "./simulation/types.js";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
@@ -65,6 +65,7 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
   private secrets: vscode.SecretStorage;
   private eventDispatcherInstance?: { start(): void; stop(): void };
   private popOutPanels: Map<string, vscode.WebviewPanel> = new Map();
+  private notifiedAttentionAgents: Set<string> = new Set();
   private packagesBaseUri = "";
   private userPackagesBaseUri = "";
 
@@ -263,7 +264,7 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
     if (!agent) return;
 
     const action = await vscode.window.showQuickPick(
-      ["Rename agent", "Change backend"],
+      ["Rename agent", "Change backend", "Set working directory"],
       { placeHolder: `Configure ${agent.name}` },
     );
     if (!action) return;
@@ -294,6 +295,29 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
           ttsEnabled: agent.backendConfig?.ttsEnabled ?? false,
           cwd: agent.backendConfig?.cwd ?? null,
         });
+      }
+    } else if (action === "Set working directory") {
+      const uris = await vscode.window.showOpenDialog({
+        canSelectFolders: true,
+        canSelectFiles: false,
+        canSelectMany: false,
+        openLabel: "Select working directory",
+        defaultUri: agent.backendConfig?.cwd
+          ? vscode.Uri.file(agent.backendConfig.cwd)
+          : undefined,
+      });
+      if (uris && uris.length > 0) {
+        this.world.setBackendConfig(agentId, {
+          backendId: agent.backendConfig?.backendId ?? "echo",
+          model: agent.backendConfig?.model ?? null,
+          awarenessModel: agent.backendConfig?.awarenessModel ?? null,
+          systemPrompt: agent.backendConfig?.systemPrompt ?? null,
+          customAgent: agent.backendConfig?.customAgent ?? null,
+          awarenessLevel: agent.backendConfig?.awarenessLevel ?? 0,
+          ttsEnabled: agent.backendConfig?.ttsEnabled ?? false,
+          cwd: uris[0].fsPath,
+        });
+        log(`Set working directory for ${agent.name}: ${uris[0].fsPath}`);
       }
     }
   }
@@ -364,6 +388,7 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
     // Start simulation tick loop (20 Hz = 50ms)
     this.tickInterval = setInterval(() => {
       this.world.tick();
+      this.checkAttentionNotifications();
       this.pushState();
     }, 50);
     log("Simulation tick loop started (20 Hz)");
@@ -372,6 +397,34 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
       log("Webview disposed");
       if (this.tickInterval) clearInterval(this.tickInterval);
     });
+  }
+
+  private checkAttentionNotifications(): void {
+    for (const agent of this.world.state.agents) {
+      if (agent.state === AgentState.NeedsAttention) {
+        if (!this.notifiedAttentionAgents.has(agent.id)) {
+          this.notifiedAttentionAgents.add(agent.id);
+          vscode.window
+            .showInformationMessage(
+              `${agent.name} needs your attention!`,
+              "Open Chat",
+            )
+            .then((choice: string | undefined) => {
+              if (choice === "Open Chat") {
+                this.view?.webview.postMessage({
+                  type: "openAgentChat",
+                  agentId: agent.id,
+                });
+                this.world.dismissAttention(agent.id);
+                this.world.clickAgent(agent.id);
+              }
+            });
+        }
+      } else {
+        // Agent no longer needs attention — allow future notifications
+        this.notifiedAttentionAgents.delete(agent.id);
+      }
+    }
   }
 
   private pushState(): void {
@@ -816,7 +869,23 @@ class TerrariumViewProvider implements vscode.WebviewViewProvider {
         break;
 
       case "updateMouse":
-        // Mouse position tracking (optional, for agent gaze)
+        this.world.updateMouse(
+          msg.x as number | null,
+          msg.y as number | null,
+        );
+        break;
+
+      // ── About dialog ────────────────────────────────────────────────
+      case "showAbout":
+        vscode.window.showInformationMessage(
+          "Agent Terrarium v0.1.0\n\nAI agents in an animated world in your editor.\n\nhttps://github.com/nicefiction/agent-terrarium",
+          "OK",
+        );
+        break;
+
+      // ── Debug panel (show Output channel) ───────────────────────────
+      case "toggleDebug":
+        outputChannel.show(true);
         break;
 
       // ── File drop via picker ────────────────────────────────────────
