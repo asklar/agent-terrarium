@@ -68,39 +68,44 @@ export function loadConfig(): AppConfig | null {
   if (!fs.existsSync(p)) return null;
   try {
     const raw = JSON.parse(fs.readFileSync(p, "utf-8"));
-    // Config file uses snake_case (Rust serde); convert to camelCase
+    // Config file may use snake_case (Rust serde) or camelCase (VS Code);
+    // handle both by checking for either key variant
     return {
       theme: raw.theme ?? "meadow",
-      agents: (raw.agents ?? []).map((a: Record<string, unknown>) => ({
-        id: a.id,
-        name: a.name,
-        avatar: a.avatar,
-        gear: a.gear ?? [],
-        personality: a.personality ? {
-          speedMin: (a.personality as Record<string, unknown>).speed_min,
-          speedMax: (a.personality as Record<string, unknown>).speed_max,
-          movementStyle: (a.personality as Record<string, unknown>).movement_style,
-          interactionChance: (a.personality as Record<string, unknown>).interaction_chance,
-          ballInterest: (a.personality as Record<string, unknown>).ball_interest,
-          chatEmojis: (a.personality as Record<string, unknown>).chat_emojis,
-        } : undefined,
-        backendConfig: a.backend_config ? {
-          backendId: (a.backend_config as Record<string, unknown>).backend_id ?? "echo",
-          model: (a.backend_config as Record<string, unknown>).model,
-          awarenessModel: (a.backend_config as Record<string, unknown>).awareness_model,
-          systemPrompt: (a.backend_config as Record<string, unknown>).system_prompt,
-          customAgent: (a.backend_config as Record<string, unknown>).custom_agent,
-          awarenessLevel: (a.backend_config as Record<string, unknown>).awareness_level ?? 0,
-          ttsEnabled: (a.backend_config as Record<string, unknown>).tts_enabled ?? false,
-          cwd: (a.backend_config as Record<string, unknown>).cwd,
-        } : undefined,
-      })),
+      agents: (raw.agents ?? []).map((a: Record<string, unknown>) => {
+        const pers = (a.personality ?? {}) as Record<string, unknown>;
+        const bc = (a.backend_config ?? a.backendConfig ?? {}) as Record<string, unknown>;
+        return {
+          id: a.id,
+          name: a.name,
+          avatar: a.avatar,
+          gear: a.gear ?? [],
+          personality: pers.speedMin !== undefined || pers.speed_min !== undefined ? {
+            speedMin: pers.speedMin ?? pers.speed_min,
+            speedMax: pers.speedMax ?? pers.speed_max,
+            movementStyle: pers.movementStyle ?? pers.movement_style,
+            interactionChance: pers.interactionChance ?? pers.interaction_chance,
+            ballInterest: pers.ballInterest ?? pers.ball_interest,
+            chatEmojis: pers.chatEmojis ?? pers.chat_emojis,
+          } : undefined,
+          backendConfig: Object.keys(bc).length > 0 ? {
+            backendId: bc.backendId ?? bc.backend_id ?? "echo",
+            model: bc.model,
+            awarenessModel: bc.awarenessModel ?? bc.awareness_model,
+            systemPrompt: bc.systemPrompt ?? bc.system_prompt,
+            customAgent: bc.customAgent ?? bc.custom_agent,
+            awarenessLevel: bc.awarenessLevel ?? bc.awareness_level ?? 0,
+            ttsEnabled: bc.ttsEnabled ?? bc.tts_enabled ?? false,
+            cwd: bc.cwd,
+          } : undefined,
+        };
+      }),
       window: raw.window,
-      ballMaxCaptures: raw.ball_max_captures ?? 3,
-      ballKickOnCapture: raw.ball_kick_on_capture ?? true,
-      attentionIntervalSecs: raw.attention_interval_secs ?? 5,
-      musicMuted: raw.music_muted ?? false,
-      dynamicSky: raw.dynamic_sky ?? false,
+      ballMaxCaptures: raw.ballMaxCaptures ?? raw.ball_max_captures ?? 3,
+      ballKickOnCapture: raw.ballKickOnCapture ?? raw.ball_kick_on_capture ?? true,
+      attentionIntervalSecs: raw.attentionIntervalSecs ?? raw.attention_interval_secs ?? 5,
+      musicMuted: raw.musicMuted ?? raw.music_muted ?? false,
+      dynamicSky: raw.dynamicSky ?? raw.dynamic_sky ?? false,
     };
   } catch {
     return null;

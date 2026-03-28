@@ -1019,9 +1019,13 @@ export class World {
     s.attentionIntervalSecs = config.attentionIntervalSecs;
     for (const ac of config.agents) {
       const agent = createAgent(ac.id, ac.name, ac.avatar, bounds, groundY);
-      agent.personality = { ...ac.personality };
+      if (ac.personality && Object.keys(ac.personality).length > 0) {
+        agent.personality = { ...ac.personality };
+      }
       agent.gear = [...ac.gear];
-      agent.backendConfig = { ...ac.backendConfig };
+      if (ac.backendConfig && Object.keys(ac.backendConfig).length > 0) {
+        agent.backendConfig = { ...ac.backendConfig };
+      }
       s.agents.push(agent);
     }
   }
