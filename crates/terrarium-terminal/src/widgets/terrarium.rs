@@ -167,11 +167,21 @@ impl<'a> TerrariumWidget<'a> {
 
         // Get the Sixel renderer
         if let Some(renderer) = self.sixel_renderer {
+            // Determine background color based on agent position
+            // Ground color: Rgb(40, 80, 40) — agents sit on the ground
+            let ground_start = (area.height as f64 * self.state.ground_y_ratio) as u16;
+            let bg_color = if term_y >= ground_start {
+                Some([40, 80, 40]) // Ground bg color
+            } else {
+                Some([0, 0, 0]) // Sky/black bg
+            };
+
             if let Some(sixel_data) = renderer.render_sprite(
                 &agent.avatar,
                 agent.state,
                 agent.direction,
                 frame,
+                bg_color,
             ) {
                 // Calculate position for the Sixel sprite
                 // Sixel sprites are 16x16 pixels, which is roughly 2 chars wide, 1 char tall in most terminals

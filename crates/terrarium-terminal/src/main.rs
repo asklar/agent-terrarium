@@ -73,10 +73,14 @@ async fn main() -> io::Result<()> {
 /// Create a solid background-colored Sixel block to erase old sprite positions
 /// Uses the terminal background color (black) to overwrite previous Sixel graphics
 fn make_bg_sixel(width: u16, height: u16) -> String {
+    // Use ground color (40, 80, 40) as most sprites are on the ground
+    let r_pct = (40u32 * 100) / 255;
+    let g_pct = (80u32 * 100) / 255;
+    let b_pct = (40u32 * 100) / 255;
     let mut output = String::new();
     output.push_str("\x1bP0;1;q");
-    // Define color 0 as black (terminal background)
-    output.push_str("#0;2;0;0;0");
+    // Define color 0 as ground color
+    output.push_str(&format!("#0;2;{};{};{}", r_pct, g_pct, b_pct));
     output.push_str("#0");
 
     let sixel_rows = (height + 5) / 6;

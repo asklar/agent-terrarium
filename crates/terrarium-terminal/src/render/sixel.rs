@@ -221,29 +221,37 @@ impl SixelRenderer {
         state: terrarium_sim::AgentState,
         direction: terrarium_sim::Direction,
         frame: usize,
+        bg_color: Option<[u8; 3]>,
     ) -> Option<String> {
         let sprite = get_pixel_sprite(avatar, state, direction, frame);
-        Some(self.sprite_to_sixel(sprite))
+        Some(self.sprite_to_sixel(sprite, bg_color))
     }
 
     /// Convert a pixel sprite to Sixel escape sequence
-    fn sprite_to_sixel(&self, sprite: &PixelSprite) -> String {
-        // Collect unique colors (ignoring transparent pixels)
+    fn sprite_to_sixel(&self, sprite: &PixelSprite, bg_color: Option<[u8; 3]>) -> String {
+        // Collect unique colors (transparent pixels get bg_color if provided)
         let mut color_map: HashMap<[u8; 3], u8> = HashMap::new();
-        let mut color_index: u8 = 1; // Start at 1, 0 is often transparent
+        let mut color_index: u8 = 1;
+
+        // Pre-register background color if provided
+        if let Some(bg) = bg_color {
+            color_map.insert(bg, color_index);
+            color_index += 1;
+        }
 
         for row in &sprite.pixels {
             for pixel in row {
-                if pixel[3] > 0 {
-                    // Not transparent
-                    let rgb = [pixel[0], pixel[1], pixel[2]];
-                    if !color_map.contains_key(&rgb) {
-                        color_map.insert(rgb, color_index);
-                        color_index += 1;
-                        if color_index > 254 {
-                            break; // Sixel supports up to 256 colors
-                        }
-                    }
+                let rgb = if pixel[3] > 0 {
+                    [pixel[0], pixel[1], pixel[2]]
+                } else if let Some(bg) = bg_color {
+                    bg
+                } else {
+                    continue;
+                };
+                if !color_map.contains_key(&rgb) {
+                    color_map.insert(rgb, color_index);
+                    color_index += 1;
+                    if color_index > 254 { break; }
                 }
             }
         }
@@ -289,12 +297,15 @@ impl SixelRenderer {
                         let y = y_start + y_offset;
                         if y < height {
                             let pixel = &sprite.pixels[y][x];
-                            if pixel[3] > 0 {
-                                // Not transparent
-                                let pixel_rgb = [pixel[0], pixel[1], pixel[2]];
-                                if &pixel_rgb == *rgb {
-                                    bits |= 1 << y_offset;
-                                }
+                            let pixel_rgb = if pixel[3] > 0 {
+                                [pixel[0], pixel[1], pixel[2]]
+                            } else if let Some(bg) = bg_color {
+                                bg
+                            } else {
+                                continue;
+                            };
+                            if &pixel_rgb == *rgb {
+                                bits |= 1 << y_offset;
                             }
                         }
                     }
