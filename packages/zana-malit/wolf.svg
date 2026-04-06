@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-18 -30 36 50">
+  <!-- Tail -->
+  <path d="M -3,12 Q -8,16 -10,20 Q -6,18 -3,14 Z" fill="#616161"/>
+  <path d="M -3,13 Q -6,18 -7,22 Q -4,19 -2,15 Z" fill="#757575"/>
+
+  <!-- Legs -->
+  <path d="M -4,14 L -5,18 L -7,19" stroke="#424242" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+  <path d="M 4,14 L 5,18 L 7,19" stroke="#424242" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+
+  <!-- Body -->
+  <ellipse cx="0" cy="4" rx="9" ry="12" fill="#616161"/>
+  <!-- Belly (lighter) -->
+  <ellipse cx="0" cy="5" rx="6" ry="8" fill="#9E9E9E"/>
+  <!-- Fur texture lines -->
+  <path d="M -5,-2 Q -3,0 -5,2" stroke="#757575" stroke-width="0.4" fill="none"/>
+  <path d="M 5,-2 Q 3,0 5,2" stroke="#757575" stroke-width="0.4" fill="none"/>
+
+  <!-- Neck ruff -->
+  <path d="M -7,-6 Q -8,-9 -6,-11 Q -4,-8 -3,-6" fill="#9E9E9E"/>
+  <path d="M 7,-6 Q 8,-9 6,-11 Q 4,-8 3,-6" fill="#9E9E9E"/>
+
+  <!-- Head -->
+  <ellipse cx="0" cy="-15" rx="7" ry="7" fill="#757575"/>
+
+  <!-- Ears (pointed) -->
+  <path d="M -5,-21 L -7,-28 L -3,-22 Z" fill="#616161"/>
+  <path d="M 5,-21 L 7,-28 L 3,-22 Z" fill="#616161"/>
+  <path d="M -4.5,-22 L -6,-26 L -3.5,-22.5 Z" fill="#9E9E9E" opacity="0.5"/>
+  <path d="M 4.5,-22 L 6,-26 L 3.5,-22.5 Z" fill="#9E9E9E" opacity="0.5"/>
+
+  <!-- Muzzle -->
+  <ellipse cx="0" cy="-12" rx="4" ry="3" fill="#BDBDBD"/>
+
+  <!-- Eyes -->
+  <ellipse cx="-3" cy="-16.5" rx="2" ry="2.2" fill="#FFC107"/>
+  <ellipse cx="3" cy="-16.5" rx="2" ry="2.2" fill="#FFC107"/>
+  <ellipse cx="-3" cy="-16.5" rx="1.2" ry="1.8" fill="#1A1A1A"/>
+  <ellipse cx="3" cy="-16.5" rx="1.2" ry="1.8" fill="#1A1A1A"/>
+  <circle cx="-2.5" cy="-17" r="0.4" fill="#FFF"/>
+  <circle cx="3.5" cy="-17" r="0.4" fill="#FFF"/>
+
+  <!-- Nose -->
+  <ellipse cx="0" cy="-11" rx="2" ry="1.2" fill="#37474F"/>
+  <circle cx="-0.5" cy="-11.3" r="0.3" fill="#546E7A"/>
+
+  <!-- Mouth -->
+  <path d="M 0,-10 L 0,-9.5" stroke="#37474F" stroke-width="0.6" fill="none"/>
+  <path d="M -1.5,-9.5 Q 0,-8.8 1.5,-9.5" stroke="#37474F" stroke-width="0.5" fill="none"/>
+</svg>

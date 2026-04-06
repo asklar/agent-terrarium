@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-8 -6 16 12">
+  <!-- Wings -->
+  <ellipse cx="-3" cy="-1" rx="4" ry="3" fill="rgba(220,220,240,0.5)"/>
+  <ellipse cx="3" cy="-1" rx="4" ry="3" fill="rgba(220,220,240,0.5)"/>
+  <!-- Body -->
+  <ellipse cx="0" cy="0" rx="2.5" ry="4" fill="#F9A825"/>
+  <!-- Stripes -->
+  <line x1="-2" y1="-1" x2="2" y2="-1" stroke="#1A1A1A" stroke-width="1"/>
+  <line x1="-2.2" y1="1" x2="2.2" y2="1" stroke="#1A1A1A" stroke-width="1"/>
+  <!-- Head -->
+  <circle cx="0" cy="-4.5" r="2" fill="#1A1A1A"/>
+  <!-- Eyes -->
+  <circle cx="-0.8" cy="-5" r="0.5" fill="white"/>
+  <circle cx="0.8" cy="-5" r="0.5" fill="white"/>
+  <!-- Antennae -->
+  <path d="M -0.5,-6 Q -1.5,-8 -2,-8.5" stroke="#1A1A1A" stroke-width="0.4" fill="none"/>
+  <path d="M 0.5,-6 Q 1.5,-8 2,-8.5" stroke="#1A1A1A" stroke-width="0.4" fill="none"/>
+  <!-- Stinger -->
+  <path d="M 0,4 L 0,5.5" stroke="#1A1A1A" stroke-width="0.6" stroke-linecap="round"/>
+</svg>

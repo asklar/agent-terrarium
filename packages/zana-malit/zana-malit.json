@@ -1,0 +1,624 @@
+{
+  "version": 1,
+  "name": "Zana Malit",
+  "author": "mirajklorida",
+  "themes": [
+    {
+      "id": "albanian-mountains",
+      "name": "Albanian Mountains (Day)",
+      "icon": "🏔️",
+      "sky": ["#4A90C4", "#7CBAE8", "#A8D4F0", "#D4ECFA"],
+      "ground": "#4A7222",
+      "groundAccent": "#3A5E1A",
+      "groundWave": 3,
+      "grass": {
+        "color": "#558A2C",
+        "accent": "#467524"
+      },
+      "particles": {
+        "type": "leaf",
+        "color": "#8AAF6E",
+        "count": 8
+      },
+      "decorators": ["clouds", "mountain_range", "pine_forest", "rocks", "pebble_path", "flower_patch", "flower_patch_2", "flower_patch_3", "flower_patch_4", "flower_patch_5", "hedgehog", "hedgehog_2", "cuckoo_bird", "soaring_eagle", "prowling_wolf", "wolf_2", "fox", "butterfly_1", "butterfly_2", "bee_1", "bee_2", "mist"],
+      "customDecorators": [
+        {
+          "name": "mountain_range",
+          "file": "zana-malit/mountains.svg",
+          "fileX": 0.5,
+          "fileY": 0.72,
+          "fileWidth": 1400,
+          "fileHeight": 300,
+          "fileOpacity": 0.9,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "pine_forest",
+          "file": "zana-malit/pine-trees.svg",
+          "fileX": 0.5,
+          "fileY": 0.72,
+          "fileWidth": 500,
+          "fileHeight": 170,
+          "fileOpacity": 0.85,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "rocks",
+          "file": "zana-malit/rocks.svg",
+          "fileX": 0.5,
+          "fileY": 0.72,
+          "fileWidth": 600,
+          "fileHeight": 80,
+          "fileOpacity": 0.8,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "pebble_path",
+          "file": "zana-malit/pebble-path.svg",
+          "fileX": 0.5,
+          "fileY": 0.75,
+          "fileWidth": 550,
+          "fileHeight": 30,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "flower_patch",
+          "file": "zana-malit/flower-patch.svg",
+          "fileX": 0.18,
+          "fileY": 0.78,
+          "fileWidth": 280,
+          "fileHeight": 45,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "flower_patch_2",
+          "file": "zana-malit/flower-patch.svg",
+          "fileX": 0.28,
+          "fileY": 0.8,
+          "fileWidth": 230,
+          "fileHeight": 40,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "flower_patch_3",
+          "file": "zana-malit/flower-patch.svg",
+          "fileX": 0.12,
+          "fileY": 0.82,
+          "fileWidth": 200,
+          "fileHeight": 38,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "flower_patch_4",
+          "file": "zana-malit/flower-patch.svg",
+          "fileX": 0.22,
+          "fileY": 0.84,
+          "fileWidth": 240,
+          "fileHeight": 42,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "flower_patch_5",
+          "file": "zana-malit/flower-patch.svg",
+          "fileX": 0.08,
+          "fileY": 0.8,
+          "fileWidth": 180,
+          "fileHeight": 36,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "hedgehog",
+          "file": "zana-malit/hedgehog.svg",
+          "fileWidth": 34,
+          "fileHeight": 24,
+          "fileX": 0.24,
+          "fileY": 0.82,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "hedgehog_2",
+          "file": "zana-malit/hedgehog.svg",
+          "fileWidth": 30,
+          "fileHeight": 22,
+          "fileX": 0.14,
+          "fileY": 0.84,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "cuckoo_bird",
+          "file": "zana-malit/cuckoo.svg",
+          "fileWidth": 32,
+          "fileHeight": 44,
+          "fileX": 0.38,
+          "fileY": 0.68,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "soaring_eagle",
+          "file": "zana-malit/eagle.svg",
+          "fileWidth": 110,
+          "fileHeight": 52,
+          "animation": {
+            "waypoints": [[0.9, 0.4], [0.7, 0.35], [0.45, 0.42], [0.2, 0.32], [0.05, 0.38]],
+            "duration": 50,
+            "pingPong": true
+          }
+        },
+        {
+          "name": "prowling_wolf",
+          "file": "zana-malit/wolf.svg",
+          "fileWidth": 44,
+          "fileHeight": 60,
+          "animation": {
+            "waypoints": [[0.5, 0.7], [0.6, 0.7], [0.7, 0.7], [0.8, 0.7], [0.9, 0.7]],
+            "duration": 35,
+            "pingPong": true
+          }
+        },
+        {
+          "name": "wolf_2",
+          "file": "zana-malit/wolf.svg",
+          "fileWidth": 38,
+          "fileHeight": 52,
+          "animation": {
+            "waypoints": [[0.92, 0.7], [0.8, 0.7], [0.7, 0.7], [0.6, 0.7], [0.5, 0.7]],
+            "duration": 42,
+            "pingPong": true
+          }
+        },
+        {
+          "name": "fox",
+          "file": "zana-malit/fox.svg",
+          "fileWidth": 28,
+          "fileHeight": 38,
+          "animation": {
+            "waypoints": [[0.55, 0.7], [0.65, 0.7], [0.75, 0.7], [0.85, 0.7], [0.92, 0.7]],
+            "duration": 30,
+            "pingPong": true
+          }
+        },
+        {
+          "name": "butterfly_1",
+          "file": "zana-malit/butterfly.svg",
+          "fileWidth": 18,
+          "fileHeight": 14,
+          "animation": {
+            "waypoints": [[0.1, 0.72], [0.16, 0.7], [0.22, 0.74], [0.28, 0.71], [0.32, 0.73]],
+            "duration": 25,
+            "pingPong": true
+          }
+        },
+        {
+          "name": "butterfly_2",
+          "file": "zana-malit/butterfly.svg",
+          "fileWidth": 14,
+          "fileHeight": 11,
+          "animation": {
+            "waypoints": [[0.25, 0.73], [0.2, 0.7], [0.15, 0.75], [0.1, 0.72], [0.18, 0.74]],
+            "duration": 30,
+            "pingPong": true
+          }
+        },
+        {
+          "name": "bee_1",
+          "file": "zana-malit/bee.svg",
+          "fileWidth": 12,
+          "fileHeight": 10,
+          "animation": {
+            "waypoints": [[0.14, 0.73], [0.18, 0.7], [0.22, 0.74], [0.26, 0.71], [0.2, 0.73]],
+            "duration": 18,
+            "pingPong": true
+          }
+        },
+        {
+          "name": "bee_2",
+          "file": "zana-malit/bee.svg",
+          "fileWidth": 10,
+          "fileHeight": 8,
+          "animation": {
+            "waypoints": [[0.22, 0.72], [0.17, 0.75], [0.12, 0.71], [0.16, 0.74], [0.24, 0.72]],
+            "duration": 20,
+            "pingPong": true
+          }
+        }
+      ],
+      "music": {
+        "bpm": 68,
+        "key": 55,
+        "scale": [0, 2, 3, 7, 8],
+        "wave": "sine",
+        "bassWave": "sine",
+        "volume": 0.1,
+        "chords": [[0, 3, 7], [7, 10, 14], [3, 7, 10], [0, 3, 7]]
+      }
+    },
+    {
+      "id": "albanian-mountains-sunset",
+      "name": "Albanian Mountains (Sunset)",
+      "icon": "🌅",
+      "sky": ["#4A1942", "#B5365A", "#E8734A", "#F4A942", "#FADA5E"],
+      "ground": "#3D5A1E",
+      "groundAccent": "#2E4516",
+      "groundWave": 3,
+      "grass": {
+        "color": "#4A7228",
+        "accent": "#3B5E20"
+      },
+      "particles": {
+        "type": "leaf",
+        "color": "#D4A060",
+        "count": 10
+      },
+      "decorators": ["clouds", "mountain_range", "pine_forest", "rocks", "pebble_path", "flower_patch", "flower_patch_2", "flower_patch_3", "flower_patch_4", "flower_patch_5", "hedgehog", "hedgehog_2", "cuckoo_bird", "soaring_eagle", "prowling_wolf", "wolf_2", "fox", "butterfly_1", "butterfly_2", "bee_1", "bee_2", "fireflies", "mist"],
+      "customDecorators": [
+        {
+          "name": "mountain_range",
+          "file": "zana-malit/mountains.svg",
+          "fileX": 0.5,
+          "fileY": 0.72,
+          "fileWidth": 1400,
+          "fileHeight": 300,
+          "fileOpacity": 0.9,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "pine_forest",
+          "file": "zana-malit/pine-trees.svg",
+          "fileX": 0.5,
+          "fileY": 0.72,
+          "fileWidth": 500,
+          "fileHeight": 170,
+          "fileOpacity": 0.85,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "rocks",
+          "file": "zana-malit/rocks.svg",
+          "fileX": 0.5,
+          "fileY": 0.72,
+          "fileWidth": 600,
+          "fileHeight": 80,
+          "fileOpacity": 0.8,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "pebble_path",
+          "file": "zana-malit/pebble-path.svg",
+          "fileX": 0.5,
+          "fileY": 0.75,
+          "fileWidth": 550,
+          "fileHeight": 30,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "flower_patch",
+          "file": "zana-malit/flower-patch.svg",
+          "fileX": 0.18,
+          "fileY": 0.78,
+          "fileWidth": 280,
+          "fileHeight": 45,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "flower_patch_2",
+          "file": "zana-malit/flower-patch.svg",
+          "fileX": 0.28,
+          "fileY": 0.8,
+          "fileWidth": 230,
+          "fileHeight": 40,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "flower_patch_3",
+          "file": "zana-malit/flower-patch.svg",
+          "fileX": 0.12,
+          "fileY": 0.82,
+          "fileWidth": 200,
+          "fileHeight": 38,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "flower_patch_4",
+          "file": "zana-malit/flower-patch.svg",
+          "fileX": 0.22,
+          "fileY": 0.84,
+          "fileWidth": 240,
+          "fileHeight": 42,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "flower_patch_5",
+          "file": "zana-malit/flower-patch.svg",
+          "fileX": 0.08,
+          "fileY": 0.8,
+          "fileWidth": 180,
+          "fileHeight": 36,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "hedgehog",
+          "file": "zana-malit/hedgehog.svg",
+          "fileWidth": 34,
+          "fileHeight": 24,
+          "fileX": 0.24,
+          "fileY": 0.82,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "hedgehog_2",
+          "file": "zana-malit/hedgehog.svg",
+          "fileWidth": 30,
+          "fileHeight": 22,
+          "fileX": 0.14,
+          "fileY": 0.84,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "cuckoo_bird",
+          "file": "zana-malit/cuckoo.svg",
+          "fileWidth": 32,
+          "fileHeight": 44,
+          "fileX": 0.38,
+          "fileY": 0.68,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "soaring_eagle",
+          "file": "zana-malit/eagle.svg",
+          "fileWidth": 110,
+          "fileHeight": 52,
+          "animation": {
+            "waypoints": [[0.9, 0.4], [0.7, 0.35], [0.45, 0.42], [0.2, 0.32], [0.05, 0.38]],
+            "duration": 50,
+            "pingPong": true
+          }
+        },
+        {
+          "name": "prowling_wolf",
+          "file": "zana-malit/wolf.svg",
+          "fileWidth": 44,
+          "fileHeight": 60,
+          "animation": {
+            "waypoints": [[0.5, 0.7], [0.6, 0.7], [0.7, 0.7], [0.8, 0.7], [0.9, 0.7]],
+            "duration": 35,
+            "pingPong": true
+          }
+        },
+        {
+          "name": "wolf_2",
+          "file": "zana-malit/wolf.svg",
+          "fileWidth": 38,
+          "fileHeight": 52,
+          "animation": {
+            "waypoints": [[0.92, 0.7], [0.8, 0.7], [0.7, 0.7], [0.6, 0.7], [0.5, 0.7]],
+            "duration": 42,
+            "pingPong": true
+          }
+        },
+        {
+          "name": "fox",
+          "file": "zana-malit/fox.svg",
+          "fileWidth": 28,
+          "fileHeight": 38,
+          "animation": {
+            "waypoints": [[0.55, 0.7], [0.65, 0.7], [0.75, 0.7], [0.85, 0.7], [0.92, 0.7]],
+            "duration": 30,
+            "pingPong": true
+          }
+        },
+        {
+          "name": "butterfly_1",
+          "file": "zana-malit/butterfly.svg",
+          "fileWidth": 18,
+          "fileHeight": 14,
+          "animation": {
+            "waypoints": [[0.1, 0.72], [0.16, 0.7], [0.22, 0.74], [0.28, 0.71], [0.32, 0.73]],
+            "duration": 25,
+            "pingPong": true
+          }
+        },
+        {
+          "name": "butterfly_2",
+          "file": "zana-malit/butterfly.svg",
+          "fileWidth": 14,
+          "fileHeight": 11,
+          "animation": {
+            "waypoints": [[0.25, 0.73], [0.2, 0.7], [0.15, 0.75], [0.1, 0.72], [0.18, 0.74]],
+            "duration": 30,
+            "pingPong": true
+          }
+        },
+        {
+          "name": "bee_1",
+          "file": "zana-malit/bee.svg",
+          "fileWidth": 12,
+          "fileHeight": 10,
+          "animation": {
+            "waypoints": [[0.14, 0.73], [0.18, 0.7], [0.22, 0.74], [0.26, 0.71], [0.2, 0.73]],
+            "duration": 18,
+            "pingPong": true
+          }
+        },
+        {
+          "name": "bee_2",
+          "file": "zana-malit/bee.svg",
+          "fileWidth": 10,
+          "fileHeight": 8,
+          "animation": {
+            "waypoints": [[0.22, 0.72], [0.17, 0.75], [0.12, 0.71], [0.16, 0.74], [0.24, 0.72]],
+            "duration": 20,
+            "pingPong": true
+          }
+        }
+      ],
+      "music": {
+        "bpm": 60,
+        "key": 53,
+        "scale": [0, 2, 4, 7, 9],
+        "wave": "sine",
+        "bassWave": "sine",
+        "volume": 0.1,
+        "chords": [[0, 4, 7], [5, 9, 12], [7, 11, 14], [0, 4, 7]]
+      }
+    },
+    {
+      "id": "albanian-mountains-night",
+      "name": "Albanian Mountains (Night)",
+      "icon": "🌙",
+      "sky": ["#0A0E1A", "#121B30", "#1A2744", "#243556"],
+      "ground": "#1A2E12",
+      "groundAccent": "#12200C",
+      "groundWave": 3,
+      "grass": {
+        "color": "#2A4418",
+        "accent": "#1E3412"
+      },
+      "particles": {
+        "type": "star",
+        "color": "#E8EAF6",
+        "count": 40
+      },
+      "decorators": ["mountain_range", "pine_forest", "rocks", "pebble_path", "hedgehog", "hedgehog_2", "prowling_wolf", "wolf_2", "fox", "fireflies", "mist"],
+      "customDecorators": [
+        {
+          "name": "mountain_range",
+          "file": "zana-malit/mountains.svg",
+          "fileX": 0.5,
+          "fileY": 0.72,
+          "fileWidth": 1400,
+          "fileHeight": 300,
+          "fileOpacity": 0.7,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "pine_forest",
+          "file": "zana-malit/pine-trees.svg",
+          "fileX": 0.5,
+          "fileY": 0.72,
+          "fileWidth": 500,
+          "fileHeight": 170,
+          "fileOpacity": 0.6,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "rocks",
+          "file": "zana-malit/rocks.svg",
+          "fileX": 0.5,
+          "fileY": 0.72,
+          "fileWidth": 600,
+          "fileHeight": 80,
+          "fileOpacity": 0.6,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "pebble_path",
+          "file": "zana-malit/pebble-path.svg",
+          "fileX": 0.5,
+          "fileY": 0.75,
+          "fileWidth": 550,
+          "fileHeight": 30,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "hedgehog",
+          "file": "zana-malit/hedgehog.svg",
+          "fileWidth": 34,
+          "fileHeight": 24,
+          "fileX": 0.24,
+          "fileY": 0.82,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "hedgehog_2",
+          "file": "zana-malit/hedgehog.svg",
+          "fileWidth": 30,
+          "fileHeight": 22,
+          "fileX": 0.14,
+          "fileY": 0.84,
+          "fileAnchor": "bottom"
+        },
+        {
+          "name": "prowling_wolf",
+          "file": "zana-malit/wolf.svg",
+          "fileWidth": 44,
+          "fileHeight": 60,
+          "animation": {
+            "waypoints": [[0.5, 0.7], [0.6, 0.7], [0.7, 0.7], [0.8, 0.7], [0.9, 0.7]],
+            "duration": 35,
+            "pingPong": true
+          }
+        },
+        {
+          "name": "wolf_2",
+          "file": "zana-malit/wolf.svg",
+          "fileWidth": 38,
+          "fileHeight": 52,
+          "animation": {
+            "waypoints": [[0.92, 0.7], [0.8, 0.7], [0.7, 0.7], [0.6, 0.7], [0.5, 0.7]],
+            "duration": 42,
+            "pingPong": true
+          }
+        },
+        {
+          "name": "fox",
+          "file": "zana-malit/fox.svg",
+          "fileWidth": 28,
+          "fileHeight": 38,
+          "animation": {
+            "waypoints": [[0.55, 0.7], [0.65, 0.7], [0.75, 0.7], [0.85, 0.7], [0.92, 0.7]],
+            "duration": 30,
+            "pingPong": true
+          }
+        }
+      ],
+      "music": {
+        "bpm": 54,
+        "key": 48,
+        "scale": [0, 2, 3, 7, 8],
+        "wave": "sine",
+        "bassWave": "sine",
+        "volume": 0.08,
+        "chords": [[0, 3, 7], [3, 7, 10], [5, 8, 12], [0, 3, 7]]
+      }
+    }
+  ],
+  "agents": [
+    {
+      "id": "zana-malit",
+      "name": "Zana",
+      "icon": "🧚",
+      "shape": "zana-malit",
+      "voice": {
+        "basePitch": 520,
+        "pitchVar": 130,
+        "wave": "sine",
+        "syllables": 5,
+        "speed": 0.055,
+        "volume": 0.09,
+        "ttsRate": 0,
+        "ttsPitchShift": 1.5
+      },
+      "personality": {
+        "speedMin": 15,
+        "speedMax": 65,
+        "movementStyle": "float",
+        "interactionChance": 0.6,
+        "ballInterest": 0.3,
+        "chatEmojis": ["🧚", "✨", "⛰️", "🌙", "🦅", "💫", "🌿"]
+      },
+      "drawSpec": {
+        "movement": "float",
+        "svgFile": "zana-malit/zana.svg",
+        "svgWidth": 36,
+        "svgHeight": 60,
+        "layers": [
+          { "type": "glow", "color": "rgba(200, 16, 32, 0.12)", "radius": 22, "pulseSpeed": 600, "baseAlpha": 0.1, "alphaVar": 0.06 },
+          { "type": "sparkles", "sparkleStyle": "floating", "color": "#E31B2C", "count": 4, "speed": 500 }
+        ]
+      },
+      "defaultBackend": {
+        "backend_id": "echo"
+      }
+    }
+  ]
+}
