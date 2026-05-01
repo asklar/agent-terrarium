@@ -27,13 +27,13 @@
       },
       "drawSpec": {
         "layers": [
-          { "type": "tail", "tailStyle": "thin", "color": "#E65100", "swaySpeed": 200, "swayAmount": 6 },
-          { "type": "legs", "color": "#E65100", "spread": 5, "length": 8 },
-          { "type": "body", "color": "#FF9800", "rx": 10, "ry": 10 },
-          { "type": "head", "color": "#FFB74D", "rx": 11, "ry": 10 },
-          { "type": "ears", "style": "pointed", "color": "#FFB74D", "size": 11, "innerColor": "#FFAB91" },
+          { "type": "tail", "tailStyle": "thin", "color": "#E65100", "swaySpeed": 200, "swayAmount": 4 },
+          { "type": "legs", "color": "#E65100", "spread": 4, "length": 6 },
+          { "type": "body", "color": "#FF9800", "rx": 7, "ry": 7 },
+          { "type": "head", "color": "#FFB74D", "rx": 8, "ry": 7 },
+          { "type": "ears", "style": "pointed", "color": "#FFB74D", "size": 8, "innerColor": "#FFAB91" },
           { "type": "whiskers" },
-          { "type": "eyes", "style": "standard", "color": "#333", "size": 2.5 },
+          { "type": "eyes", "style": "standard", "color": "#333", "size": 2 },
           { "type": "cheeks", "color": "#FF8A80" },
           { "type": "mouth", "style": "w" }
         ]

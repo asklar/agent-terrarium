@@ -1060,7 +1060,7 @@ function drawFlowers(
   groundY: number,
   time: number,
 ) {
-  const flowerColors = ["#F48FB1", "#CE93D8", "#FFF176", "#EF5350", "#FF8A65"];
+  const flowerColors = ["#FFD600", "#FFEB3B", "#FFF176", "#FFC107", "#FFE082"];
   for (let i = 0; i < 8; i++) {
     const x = ((i * 97 + 30) % w);
     const waveOffset = Math.sin(x * 0.02 + time * 0.0005) * 4;
