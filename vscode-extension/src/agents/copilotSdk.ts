@@ -27,6 +27,10 @@ interface SdkCopilotSession {
     options: { prompt: string },
     timeout?: number,
   ): Promise<{ data: { content: string } } | undefined>;
+  sendAndWait(
+    prompt: string,
+    timeout?: number,
+  ): Promise<{ data: { content: string } } | undefined>;
   disconnect(): Promise<void>;
 }
 
