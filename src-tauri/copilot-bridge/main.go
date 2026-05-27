@@ -66,36 +66,30 @@ func copilot_init(errorOut **C.char) C.int {
 		return 0
 	}
 
-	opts := &copilot.ClientOptions{
-		LogLevel: "error",
+	// Find the copilot CLI executable
+	conn := copilot.StdioConnection{}
+	if cliPath := os.Getenv("COPILOT_CLI_PATH"); cliPath != "" {
+		conn.Path = cliPath
+	} else if path, err := exec.LookPath("copilot"); err == nil {
+		conn.Path = path
+	} else if path, err := exec.LookPath("copilot.exe"); err == nil {
+		conn.Path = path
+	} else {
+		fmt.Fprintf(os.Stderr, "[copilot-bridge] WARNING: copilot CLI not found in PATH\n")
+	}
+	if conn.Path != "" {
+		fmt.Fprintf(os.Stderr, "[copilot-bridge] Found CLI at: %s\n", conn.Path)
 	}
 
-	// Use a separate config dir so we don't pollute personal CLI sessions
-	cfgDir := configDir()
-	if cfgDir != "" {
-		opts.CLIArgs = []string{"--config-dir", cfgDir}
-		fmt.Fprintf(os.Stderr, "[copilot-bridge] Config dir: %s\n", cfgDir)
-	}
-
-	// If COPILOT_CLI_PATH is not set, try to find copilot in common locations
-	if os.Getenv("COPILOT_CLI_PATH") == "" {
-		if path, err := exec.LookPath("copilot"); err == nil {
-			opts.CLIPath = path
-			fmt.Fprintf(os.Stderr, "[copilot-bridge] Found CLI at: %s\n", path)
-		} else if path, err := exec.LookPath("copilot.exe"); err == nil {
-			opts.CLIPath = path
-			fmt.Fprintf(os.Stderr, "[copilot-bridge] Found CLI at: %s\n", path)
-		} else {
-			fmt.Fprintf(os.Stderr, "[copilot-bridge] WARNING: copilot CLI not found in PATH\n")
-		}
-	}
-
-	// Capture CLI stderr to a log file for debugging
 	logPath := filepath.Join(os.TempDir(), "copilot-bridge-cli.log")
-	logFile, _ := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-	if logFile != nil {
-		opts.Env = append(os.Environ(), "COPILOT_DEBUG_LOG="+logPath)
-		fmt.Fprintf(os.Stderr, "[copilot-bridge] CLI log: %s\n", logPath)
+	fmt.Fprintf(os.Stderr, "[copilot-bridge] CLI log: %s\n", logPath)
+
+	// Don't set BaseDirectory — let the CLI use default ~/.copilot so auth
+	// tokens are found. Per-session isolation uses ConfigDir on SessionConfig.
+	opts := &copilot.ClientOptions{
+		Connection: conn,
+		LogLevel:   "error",
+		Env:        append(os.Environ(), "COPILOT_DEBUG_LOG="+logPath),
 	}
 
 	client := copilot.NewClient(opts)
@@ -264,8 +258,12 @@ func copilot_send_and_wait(sessionID *C.char, prompt *C.char, timeoutSecs C.int,
 		return 1
 	}
 
-	if event != nil && event.Data.Content != nil {
-		*responseOut = C.CString(*event.Data.Content)
+	if event != nil {
+		if d, ok := event.Data.(*copilot.AssistantMessageData); ok && d.Content != "" {
+			*responseOut = C.CString(d.Content)
+		} else {
+			*responseOut = C.CString("")
+		}
 	} else {
 		*responseOut = C.CString("")
 	}
