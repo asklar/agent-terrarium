@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 300">
+  <!-- River flowing from mountains down -->
+  <!-- Main water body -->
+  <path d="M50,0 Q55,30 48,60 Q42,90 52,120 Q58,150 46,180 Q40,210 50,240 Q56,270 48,300" 
+        stroke="none" fill="none"/>
+  <path d="M40,0 Q45,30 38,60 Q32,90 42,120 Q48,150 36,180 Q30,210 40,240 Q46,270 38,300 
+           L58,300 Q66,270 60,240 Q54,210 60,180 Q68,150 62,120 Q56,90 58,60 Q65,30 60,0 Z" 
+        fill="#3D8EC9" opacity="0.7"/>
+  
+  <!-- Lighter water highlights -->
+  <path d="M45,10 Q48,40 42,70 Q38,100 46,130 Q50,160 40,190 Q36,220 44,250 Q48,280 42,300" 
+        stroke="#64B5F6" stroke-width="3" fill="none" opacity="0.5"/>
+  
+  <!-- Water shimmer lines -->
+  <path d="M48,20 Q50,25 47,30" stroke="white" stroke-width="0.8" fill="none" opacity="0.4"/>
+  <path d="M44,60 Q46,65 43,70" stroke="white" stroke-width="0.8" fill="none" opacity="0.35"/>
+  <path d="M50,100 Q52,105 49,110" stroke="white" stroke-width="0.8" fill="none" opacity="0.4"/>
+  <path d="M42,140 Q44,145 41,150" stroke="white" stroke-width="0.8" fill="none" opacity="0.35"/>
+  <path d="M48,180 Q50,185 47,190" stroke="white" stroke-width="0.8" fill="none" opacity="0.4"/>
+  <path d="M44,220 Q46,225 43,230" stroke="white" stroke-width="0.8" fill="none" opacity="0.35"/>
+  <path d="M50,260 Q52,265 49,270" stroke="white" stroke-width="0.8" fill="none" opacity="0.4"/>
+
+  <!-- River banks -->
+  <path d="M38,0 Q43,30 36,60 Q30,90 40,120 Q46,150 34,180 Q28,210 38,240 Q44,270 36,300" 
+        stroke="#5D4037" stroke-width="1.5" fill="none" opacity="0.5"/>
+  <path d="M62,0 Q67,30 62,60 Q57,90 60,120 Q70,150 64,180 Q60,210 62,240 Q68,270 60,300" 
+        stroke="#5D4037" stroke-width="1.5" fill="none" opacity="0.5"/>
+
+  <!-- Small rocks in river -->
+  <ellipse cx="48" cy="50" rx="3" ry="2" fill="#7E7E7E" opacity="0.6"/>
+  <ellipse cx="52" cy="130" rx="2.5" ry="1.8" fill="#757575" opacity="0.6"/>
+  <ellipse cx="44" cy="200" rx="3" ry="2" fill="#7E7E7E" opacity="0.6"/>
+  <ellipse cx="50" cy="270" rx="2" ry="1.5" fill="#757575" opacity="0.6"/>
+</svg>

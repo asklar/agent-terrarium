@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-30 -14 60 28">
+  <!-- Wings spread wide (soaring pose) -->
+  <path d="M -6,0 Q -14,-6 -28,-10 Q -26,-6 -22,-4 Q -18,-2 -10,0 Z" fill="#3E2723"/>
+  <path d="M 6,0 Q 14,-6 28,-10 Q 26,-6 22,-4 Q 18,-2 10,0 Z" fill="#3E2723"/>
+  <!-- Wing feather details -->
+  <path d="M -28,-10 Q -24,-8 -20,-5" stroke="#5D4037" stroke-width="0.5" fill="none"/>
+  <path d="M -24,-9 Q -20,-6 -16,-4" stroke="#5D4037" stroke-width="0.5" fill="none"/>
+  <path d="M 28,-10 Q 24,-8 20,-5" stroke="#5D4037" stroke-width="0.5" fill="none"/>
+  <path d="M 24,-9 Q 20,-6 16,-4" stroke="#5D4037" stroke-width="0.5" fill="none"/>
+
+  <!-- Tail feathers (fanned) -->
+  <path d="M -3,6 L -5,12 L 0,10 L 5,12 L 3,6 Z" fill="#4E342E"/>
+
+  <!-- Body (horizontal/streamlined) -->
+  <ellipse cx="0" cy="1" rx="7" ry="4" fill="#4E342E"/>
+  <!-- Chest -->
+  <ellipse cx="0" cy="0" rx="4" ry="3" fill="#6D4C41"/>
+
+  <!-- Head (forward-facing) -->
+  <ellipse cx="0" cy="-5" rx="4" ry="3.5" fill="#EFEBE9"/>
+
+  <!-- Eyes -->
+  <circle cx="-1.5" cy="-5.5" r="1" fill="#FFF"/>
+  <circle cx="1.5" cy="-5.5" r="1" fill="#FFF"/>
+  <circle cx="-1.5" cy="-5.5" r="0.6" fill="#1A1A1A"/>
+  <circle cx="1.5" cy="-5.5" r="0.6" fill="#1A1A1A"/>
+  <!-- Fierce brow -->
+  <path d="M -2.8,-6.5 L -0.8,-6.2" stroke="#5D4037" stroke-width="0.6" fill="none"/>
+  <path d="M 2.8,-6.5 L 0.8,-6.2" stroke="#5D4037" stroke-width="0.6" fill="none"/>
+
+  <!-- Beak (pointed forward) -->
+  <path d="M 0,-4 L -1.2,-2.8 L 0,-1.5 L 1.2,-2.8 Z" fill="#F9A825"/>
+</svg>

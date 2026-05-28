@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300">
+  <!-- Far mountain range (lighter, distant) — extends beyond edges -->
+  <path d="M-50,300 L-20,220 L60,180 L120,220 L200,100 L280,200 L340,140 L420,80 L500,160 L560,120 L640,60 L720,150 L800,110 L840,180 L850,300 Z" fill="#7B8FA1" opacity="0.5"/>
+  <path d="M200,100 L180,140 L220,140 Z" fill="#E8EEF2" opacity="0.4"/>
+  <path d="M420,80 L400,115 L440,115 Z" fill="#E8EEF2" opacity="0.4"/>
+  <path d="M640,60 L615,100 L665,100 Z" fill="#E8EEF2" opacity="0.4"/>
+
+  <!-- Mid mountain range -->
+  <path d="M-50,300 L-10,240 L80,200 L160,250 L260,130 L360,210 L440,150 L540,100 L620,180 L700,130 L780,190 L830,210 L850,300 Z" fill="#5C6B73" opacity="0.7"/>
+  <path d="M260,130 L238,170 L282,170 Z" fill="#D5DEE5" opacity="0.6"/>
+  <path d="M540,100 L515,145 L565,145 Z" fill="#D5DEE5" opacity="0.6"/>
+  <path d="M700,130 L680,165 L720,165 Z" fill="#D5DEE5" opacity="0.6"/>
+
+  <!-- Near mountain range (darker, closer) — fills to edges -->
+  <path d="M-50,300 L-20,260 L100,220 L180,260 L300,160 L400,230 L500,180 L600,140 L700,210 L800,180 L830,220 L850,300 Z" fill="#3D4A52" opacity="0.85"/>
+  <path d="M300,160 L275,200 L325,200 Z" fill="#C8D5DE" opacity="0.7"/>
+  <path d="M600,140 L575,180 L625,180 Z" fill="#C8D5DE" opacity="0.7"/>
+</svg>

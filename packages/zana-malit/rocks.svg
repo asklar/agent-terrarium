@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 80">
+  <!-- Rock cluster 1 (left) -->
+  <path d="M30,80 L20,55 L35,40 L55,38 L65,50 L70,80 Z" fill="#4A4A4A" stroke="#333" stroke-width="1"/>
+  <path d="M35,40 L42,52 L55,38" fill="#555" opacity="0.5"/>
+  <path d="M20,55 L35,65 L50,55" fill="#3D3D3D" opacity="0.4"/>
+
+  <!-- Small rock near cluster 1 -->
+  <path d="M80,80 L75,62 L88,55 L100,58 L102,80 Z" fill="#484848" stroke="#333" stroke-width="1"/>
+  <path d="M78,68 L88,58 L96,64" fill="#3A3A3A" opacity="0.4"/>
+
+  <!-- Rock cluster 2 (center-left) -->
+  <path d="M180,80 L170,48 L190,32 L215,30 L235,40 L240,80 Z" fill="#505050" stroke="#333" stroke-width="1"/>
+  <path d="M190,32 L200,50 L215,30" fill="#5A5A5A" opacity="0.4"/>
+  <path d="M170,48 L195,60 L220,50" fill="#3E3E3E" opacity="0.45"/>
+  <path d="M185,55 L200,42 L215,48" stroke="#393939" stroke-width="0.8" fill="none"/>
+
+  <!-- Tiny rock -->
+  <path d="M260,80 L255,68 L265,62 L275,65 L278,80 Z" fill="#454545" stroke="#333" stroke-width="0.8"/>
+
+  <!-- Rock cluster 3 (center-right) -->
+  <path d="M350,80 L345,58 L360,44 L380,42 L395,52 L400,80 Z" fill="#4C4C4C" stroke="#333" stroke-width="1"/>
+  <path d="M360,44 L368,56 L380,42" fill="#565656" opacity="0.45"/>
+  <path d="M345,58 L365,66 L385,58" fill="#3C3C3C" opacity="0.4"/>
+
+  <!-- Small boulder (right) -->
+  <path d="M460,80 L452,55 L470,44 L490,46 L498,58 L500,80 Z" fill="#4E4E4E" stroke="#333" stroke-width="1"/>
+  <path d="M470,44 L478,58 L490,46" fill="#585858" opacity="0.4"/>
+  <path d="M452,55 L472,65 L492,56" fill="#404040" opacity="0.4"/>
+
+  <!-- Rock cluster 4 (far right) -->
+  <path d="M540,80 L535,60 L548,46 L565,44 L578,52 L582,80 Z" fill="#474747" stroke="#333" stroke-width="1"/>
+  <path d="M548,46 L555,58 L565,44" fill="#525252" opacity="0.45"/>
+  <path d="M535,60 L555,68 L575,58" fill="#3B3B3B" opacity="0.4"/>
+
+  <!-- Tiny pebble -->
+  <path d="M510,80 L507,70 L515,65 L522,68 L523,80 Z" fill="#434343" stroke="#333" stroke-width="0.8"/>
+</svg>

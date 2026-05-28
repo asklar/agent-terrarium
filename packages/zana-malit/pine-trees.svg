@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200">
+  <!-- Pine tree 1 (left) -->
+  <g transform="translate(60,200)">
+    <rect x="-4" y="-30" width="8" height="30" fill="#4A3728"/>
+    <path d="M0,-110 L-22,-50 L-15,-55 L-30,-20 L-18,-28 L-35,0 L35,0 L18,-28 L30,-20 L15,-55 L22,-50 Z" fill="#2E5339"/>
+    <path d="M0,-110 L-18,-55 L-12,-58 L-24,-25 L-14,-32 L-28,0 L0,-10 Z" fill="#3A6B47" opacity="0.5"/>
+  </g>
+  <!-- Pine tree 2 -->
+  <g transform="translate(150,200)">
+    <rect x="-5" y="-35" width="10" height="35" fill="#3E2E1E"/>
+    <path d="M0,-130 L-26,-60 L-18,-65 L-35,-22 L-22,-30 L-42,0 L42,0 L22,-30 L35,-22 L18,-65 L26,-60 Z" fill="#234A2E"/>
+    <path d="M0,-130 L-22,-62 L-14,-66 L-28,-26 L-17,-33 L-34,0 L0,-12 Z" fill="#2E5D3A" opacity="0.5"/>
+  </g>
+  <!-- Pine tree 3 (small) -->
+  <g transform="translate(250,200)">
+    <rect x="-3" y="-22" width="6" height="22" fill="#4A3728"/>
+    <path d="M0,-80 L-16,-38 L-10,-42 L-22,-14 L-13,-20 L-26,0 L26,0 L13,-20 L22,-14 L10,-42 L16,-38 Z" fill="#2E5339"/>
+  </g>
+  <!-- Pine tree 4 -->
+  <g transform="translate(360,200)">
+    <rect x="-5" y="-32" width="10" height="32" fill="#3E2E1E"/>
+    <path d="M0,-120 L-24,-55 L-16,-60 L-32,-20 L-20,-28 L-38,0 L38,0 L20,-28 L32,-20 L16,-60 L24,-55 Z" fill="#1D3D26"/>
+    <path d="M0,-120 L-20,-58 L-12,-62 L-26,-24 L-16,-30 L-30,0 L0,-10 Z" fill="#27502F" opacity="0.5"/>
+  </g>
+  <!-- Pine tree 5 (small) -->
+  <g transform="translate(460,200)">
+    <rect x="-3" y="-25" width="6" height="25" fill="#4A3728"/>
+    <path d="M0,-90 L-18,-42 L-12,-46 L-24,-16 L-15,-22 L-28,0 L28,0 L15,-22 L24,-16 L12,-46 L18,-42 Z" fill="#2E5339"/>
+  </g>
+  <!-- Pine tree 6 -->
+  <g transform="translate(540,200)">
+    <rect x="-4" y="-28" width="8" height="28" fill="#3E2E1E"/>
+    <path d="M0,-105 L-22,-48 L-14,-52 L-28,-18 L-18,-25 L-33,0 L33,0 L18,-25 L28,-18 L14,-52 L22,-48 Z" fill="#234A2E"/>
+  </g>
+</svg>

@@ -13,6 +13,7 @@ use libloading::{Library, Symbol};
 /// Singleton holder for the loaded DLL
 static BRIDGE: OnceLock<CopilotBridge> = OnceLock::new();
 
+#[allow(dead_code)]
 struct CopilotBridge {
     _lib: Library,
 
@@ -132,6 +133,7 @@ pub fn init() -> Result<(), String> {
 }
 
 /// Stop the Copilot client
+#[allow(dead_code)]
 pub fn stop() {
     if let Ok(b) = bridge() {
         unsafe { (b.fn_stop)() }
@@ -154,6 +156,7 @@ pub fn create_session(config_json: &str) -> Result<String, String> {
 }
 
 /// Resume a previously saved session. Returns the session ID.
+#[allow(dead_code)]
 pub fn resume_session(saved_id: &str, config_json: &str) -> Result<String, String> {
     let b = bridge()?;
     let c_id = CString::new(saved_id).map_err(|e| e.to_string())?;

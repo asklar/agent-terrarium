@@ -574,6 +574,7 @@ impl World {
     }
 
     /// Get the files claimed by an agent (if any).
+    #[allow(dead_code)]
     pub fn get_claimed_files(&self, agent_id: &str) -> Option<Vec<(String, String)>> {
         let state = self.state.lock().unwrap();
         state.dropped_files.iter()

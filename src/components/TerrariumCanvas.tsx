@@ -409,19 +409,50 @@ export function TerrariumCanvas({
 
       ctx.scale(sx * ballScale, sy * ballScale);
 
-      ctx.fillStyle = "#FF5722";
+      // Pinecone body
+      const R = BALL_SIZE;
       if (ballHeight > 2) {
         ctx.shadowColor = "rgba(0,0,0,0.3)";
         ctx.shadowBlur = 4;
         ctx.shadowOffsetY = 2;
       }
+      // Oval pinecone shape
+      ctx.fillStyle = "#3E2723";
       ctx.beginPath();
-      ctx.arc(0, 0, BALL_SIZE, 0, Math.PI * 2);
+      ctx.ellipse(0, 0, R * 0.75, R, 0, 0, Math.PI * 2);
       ctx.fill();
-      // Highlight
-      ctx.fillStyle = "rgba(255,255,255,0.4)";
+
+      // Scale pattern
+      const scaleRows = [
+        { y: -6, count: 3, size: 3 },
+        { y: -2.5, count: 4, size: 3.2 },
+        { y: 1.5, count: 4, size: 3 },
+        { y: 5, count: 3, size: 2.8 },
+      ];
+      for (const row of scaleRows) {
+        const startX = -(row.count - 1) * row.size * 0.55;
+        for (let i = 0; i < row.count; i++) {
+          const sx = startX + i * row.size * 1.1;
+          ctx.fillStyle = "#5D4037";
+          ctx.beginPath();
+          ctx.ellipse(sx, row.y, row.size * 0.5, row.size * 0.45, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = "#2E1B0E";
+          ctx.lineWidth = 0.4;
+          ctx.stroke();
+        }
+      }
+
+      // Stem
+      ctx.fillStyle = "#2E7D32";
       ctx.beginPath();
-      ctx.arc(-2, -2, BALL_SIZE * 0.4, 0, Math.PI * 2);
+      ctx.ellipse(0, -R + 1, 2.5, 1.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Highlight
+      ctx.fillStyle = "rgba(255,255,255,0.2)";
+      ctx.beginPath();
+      ctx.ellipse(-2, -3, R * 0.25, R * 0.35, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
