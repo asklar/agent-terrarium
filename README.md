@@ -60,8 +60,10 @@ Built with **Tauri v2** (Rust) + **React** (Canvas 2D). All simulation runs in R
 
 - [Node.js](https://nodejs.org/) ≥ 18
 - [pnpm](https://pnpm.io/) ≥ 8
-- [Rust](https://rustup.rs/) ≥ 1.70
+- [Rust](https://rustup.rs/) ≥ 1.94
 - Windows 10/11 (primary target)
+
+The GitHub Copilot backend uses the official Rust SDK with its bundled CLI. No Go toolchain or bridge DLL is required.
 
 ### Run in development
 
@@ -79,6 +81,8 @@ pnpm tauri build
 ```
 
 Produces `.msi` and/or `.exe` installers in `src-tauri/target/release/bundle/`.
+
+Backend and Copilot SDK logs are written to `~/agent-terrarium/logs/`.
 
 ## 🎮 Controls
 

@@ -146,7 +146,7 @@ pub trait AgentBackend: Send + Sync {
 | Backend | ID | Description |
 |---------|----|-------------|
 | Echo | `echo` | Echoes user input; no API key needed. Default for NPC agents. |
-| GitHub Copilot | `copilot` | Via Copilot SDK. Supports tool calling, model selection, custom agents. |
+| GitHub Copilot | `copilot` | Via the official Rust `github-copilot-sdk` with a bundled protocol-v3 CLI. Supports tool calling, model selection, and custom agents. |
 | OpenAI-compatible | `openai` | Works with OpenAI, Anthropic Claude, or any OpenAI-compatible endpoint. |
 
 ### Per-Agent Configuration
@@ -306,7 +306,7 @@ Credentials (API keys) are stored separately via `tauri-plugin-store`.
 ### Rust
 - `tauri` 2 — desktop app framework
 - `tokio` — async runtime
-- `copilot-sdk` — GitHub Copilot integration
+- `github-copilot-sdk` — official Rust SDK with a bundled GitHub Copilot CLI
 - `reqwest` — HTTP for OpenAI-compatible APIs
 - `windows` 0.61 — Win32 SAPI for TTS
 - `notify` — file system watcher (package hot-reload)
