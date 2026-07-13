@@ -14,8 +14,39 @@ use agents::openai_compat;
 use agents::registry::BackendRegistry;
 use simulation::types::{AppConfig, Vec2};
 use simulation::world::World;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use std::time::Duration;
+
+static LOG_GUARD: OnceLock<tracing_appender::non_blocking::WorkerGuard> = OnceLock::new();
+
+fn init_logging() {
+    if tracing_log::LogTracer::init().is_err() {
+        return;
+    }
+
+    let log_dir = dirs::home_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .join("agent-terrarium")
+        .join("logs");
+    if std::fs::create_dir_all(&log_dir).is_err() {
+        return;
+    }
+
+    let appender = tracing_appender::rolling::daily(log_dir, "agent-terrarium.log");
+    let (writer, guard) = tracing_appender::non_blocking(appender);
+    let filter = tracing_subscriber::EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info,github_copilot_sdk=debug"));
+
+    if tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .with_ansi(false)
+        .with_writer(writer)
+        .try_init()
+        .is_ok()
+    {
+        let _ = LOG_GUARD.set(guard);
+    }
+}
 
 #[tauri::command]
 fn get_world_state(world: tauri::State<'_, Arc<World>>) -> simulation::types::WorldState {
@@ -137,9 +168,18 @@ async fn send_message(world: tauri::State<'_, Arc<World>>, app: tauri::AppHandle
         }
     }
 
-    let response = backend
-        .respond(&agent_id, &backend_config, &messages)
+    log::info!(
+        "Dispatching message for {} to backend {}",
+        agent_id,
+        backend_config.backend_id
+    );
+    let response = tokio::time::timeout(
+        Duration::from_secs(135),
+        backend.respond(&agent_id, &backend_config, &messages),
+    )
         .await
+        .map_err(|_| "Backend response timed out after 135 seconds".to_string())
+        .and_then(|result| result)
         .unwrap_or_else(|e| {
             log::error!("Backend respond error for {}: {}", agent_id, e);
             agents::backend::BackendResponse {
@@ -553,9 +593,7 @@ fn get_splash_wait(state: tauri::State<'_, SplashWait>) -> bool {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
-        .format_timestamp_millis()
-        .init();
+    init_logging();
 
     log::info!("Agent Terrarium starting up");
     let splash_wait = std::env::args().any(|a| a == "--splash-wait");
@@ -715,8 +753,7 @@ pub fn run() {
                                 system_context, context, events_text
                             );
 
-                            let tools = agents::tools::define_tools_json();
-                            let handlers = agents::tools::create_handlers(
+                            let tools = agents::tools::create_tools(
                                 world_ref.clone(), aid.clone(), aname.clone(),
                             );
 
@@ -726,7 +763,7 @@ pub fn run() {
                                     let copilot = backend.as_any()
                                         .downcast_ref::<CopilotBackend>()
                                         .expect("copilot backend");
-                                    match copilot.dispatch_with_tools(&aid, &event_config, &prompt, tools, handlers).await {
+                                    match copilot.dispatch_with_tools(&aid, &event_config, &prompt, tools).await {
                                         Ok(text) => {
                                             if !text.trim().is_empty() {
                                                 log::debug!("Event text from {} (tools handled): {}", aname, text.trim());

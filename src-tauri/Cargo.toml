@@ -1,6 +1,6 @@
 [package]
 name = "agent-terrarium"
-version = "0.1.0"
+version = "0.1.2"
 description = "A desktop companion app where AI agents live in a tiny animated world on your screen"
 authors = ["Alexander Sklar"]
 license = "MIT"
@@ -29,11 +29,11 @@ tokio = { version = "1", features = ["rt", "macros"] }
 tauri-plugin-store = "2"
 tauri-plugin-dialog = "2"
 reqwest = { version = "0.12", features = ["json"] }
-libloading = "0.8"
-libc = "0.2"
 log = "0.4"
-env_logger = "0.11"
 windows = { version = "0.61", features = ["Win32_Media_Speech", "Win32_System_Com", "Win32_System_Com_StructuredStorage", "Win32_Media_Audio", "Win32_UI_Shell", "Win32_Graphics_Gdi", "Win32_UI_WindowsAndMessaging", "Win32_Storage_FileSystem"] }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "bmp", "webp", "ico"] }
 notify = { version = "8.2.0", features = ["macos_kqueue"] }
-
+github-copilot-sdk = "1.0.6"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-appender = "0.2"
+tracing-log = "0.2"

@@ -7,9 +7,11 @@ Thanks for your interest in contributing! This guide covers how to set up the pr
 ### Prerequisites
 
 - **Node.js** ≥ 18 and **pnpm** ≥ 8
-- **Rust** ≥ 1.70 (install via [rustup](https://rustup.rs/))
+- **Rust** ≥ 1.94 (install via [rustup](https://rustup.rs/))
 - **Windows 10/11** — the primary target platform
 - A code editor with Rust and TypeScript support (VS Code with rust-analyzer recommended)
+
+The official `github-copilot-sdk` crate bundles a compatible Copilot CLI, so development and packaging do not require Go, CGO, or a bridge DLL.
 
 ### Getting Started
 
@@ -30,6 +32,8 @@ cargo check --manifest-path src-tauri/Cargo.toml     # Rust backend
 ```
 
 No test framework is configured for either frontend or backend.
+
+Backend and Copilot SDK logs are written to `~/agent-terrarium/logs/`.
 
 ## Architecture Overview
 
