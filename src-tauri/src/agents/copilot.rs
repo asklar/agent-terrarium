@@ -1,38 +1,74 @@
 use async_trait::async_trait;
+use github_copilot_sdk::session::Session;
+use github_copilot_sdk::session_events::AssistantMessageData;
+use github_copilot_sdk::{
+    Client, ClientOptions, CustomAgentConfig, LogLevel, MessageOptions, ResumeSessionConfig,
+    SessionConfig, SessionId, SystemMessageConfig, Tool,
+};
 use std::collections::HashMap;
-use std::os::raw::c_char;
+use std::path::PathBuf;
 use std::sync::Arc;
-use tokio::sync::RwLock;
+use std::time::Duration;
+use tokio::sync::{Mutex, RwLock};
 
-use super::backend::{AgentBackend, AgentOption, BackendConfig, BackendMessage, BackendResponse, MessageRole, ModelOption};
-use super::copilot_ffi;
+use super::backend::{
+    AgentBackend, AgentOption, BackendConfig, BackendMessage, BackendResponse, MessageRole,
+    ModelOption,
+};
 
-pub struct CopilotBackend {
-    initialized: Arc<RwLock<bool>>,
-    /// Persistent sessions for awareness events, keyed by agent_id
-    awareness_sessions: Arc<RwLock<HashMap<String, String>>>, // agent_id → session_id
-    /// Persistent sessions for user chat, keyed by agent_id
-    chat_sessions: Arc<RwLock<HashMap<String, String>>>, // agent_id → session_id
+struct AgentSession {
+    session: Arc<Session>,
+    turn_lock: Mutex<()>,
 }
 
-fn session_id_path(agent_id: &str) -> std::path::PathBuf {
+pub struct CopilotBackend {
+    client: Arc<RwLock<Option<Client>>>,
+    awareness_sessions: Arc<RwLock<HashMap<String, Arc<AgentSession>>>>,
+    chat_sessions: Arc<RwLock<HashMap<String, Arc<AgentSession>>>>,
+    awareness_creation_locks: Mutex<HashMap<String, Arc<Mutex<()>>>>,
+    chat_creation_locks: Mutex<HashMap<String, Arc<Mutex<()>>>>,
+}
+
+async fn creation_lock(
+    locks: &Mutex<HashMap<String, Arc<Mutex<()>>>>,
+    agent_id: &str,
+) -> Arc<Mutex<()>> {
+    let mut locks = locks.lock().await;
+    locks
+        .entry(agent_id.to_string())
+        .or_insert_with(|| Arc::new(Mutex::new(())))
+        .clone()
+}
+
+fn session_id_path(agent_id: &str) -> PathBuf {
     let dir = dirs::home_dir()
-        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .unwrap_or_else(|| PathBuf::from("."))
         .join("agent-terrarium")
         .join("sessions");
     let _ = std::fs::create_dir_all(&dir);
     dir.join(format!("{}.txt", agent_id))
 }
 
-fn save_session_id(agent_id: &str, session_id: &str) {
+fn config_directory() -> PathBuf {
+    let dir = dirs::home_dir()
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join("agent-terrarium")
+        .join(".copilot");
+    let _ = std::fs::create_dir_all(&dir);
+    dir
+}
+
+fn save_session_id(agent_id: &str, session_id: &SessionId) {
     let path = session_id_path(agent_id);
-    let _ = std::fs::write(&path, session_id);
+    let _ = std::fs::write(&path, session_id.as_str());
     log::info!("Saved session ID for {}: {}", agent_id, session_id);
 }
 
 fn load_session_id(agent_id: &str) -> Option<String> {
     let path = session_id_path(agent_id);
-    std::fs::read_to_string(&path).ok().filter(|s| !s.is_empty())
+    std::fs::read_to_string(&path)
+        .ok()
+        .filter(|session_id| !session_id.is_empty())
 }
 
 fn delete_session_id(agent_id: &str) {
@@ -40,154 +76,220 @@ fn delete_session_id(agent_id: &str) {
     let _ = std::fs::remove_file(&path);
 }
 
+fn system_message(config: &BackendConfig) -> Option<SystemMessageConfig> {
+    config.system_prompt.as_ref().map(|prompt| {
+        SystemMessageConfig::new()
+            .with_mode("replace")
+            .with_content(prompt)
+    })
+}
 
+fn custom_agent(config: &BackendConfig) -> Option<CustomAgentConfig> {
+    config.custom_agent.as_ref().map(|name| {
+        CustomAgentConfig::new(name, config.system_prompt.clone().unwrap_or_default())
+            .with_infer(true)
+    })
+}
 
-/// Build a JSON config string for the Go bridge from BackendConfig
-fn build_config_json(config: &BackendConfig) -> String {
-    serde_json::json!({
-        "model": config.model,
-        "system_prompt": config.system_prompt,
-        "custom_agent": config.custom_agent,
-        "working_directory": config.cwd,
-    }).to_string()
+fn create_session_config(config: &BackendConfig, tools: Option<Vec<Tool>>) -> SessionConfig {
+    let mut session_config = SessionConfig::default()
+        .with_client_name("agent-terrarium")
+        .with_config_directory(config_directory())
+        .approve_all_permissions();
+
+    if let Some(model) = config.model.as_deref().filter(|model| !model.is_empty()) {
+        session_config = session_config.with_model(model);
+    }
+    if let Some(cwd) = config.cwd.as_deref().filter(|cwd| !cwd.is_empty()) {
+        session_config = session_config.with_working_directory(cwd);
+    }
+    if let Some(message) = system_message(config) {
+        session_config = session_config.with_system_message(message);
+    }
+    if let Some(agent) = custom_agent(config) {
+        let name = agent.name.clone();
+        session_config = session_config.with_custom_agents([agent]).with_agent(name);
+    }
+    if let Some(tools) = tools {
+        session_config = session_config.with_tools(tools);
+    }
+
+    session_config
+}
+
+fn resume_session_config(saved_id: &str, config: &BackendConfig) -> ResumeSessionConfig {
+    let mut session_config = ResumeSessionConfig::new(SessionId::from(saved_id))
+        .with_client_name("agent-terrarium")
+        .with_config_directory(config_directory())
+        .approve_all_permissions();
+
+    if let Some(model) = config.model.as_deref().filter(|model| !model.is_empty()) {
+        session_config = session_config.with_model(model);
+    }
+    if let Some(cwd) = config.cwd.as_deref().filter(|cwd| !cwd.is_empty()) {
+        session_config = session_config.with_working_directory(cwd);
+    }
+    if let Some(message) = system_message(config) {
+        session_config = session_config.with_system_message(message);
+    }
+    if let Some(agent) = custom_agent(config) {
+        let name = agent.name.clone();
+        session_config = session_config.with_custom_agents([agent]).with_agent(name);
+    }
+
+    session_config
+}
+
+fn assistant_content(event: Option<github_copilot_sdk::SessionEvent>) -> String {
+    event
+        .and_then(|event| event.typed_data::<AssistantMessageData>())
+        .map(|message| message.content)
+        .unwrap_or_default()
 }
 
 impl CopilotBackend {
     pub fn new() -> Self {
         Self {
-            initialized: Arc::new(RwLock::new(false)),
+            client: Arc::new(RwLock::new(None)),
             awareness_sessions: Arc::new(RwLock::new(HashMap::new())),
             chat_sessions: Arc::new(RwLock::new(HashMap::new())),
+            awareness_creation_locks: Mutex::new(HashMap::new()),
+            chat_creation_locks: Mutex::new(HashMap::new()),
         }
     }
 
-    async fn ensure_init(&self) -> Result<(), String> {
-        let mut init = self.initialized.write().await;
-        if !*init {
-            log::info!("Initializing Copilot Go bridge...");
-            copilot_ffi::init()?;
-            log::info!("Copilot Go bridge initialized (protocol v3)");
-            *init = true;
+    async fn ensure_client(&self) -> Result<(), String> {
+        let mut client = self.client.write().await;
+        if client.is_none() {
+            log::info!("Starting official GitHub Copilot Rust SDK client...");
+            let cli_log_dir = config_directory().join("logs");
+            let _ = std::fs::create_dir_all(&cli_log_dir);
+            let cli_log = cli_log_dir.join("copilot-cli.log");
+            let options = ClientOptions::new()
+                .with_log_level(LogLevel::Debug)
+                .with_env([("COPILOT_DEBUG_LOG", cli_log.as_os_str())]);
+            let started = Client::start(options).await.map_err(|error| {
+                log::error!("Failed to start Copilot client: {}", error);
+                format!("Failed to start Copilot client: {}", error)
+            })?;
+            log::info!(
+                "Copilot Rust SDK client initialized (protocol v{})",
+                github_copilot_sdk::SDK_PROTOCOL_VERSION
+            );
+            *client = Some(started);
         }
         Ok(())
     }
 
-    /// Dispatch awareness events using a tool-enabled session.
+    async fn client(&self) -> Result<Client, String> {
+        self.ensure_client().await?;
+        self.client
+            .read()
+            .await
+            .clone()
+            .ok_or_else(|| "Copilot client is not initialized".to_string())
+    }
+
+    async fn get_or_create_awareness_session(
+        &self,
+        agent_id: &str,
+        config: &BackendConfig,
+        tools: Vec<Tool>,
+    ) -> Result<Arc<AgentSession>, String> {
+        if let Some(session) = self.awareness_sessions.read().await.get(agent_id) {
+            return Ok(session.clone());
+        }
+
+        let creation_lock = creation_lock(&self.awareness_creation_locks, agent_id).await;
+        let _creating = creation_lock.lock().await;
+        let concurrent_session = {
+            let sessions = self.awareness_sessions.read().await;
+            sessions.get(agent_id).cloned()
+        };
+        if let Some(session) = concurrent_session {
+            return Ok(session);
+        }
+
+        let client = self.client().await?;
+        let session = tokio::time::timeout(
+            Duration::from_secs(30),
+            client.create_session(create_session_config(config, Some(tools))),
+        )
+        .await
+        .map_err(|_| "Timed out creating awareness session".to_string())?
+        .map(Arc::new)
+        .map_err(|error| format!("Failed to create awareness session: {}", error))?;
+
+        log::info!(
+            "Created awareness session for {}: {}",
+            agent_id,
+            session.id()
+        );
+        let agent_session = Arc::new(AgentSession {
+            session,
+            turn_lock: Mutex::new(()),
+        });
+        self.awareness_sessions
+            .write()
+            .await
+            .insert(agent_id.to_string(), agent_session.clone());
+        Ok(agent_session)
+    }
+
     pub async fn dispatch_with_tools(
         &self,
         agent_id: &str,
         config: &BackendConfig,
         prompt: &str,
-        tools: Vec<serde_json::Value>,
-        tool_handlers: Vec<(String, Arc<dyn Fn(&str, &serde_json::Value) -> String + Send + Sync>)>,
+        tools: Vec<Tool>,
     ) -> Result<String, String> {
-        self.ensure_init().await?;
+        let agent_session = self
+            .get_or_create_awareness_session(agent_id, config, tools)
+            .await?;
+        let _turn = agent_session.turn_lock.lock().await;
 
-        // Check if we have an existing awareness session
-        let existing = {
-            let sessions = self.awareness_sessions.read().await;
-            sessions.get(agent_id).cloned()
-        };
-
-        let sid = if let Some(sid) = existing {
-            sid
-        } else {
-            // Create new session with tools
-            let config_json = build_config_json(config);
-            let tools_json = serde_json::to_string(&tools).map_err(|e| e.to_string())?;
-
-            // Set up tool callback before creating session
-            // Store handlers in a thread-local so the C callback can find them
-            {
-                let mut handlers_map = TOOL_HANDLERS.lock().unwrap();
-                for (name, handler) in &tool_handlers {
-                    handlers_map.insert(name.clone(), handler.clone());
-                }
-            }
-            copilot_ffi::set_tool_callback(Some(tool_callback_trampoline));
-
-            let sid = copilot_ffi::create_session_with_tools(&config_json, &tools_json)?;
-            log::info!("Created awareness session for {}: {}", agent_id, sid);
-
-            let mut sessions = self.awareness_sessions.write().await;
-            sessions.insert(agent_id.to_string(), sid.clone());
-            sid
-        };
-
-        // Update tool handlers for this call
+        match agent_session
+            .session
+            .send_and_wait(MessageOptions::new(prompt).with_wait_timeout(Duration::from_secs(15)))
+            .await
         {
-            let mut handlers_map = TOOL_HANDLERS.lock().unwrap();
-            for (name, handler) in &tool_handlers {
-                handlers_map.insert(name.clone(), handler.clone());
-            }
-        }
-
-        let result = copilot_ffi::send_with_tools(&sid, prompt, 15);
-
-        match result {
-            Ok(response) => Ok(response),
-            Err(e) => {
-                // Session might be broken, remove it so it gets recreated
-                log::warn!("Awareness session failed for {}: {}", agent_id, e);
-                let mut sessions = self.awareness_sessions.write().await;
-                sessions.remove(agent_id);
-                copilot_ffi::destroy_session(&sid);
-                Err(e)
+            Ok(event) => Ok(assistant_content(event)),
+            Err(error) => {
+                log::warn!("Awareness session failed for {}: {}", agent_id, error);
+                self.awareness_sessions.write().await.remove(agent_id);
+                let _ = agent_session.session.disconnect().await;
+                Err(error.to_string())
             }
         }
     }
 
-    /// Remove a persistent session
     #[allow(dead_code)]
     pub async fn remove_session(&self, agent_id: &str) {
-        let mut sessions = self.awareness_sessions.write().await;
-        if let Some(sid) = sessions.remove(agent_id) {
-            copilot_ffi::destroy_session(&sid);
+        if let Some(agent_session) = self.awareness_sessions.write().await.remove(agent_id) {
+            let _ = agent_session.session.disconnect().await;
             log::info!("Destroyed awareness session for {}", agent_id);
         }
-        drop(sessions);
 
-        let mut chat = self.chat_sessions.write().await;
-        if let Some(sid) = chat.remove(agent_id) {
-            copilot_ffi::destroy_session(&sid);
+        if let Some(agent_session) = self.chat_sessions.write().await.remove(agent_id) {
+            let _ = agent_session.session.disconnect().await;
             log::info!("Destroyed chat session for {}", agent_id);
         }
     }
-}
 
-// Global tool handler registry (used by the C callback trampoline)
-use std::sync::Mutex;
-static TOOL_HANDLERS: std::sync::LazyLock<Mutex<HashMap<String, Arc<dyn Fn(&str, &serde_json::Value) -> String + Send + Sync>>>> =
-    std::sync::LazyLock::new(|| Mutex::new(HashMap::new()));
-
-/// C callback that Go invokes when a tool is called.
-/// Returns a malloc'd C string with the result.
-unsafe extern "C" fn tool_callback_trampoline(
-    _session_id: *mut c_char,
-    tool_name: *mut c_char,
-    args_json: *mut c_char,
-) -> *mut c_char {
-    let name = std::ffi::CStr::from_ptr(tool_name).to_string_lossy();
-    let args_str = std::ffi::CStr::from_ptr(args_json).to_string_lossy();
-    let args: serde_json::Value = serde_json::from_str(&args_str).unwrap_or(serde_json::Value::Null);
-
-    let result = {
-        let handlers = TOOL_HANDLERS.lock().unwrap();
-        if let Some(handler) = handlers.get(name.as_ref()) {
-            handler(&name, &args)
-        } else {
-            format!("Unknown tool: {}", name)
-        }
-    };
-
-    // Allocate with libc::malloc so Go can free with C.free
-    let c_result = std::ffi::CString::new(result).unwrap_or_default();
-    let len = c_result.as_bytes_with_nul().len();
-    let ptr = libc::malloc(len) as *mut c_char;
-    if !ptr.is_null() {
-        std::ptr::copy_nonoverlapping(c_result.as_ptr(), ptr, len);
+    async fn create_new_session(
+        &self,
+        client: &Client,
+        config: &BackendConfig,
+    ) -> Result<Arc<Session>, String> {
+        tokio::time::timeout(
+            Duration::from_secs(30),
+            client.create_session(create_session_config(config, None)),
+        )
+        .await
+        .map_err(|_| "Timed out creating Copilot session".to_string())?
+        .map(Arc::new)
+        .map_err(|error| format!("Failed to create session: {}", error))
     }
-    ptr
 }
 
 #[async_trait]
@@ -206,72 +308,108 @@ impl AgentBackend for CopilotBackend {
         config: &BackendConfig,
         messages: &[BackendMessage],
     ) -> Result<BackendResponse, String> {
-        log::info!("Copilot respond: agent={}, model={:?}, custom_agent={:?}, {} messages",
-            agent_id, config.model, config.custom_agent, messages.len());
+        log::info!(
+            "Copilot respond: agent={}, model={:?}, custom_agent={:?}, {} messages",
+            agent_id,
+            config.model,
+            config.custom_agent,
+            messages.len()
+        );
 
-        self.ensure_init().await?;
+        let existing = self.chat_sessions.read().await.get(agent_id).cloned();
 
-        // Get or create a persistent chat session
-        let need_create = {
-            let sessions = self.chat_sessions.read().await;
-            !sessions.contains_key(agent_id)
-        };
-
-        if need_create {
-            let config_json = build_config_json(config);
-
-            // Try to resume a previously persisted session
-            let sid = if let Some(saved_id) = load_session_id(agent_id) {
-                log::info!("Resuming session {} for agent {}", saved_id, agent_id);
-                match copilot_ffi::resume_session(&saved_id, &config_json) {
-                    Ok(sid) => {
-                        log::info!("Resumed session {}", sid);
-                        sid
-                    }
-                    Err(e) => {
-                        log::warn!("Failed to resume session: {}, creating new", e);
-                        delete_session_id(agent_id);
-                        copilot_ffi::create_session(&config_json)?
-                    }
-                }
-            } else {
-                copilot_ffi::create_session(&config_json)
-                    .map_err(|e| {
-                        log::error!("Failed to create Copilot session: {}", e);
-                        if e.contains("CLI process exited") {
-                            let init = self.initialized.clone();
-                            tokio::spawn(async move {
-                                *init.write().await = false;
-                            });
-                        }
-                        format!("Failed to create session: {}", e)
-                    })?
+        let agent_session = if let Some(session) = existing {
+            log::info!("Reusing chat session for agent {}", agent_id);
+            session
+        } else {
+            log::info!(
+                "Acquiring chat session creation lock for agent {}",
+                agent_id
+            );
+            let creation_lock = creation_lock(&self.chat_creation_locks, agent_id).await;
+            let _creating = creation_lock.lock().await;
+            let concurrent_session = {
+                let sessions = self.chat_sessions.read().await;
+                sessions.get(agent_id).cloned()
             };
+            if let Some(session) = concurrent_session {
+                log::info!("Reusing chat session created concurrently for {}", agent_id);
+                session
+            } else {
+                let client = self.client().await?;
+                let session = if let Some(saved_id) = load_session_id(agent_id) {
+                    log::info!("Resuming session {} for agent {}", saved_id, agent_id);
+                    match tokio::time::timeout(
+                        Duration::from_secs(30),
+                        client.resume_session(resume_session_config(&saved_id, config)),
+                    )
+                    .await
+                    {
+                        Ok(Ok(session)) => {
+                            log::info!("Resumed session {}", session.id());
+                            Arc::new(session)
+                        }
+                        Ok(Err(error)) => {
+                            log::warn!(
+                                "Failed to resume session {} for {}: {}, creating new",
+                                saved_id,
+                                agent_id,
+                                error
+                            );
+                            delete_session_id(agent_id);
+                            self.create_new_session(&client, config).await?
+                        }
+                        Err(_) => {
+                            log::warn!(
+                                "Timed out resuming session {} for {}, creating new",
+                                saved_id,
+                                agent_id
+                            );
+                            delete_session_id(agent_id);
+                            self.create_new_session(&client, config).await?
+                        }
+                    }
+                } else {
+                    self.create_new_session(&client, config).await?
+                };
 
-            save_session_id(agent_id, &sid);
+                save_session_id(agent_id, session.id());
+                let agent_session = Arc::new(AgentSession {
+                    session,
+                    turn_lock: Mutex::new(()),
+                });
+                self.chat_sessions
+                    .write()
+                    .await
+                    .insert(agent_id.to_string(), agent_session.clone());
+                log::info!("Chat session ready for agent {}", agent_id);
+                agent_session
+            }
+        };
+        log::info!("Waiting for chat turn lock for agent {}", agent_id);
+        let _turn = agent_session.turn_lock.lock().await;
+        log::info!("Acquired chat turn lock for agent {}", agent_id);
 
-            let mut sessions = self.chat_sessions.write().await;
-            sessions.insert(agent_id.to_string(), sid);
-        }
-
-        // Send only the latest user message
-        let last_user_msg = messages
+        let last_user_message = messages
             .iter()
             .rev()
-            .find(|m| m.role == MessageRole::User)
-            .map(|m| m.content.as_str())
+            .find(|message| message.role == MessageRole::User)
+            .map(|message| message.content.as_str())
             .unwrap_or("Hello");
 
-        let sid = {
-            let sessions = self.chat_sessions.read().await;
-            sessions.get(agent_id).cloned().ok_or("Chat session not found")?
-        };
-
-        let response = copilot_ffi::send_and_wait(&sid, last_user_msg, 60)
-            .map_err(|e| {
-                log::error!("Copilot chat error for {}: {}", agent_id, e);
-                format!("Copilot error: {}", e)
+        log::info!("Sending Copilot message for agent {}", agent_id);
+        let response = agent_session
+            .session
+            .send_and_wait(
+                MessageOptions::new(last_user_message).with_wait_timeout(Duration::from_secs(60)),
+            )
+            .await
+            .map(assistant_content)
+            .map_err(|error| {
+                log::error!("Copilot chat error for {}: {}", agent_id, error);
+                format!("Copilot error: {}", error)
             })?;
+        log::info!("Copilot message completed for agent {}", agent_id);
 
         log::debug!("Copilot response: {}", &response[..response.len().min(100)]);
 
@@ -282,41 +420,46 @@ impl AgentBackend for CopilotBackend {
     }
 
     async fn is_available(&self) -> bool {
-        // Try to init — if it works, the bridge is available
-        match self.ensure_init().await {
-            Ok(_) => true,
-            Err(_) => false,
-        }
+        self.ensure_client().await.is_ok()
     }
 
     async fn destroy_chat_session(&self, agent_id: &str) {
-        let mut sessions = self.chat_sessions.write().await;
-        if let Some(sid) = sessions.remove(agent_id) {
-            copilot_ffi::destroy_session(&sid);
-            log::info!("Destroyed chat session for agent {} (new session requested)", agent_id);
+        if let Some(agent_session) = self.chat_sessions.write().await.remove(agent_id) {
+            let _ = agent_session.session.disconnect().await;
+            log::info!(
+                "Destroyed chat session for agent {} (new session requested)",
+                agent_id
+            );
         }
         delete_session_id(agent_id);
     }
 
     async fn list_models(&self) -> Result<Vec<ModelOption>, String> {
-        self.ensure_init().await?;
-        let json_str = copilot_ffi::list_models()?;
-        let models: Vec<ModelOption> = serde_json::from_str(&json_str)
-            .map_err(|e| format!("Failed to parse models: {}", e))?;
-        Ok(models)
+        let client = self.client().await?;
+        let models = tokio::time::timeout(Duration::from_secs(15), client.list_models())
+            .await
+            .map_err(|_| "Timed out listing Copilot models".to_string())?
+            .map_err(|error| format!("Failed to list models: {}", error))?;
+
+        Ok(models
+            .into_iter()
+            .map(|model| ModelOption {
+                id: model.id,
+                name: model.name,
+            })
+            .collect())
     }
 
     async fn list_agents(&self, cwd: Option<&str>) -> Result<Vec<AgentOption>, String> {
         let mut agents = Vec::new();
 
-        // Scan ~/.copilot/agents/*.md (user-level)
         if let Some(home) = dirs::home_dir() {
             let user_dir = home.join(".copilot").join("agents");
             if let Ok(entries) = std::fs::read_dir(&user_dir) {
                 for entry in entries.flatten() {
                     let path = entry.path();
-                    if path.extension().and_then(|e| e.to_str()) == Some("md") {
-                        if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                    if path.extension().and_then(|extension| extension.to_str()) == Some("md") {
+                        if let Some(stem) = path.file_stem().and_then(|stem| stem.to_str()) {
                             agents.push(AgentOption {
                                 name: stem.to_string(),
                                 source: "user".to_string(),
@@ -327,15 +470,16 @@ impl AgentBackend for CopilotBackend {
             }
         }
 
-        // Scan <cwd>/.github/agents/*.md (repo-level)
-        if let Some(dir) = cwd {
-            let repo_dir = std::path::Path::new(dir).join(".github").join("agents");
+        if let Some(directory) = cwd {
+            let repo_dir = std::path::Path::new(directory)
+                .join(".github")
+                .join("agents");
             if let Ok(entries) = std::fs::read_dir(&repo_dir) {
                 for entry in entries.flatten() {
                     let path = entry.path();
-                    if path.extension().and_then(|e| e.to_str()) == Some("md") {
-                        if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                            if !agents.iter().any(|a| a.name == stem) {
+                    if path.extension().and_then(|extension| extension.to_str()) == Some("md") {
+                        if let Some(stem) = path.file_stem().and_then(|stem| stem.to_str()) {
+                            if !agents.iter().any(|agent| agent.name == stem) {
                                 agents.push(AgentOption {
                                     name: stem.to_string(),
                                     source: "repo".to_string(),
