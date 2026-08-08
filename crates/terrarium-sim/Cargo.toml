@@ -1,0 +1,12 @@
+[package]
+name = "terrarium-sim"
+version = "0.1.0"
+edition = "2021"
+description = "Core simulation engine for Agent Terrarium"
+license = "MIT"
+authors = ["Alexander Sklar"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+log = "0.4"

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 110">
+  <!-- Background rolling hills — fade to nothing at edges -->
+  <path d="M20 110 Q35 95 55 82 Q75 72 100 70 Q125 72 145 82 Q165 95 180 110Z" fill="#66BB6A"/>
+  <path d="M25 110 Q40 97 60 85 Q75 77 95 74 Q110 74 130 82 Q150 92 175 110Z" fill="#4CAF50" opacity="0.6"/>
+  <ellipse cx="55" cy="84" rx="4" ry="2.5" fill="#388E3C" opacity="0.4"/>
+  <ellipse cx="80" cy="75" rx="3" ry="2" fill="#2E7D32" opacity="0.35"/>
+  <ellipse cx="140" cy="84" rx="4" ry="2.5" fill="#388E3C" opacity="0.4"/>
+
+  <!-- Sugarloaf peak — smooth dome -->
+  <path d="M90 110 Q90 80 96 60 Q100 48 104 38 Q107 30 110 26 Q112 24 114 26 Q117 30 120 38 Q124 48 128 60 Q134 80 134 110Z" fill="#616161"/>
+  <path d="M94 110 Q94 82 99 63 Q103 50 107 40 Q110 33 112 30 Q114 33 117 40 Q121 50 125 63 Q130 82 130 110Z" fill="#757575"/>
+  <!-- Dome highlight -->
+  <path d="M109 30 Q112 26 115 30 Q118 40 120 52" fill="none" stroke="#9E9E9E" stroke-width="0.6" opacity="0.4"/>
+
+  <!-- Urca hill — rounded mound -->
+  <path d="M28 110 Q38 90 53 80 Q66 72 80 70 Q93 72 103 82 Q110 90 116 110Z" fill="#81C784"/>
+  <ellipse cx="66" cy="74" rx="3" ry="2" fill="#388E3C" opacity="0.35"/>
+  <ellipse cx="80" cy="73" rx="2.5" ry="1.5" fill="#2E7D32" opacity="0.3"/>
+
+  <!-- Cable car wires -->
+  <line x1="70" y1="71" x2="112" y2="28" stroke="#424242" stroke-width="0.7"/>
+  <line x1="70" y1="72.8" x2="112" y2="29.8" stroke="#424242" stroke-width="0.5" opacity="0.6"/>
+  <!-- Cable car gondola -->
+  <path d="M84 46 L82 52 L92 52 L90 46Z" fill="#F44336"/>
+  <rect x="82.5" y="52" width="9" height="1.2" rx="0.3" fill="#D32F2F"/>
+  <rect x="84" y="47.5" width="1.5" height="2.5" rx="0.3" fill="#FFCDD2" opacity="0.6"/>
+  <rect x="86.5" y="47.5" width="1.5" height="2.5" rx="0.3" fill="#FFCDD2" opacity="0.6"/>
+  <line x1="87" y1="46" x2="87" y2="42" stroke="#424242" stroke-width="0.7"/>
+  <circle cx="87" cy="42" r="1" fill="#424242"/>
+</svg>

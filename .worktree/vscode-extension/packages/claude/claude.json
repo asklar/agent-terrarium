@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "name": "Claude Agent",
+  "agents": [
+    {
+      "id": "claude",
+      "name": "Claude",
+      "icon": "🧡",
+      "shape": "claude",
+      "voice": {
+        "basePitch": 420,
+        "pitchVar": 90,
+        "wave": "sine",
+        "syllables": 3,
+        "speed": 0.08,
+        "volume": 0.09,
+        "ttsRate": 0,
+        "ttsPitchShift": 1.1
+      },
+      "personality": {
+        "speedMin": 20,
+        "speedMax": 70,
+        "movementStyle": "wander",
+        "interactionChance": 0.9,
+        "ballInterest": 0.4,
+        "chatEmojis": ["🧡", "✨", "💭", "📝", "🤔"]
+      },
+      "defaultBackend": {
+        "backend_id": "claude"
+      },
+      "drawSpec": {
+        "layers": [
+          { "type": "legs", "spread": 5, "length": 8, "color": "#B85C3A" },
+          { "type": "body", "color": "#D97757", "rx": 10, "ry": 11 },
+          { "type": "glow", "color": "rgba(217, 119, 87, 0.08)", "radius": 16, "pulseSpeed": 600, "baseAlpha": 0.08, "alphaVar": 0.04 },
+          { "type": "head", "color": "#E8956F", "rx": 10, "ry": 10 },
+          { "type": "sparkles", "sparkleStyle": "orbit", "count": 3, "color": "#FFC896", "speed": 800 },
+          { "type": "eyes", "style": "custom", "color": "#FFFFFF", "size": 2.5, "pupilColor": "#B85C3A", "spacing": 4 },
+          { "type": "cheeks", "color": "#F4A98A" },
+          { "type": "mouth", "style": "small" }
+        ]
+      }
+    }
+  ]
+}

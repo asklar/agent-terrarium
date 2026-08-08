@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 30">
+  <!-- Central plume -->
+  <path d="M 20,28 C 18,18 14,12 12,8" stroke="#7EB5D6" stroke-width="1" fill="none" opacity="0.6" stroke-linecap="round"/>
+  <path d="M 20,28 C 22,18 26,12 28,8" stroke="#7EB5D6" stroke-width="1" fill="none" opacity="0.6" stroke-linecap="round"/>
+  <path d="M 20,28 C 19,20 16,14 15,10" stroke="#5A8DB0" stroke-width="0.7" fill="none" opacity="0.5" stroke-linecap="round"/>
+  <path d="M 20,28 C 21,20 24,14 25,10" stroke="#5A8DB0" stroke-width="0.7" fill="none" opacity="0.5" stroke-linecap="round"/>
+  <!-- Spray droplets -->
+  <circle cx="11" cy="6" r="1.2" fill="#7EB5D6" opacity="0.6"/>
+  <circle cx="29" cy="6" r="1.1" fill="#7EB5D6" opacity="0.55"/>
+  <circle cx="14" cy="4" r="0.8" fill="#B0D4E8" opacity="0.5"/>
+  <circle cx="26" cy="3" r="0.9" fill="#B0D4E8" opacity="0.5"/>
+  <circle cx="9" cy="10" r="0.7" fill="#5A8DB0" opacity="0.4"/>
+  <circle cx="31" cy="9" r="0.6" fill="#5A8DB0" opacity="0.4"/>
+  <circle cx="17" cy="2" r="0.5" fill="#B0D4E8" opacity="0.45"/>
+  <circle cx="23" cy="1" r="0.6" fill="#B0D4E8" opacity="0.4"/>
+  <circle cx="20" cy="5" r="0.7" fill="#7EB5D6" opacity="0.5"/>
+  <!-- Water surface rings -->
+  <ellipse cx="20" cy="28" rx="14" ry="2" stroke="#5A8DB0" stroke-width="0.5" fill="none" opacity="0.4"/>
+  <ellipse cx="20" cy="28" rx="8" ry="1.2" stroke="#7EB5D6" stroke-width="0.4" fill="none" opacity="0.5"/>
+</svg>

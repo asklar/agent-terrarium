@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <!-- Body — aerodynamic flight shape -->
+  <path d="M6 8 Q5 10.5 6.5 13 Q8 15.5 10.5 15.5 Q13 15.5 14.5 13 Q15.5 10.5 14 8 Q12 6.5 10 7 Q8 6.5 6 8Z" fill="#F44336"/>
+  <!-- Breast feathers -->
+  <path d="M8.5 10 Q9.5 9 11 9 Q12 9 12.5 10 Q12 12 10.5 13 Q9 12 8.5 10Z" fill="#EF5350" opacity="0.5"/>
+  <!-- Wing — swept back for flight -->
+  <path d="M7 9 Q3 10.5 1.5 14.5 Q5 12.5 8 11.5Z" fill="#1565C0"/>
+  <path d="M7.5 9.5 Q4 11 2.5 14.5 Q5.5 12.5 8 11.5Z" fill="#1976D2"/>
+  <!-- Tail feathers — colorful fan -->
+  <path d="M10 15.5 Q8 18.5 5.5 20" stroke="#FDD835" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+  <path d="M10.5 15.5 Q10 18.5 9.5 20" stroke="#1565C0" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+  <path d="M11.5 15.5 Q12.5 18.5 14 20" stroke="#F44336" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+  <path d="M11 15.5 Q11.5 18 12 20" stroke="#4CAF50" stroke-width="1" fill="none" stroke-linecap="round"/>
+  <!-- Head -->
+  <ellipse cx="12.5" cy="5.5" rx="3.2" ry="2.8" fill="#F44336"/>
+  <!-- Eye — white ring with dark pupil -->
+  <circle cx="14" cy="4.8" r="1.1" fill="white"/>
+  <circle cx="14.3" cy="4.6" r="0.5" fill="#212121"/>
+  <!-- Beak — hooked curved shape -->
+  <path d="M15.5 5.2 Q17 4.5 18 5 Q18.5 5.8 17.5 6.8 Q16.5 7.2 15.5 6.8Z" fill="#FDD835"/>
+  <path d="M15.5 6.2 Q16.5 6 17.2 6.5 Q16.5 7 15.5 6.8Z" fill="#F9A825"/>
+  <!-- Beak hook tip -->
+  <path d="M17.8 5.2 Q18.5 5.5 18.2 6" stroke="#E6B800" stroke-width="0.3" fill="none"/>
+  <!-- Green accent on head -->
+  <path d="M9.5 3.8 Q11 2 14 3.8" fill="#4CAF50"/>
+  <path d="M10 4.2 Q11.5 2.8 13.5 4.2" fill="#66BB6A" opacity="0.5"/>
+</svg>

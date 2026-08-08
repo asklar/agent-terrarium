@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 120" width="80" height="120">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="70%" r="50%">
+      <stop offset="0%" stop-color="#FFFDE7" stop-opacity="0.6"/>
+      <stop offset="40%" stop-color="#FFD54F" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#FFD54F" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Light cone glow -->
+  <path d="M40,35 L10,120 L70,120 Z" fill="url(#glow)" opacity="0.7"/>
+  <!-- Housing -->
+  <rect x="28" y="0" width="24" height="8" rx="2" fill="#333"/>
+  <!-- Lamp body -->
+  <path d="M30,8 L25,30 L55,30 L50,8 Z" fill="#444" stroke="#555" stroke-width="1"/>
+  <!-- Lens -->
+  <ellipse cx="40" cy="32" rx="14" ry="4" fill="#FFE082" opacity="0.9"/>
+  <!-- Bracket -->
+  <rect x="38" y="0" width="4" height="5" fill="#666"/>
+</svg>

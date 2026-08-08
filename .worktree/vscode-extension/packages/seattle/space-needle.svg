@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 -100 100 200">
+  <!-- Lightning rod / antenna spire -->
+  <path d="M -0.5 -95 L 0.5 -95 L 0.5 -40 L -0.5 -40 Z" fill="#CFD8DC"/>
+  <!-- Antenna mast (slightly wider) -->
+  <path d="M -1.2 -55 L 1.2 -55 L 1.2 -35 L -1.2 -35 Z" fill="#B0BEC5"/>
+  <!-- Halo / roof of observation deck (iconic curved flying-saucer shape) -->
+  <path d="M 0 -38 Q -18 -38 -32 -30 L -34 -28 L 34 -28 L 32 -30 Q 18 -38 0 -38 Z" fill="#CFD8DC"/>
+  <!-- Observation deck windows -->
+  <path d="M -34 -28 L -33 -24 L 33 -24 L 34 -28 Z" fill="#78909C"/>
+  <!-- Observation deck window detail lines -->
+  <line x1="-20" y1="-28" x2="-19" y2="-24" stroke="#607D8B" stroke-width="0.5"/>
+  <line x1="-8" y1="-28" x2="-7.5" y2="-24" stroke="#607D8B" stroke-width="0.5"/>
+  <line x1="8" y1="-28" x2="7.5" y2="-24" stroke="#607D8B" stroke-width="0.5"/>
+  <line x1="20" y1="-28" x2="19" y2="-24" stroke="#607D8B" stroke-width="0.5"/>
+  <!-- Lower saucer underside (curved belly) -->
+  <path d="M -33 -24 Q -28 -18 0 -16 Q 28 -18 33 -24 Z" fill="#B0BEC5"/>
+  <!-- Slim core / stem (tapers slightly toward bottom) -->
+  <path d="M -3.5 -16 L 3.5 -16 L 2.5 78 L -2.5 78 Z" fill="#B0BEC5"/>
+  <!-- Stem structural rings -->
+  <path d="M -4.5 10 L 4.5 10 L 4.5 12 L -4.5 12 Z" fill="#90A4AE"/>
+  <path d="M -4 35 L 4 35 L 4 37 L -4 37 Z" fill="#90A4AE"/>
+  <path d="M -3.5 60 L 3.5 60 L 3.5 62 L -3.5 62 Z" fill="#90A4AE"/>
+  <!-- Tripod legs (three angled legs flaring out, the iconic base) -->
+  <path d="M -2.5 58 L -26 96 L -22 96 L -0.5 64 Z" fill="#90A4AE"/>
+  <path d="M 2.5 58 L 26 96 L 22 96 L 0.5 64 Z" fill="#90A4AE"/>
+  <path d="M -1.5 65 L 1.5 65 L 1.5 96 L -1.5 96 Z" fill="#90A4AE"/>
+  <!-- Base platform -->
+  <path d="M -30 96 L 30 96 L 28 100 L -28 100 Z" fill="#78909C"/>
+</svg>

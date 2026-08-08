@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-14 -30 28 48">
+  <!-- Fozzie Bear -->
+  <!-- Body -->
+  <ellipse cx="0" cy="6" rx="8" ry="9" fill="#BC8F6F"/>
+  <!-- Fur texture on body -->
+  <ellipse cx="0" cy="6" rx="7" ry="8" fill="#C9A07A" opacity="0.4"/>
+  <!-- Belly/chest lighter area -->
+  <ellipse cx="0" cy="5" rx="5.5" ry="6" fill="#DEC4A8"/>
+  <!-- Polka dot necktie -->
+  <path d="M -3.5,-2 L 0,-3.5 L 3.5,-2 L 1.5,3 L 0,10 L -1.5,3 Z" fill="#E53935"/>
+  <circle cx="0" cy="0" r="0.9" fill="#FFCDD2"/>
+  <circle cx="-1" cy="3" r="0.8" fill="#FFCDD2"/>
+  <circle cx="1" cy="3" r="0.8" fill="#FFCDD2"/>
+  <circle cx="0" cy="6" r="0.8" fill="#FFCDD2"/>
+  <circle cx="0.5" cy="8.5" r="0.6" fill="#FFCDD2"/>
+  <!-- Arms -->
+  <path d="M -8,3 Q -11,1 -12,3" stroke="#BC8F6F" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M 8,3 Q 11,1 12,3" stroke="#BC8F6F" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Head - round, bear-like -->
+  <ellipse cx="0" cy="-11" rx="10" ry="9" fill="#BC8F6F"/>
+  <!-- Big muzzle/snout area - Fozzie has a very prominent lower face -->
+  <ellipse cx="0" cy="-6" rx="7" ry="5" fill="#DEC4A8"/>
+  <!-- Round bear ears -->
+  <circle cx="-9.5" cy="-17" r="4.5" fill="#A0775A"/>
+  <circle cx="-9.5" cy="-17" r="2.8" fill="#C9A07A"/>
+  <circle cx="9.5" cy="-17" r="4.5" fill="#A0775A"/>
+  <circle cx="9.5" cy="-17" r="2.8" fill="#C9A07A"/>
+  <!-- Porkpie hat -->
+  <ellipse cx="0" cy="-20" rx="11" ry="2.8" fill="#6D4C41"/>
+  <path d="M -7,-20 Q -7,-28 0,-28 Q 7,-28 7,-20" fill="#795548"/>
+  <rect x="-11" y="-21" width="22" height="3" rx="1.2" fill="#6D4C41"/>
+  <!-- Hat band -->
+  <rect x="-7" y="-22.5" width="14" height="2" fill="#5D4037"/>
+  <!-- Eyes -->
+  <ellipse cx="-3.5" cy="-13" rx="3" ry="3.5" fill="white" stroke="#A0775A" stroke-width="0.4"/>
+  <ellipse cx="3.5" cy="-13" rx="3" ry="3.5" fill="white" stroke="#A0775A" stroke-width="0.4"/>
+  <circle cx="-3" cy="-13" r="1.5" fill="#333"/>
+  <circle cx="4" cy="-13" r="1.5" fill="#333"/>
+  <circle cx="-4" cy="-14.5" r="0.6" fill="white" opacity="0.8"/>
+  <circle cx="3" cy="-14.5" r="0.6" fill="white" opacity="0.8"/>
+  <!-- Eyebrows (arched, friendly) -->
+  <path d="M -6.5,-16 Q -3.5,-17.5 -0.5,-16" stroke="#8B6C52" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+  <path d="M 0.5,-16 Q 3.5,-17.5 6.5,-16" stroke="#8B6C52" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+  <!-- Big round red nose - Fozzie's comedy nose -->
+  <circle cx="0" cy="-7" r="3.5" fill="#D32F2F"/>
+  <circle cx="-1" cy="-8.5" r="1.2" fill="#EF5350" opacity="0.5"/>
+  <ellipse cx="0.5" cy="-7" rx="1" ry="0.6" fill="#E57373" opacity="0.3"/>
+  <!-- Wide smile -->
+  <path d="M -5,-3.5 Q 0,-0.5 5,-3.5" stroke="#795548" stroke-width="1" fill="#4E342E" opacity="0.4" stroke-linecap="round"/>
+  <!-- Chin dimple area -->
+  <ellipse cx="0" cy="-2" rx="3" ry="1.5" fill="#C9A07A" opacity="0.3"/>
+  <!-- Legs -->
+  <path d="M -4,14 L -5,16 L -7,17" stroke="#A0775A" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M 4,14 L 5,16 L 7,17" stroke="#A0775A" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+</svg>

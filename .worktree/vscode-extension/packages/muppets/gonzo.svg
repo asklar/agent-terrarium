@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-14 -28 28 46">
+  <!-- Gonzo the Great -->
+  <!-- Body -->
+  <ellipse cx="0" cy="6" rx="6" ry="7" fill="#5C6BC0"/>
+  <!-- Arms -->
+  <path d="M -6,3 Q -10,1 -11,4" stroke="#5C6BC0" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <path d="M 6,3 Q 10,1 11,4" stroke="#5C6BC0" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <!-- Neck -->
+  <rect x="-2.5" y="-3" width="5" height="4" rx="2" fill="#5C6BC0"/>
+  <!-- Head - tall, narrow, egg-shaped -->
+  <ellipse cx="0" cy="-13" rx="8" ry="11" fill="#7986CB"/>
+  <!-- Scraggly feather tufts on top - messy, wiry -->
+  <path d="M -3,-23 L -5,-27 M -1,-24 L 0,-28 M 2,-23 L 5,-27 M 0,-23.5 L -2,-26.5 M 4,-22 L 7,-25" 
+        stroke="#9FA8DA" stroke-width="1" stroke-linecap="round"/>
+  <!-- Heavy droopy eyelids -->
+  <path d="M -8.5,-17 Q -4.5,-20.5 -0.5,-17.5" fill="#5C6BC0" stroke="none"/>
+  <path d="M 0.5,-17.5 Q 4.5,-20.5 8.5,-17" fill="#5C6BC0" stroke="none"/>
+  <!-- Big round bug eyes - wide set, high on head -->
+  <circle cx="-4.5" cy="-17" r="4.5" fill="white" stroke="#7986CB" stroke-width="0.5"/>
+  <circle cx="4.5" cy="-17" r="4.5" fill="white" stroke="#7986CB" stroke-width="0.5"/>
+  <!-- Pupils -->
+  <circle cx="-3.5" cy="-17" r="2.2" fill="#222"/>
+  <circle cx="5.5" cy="-17" r="2.2" fill="#222"/>
+  <!-- Eye highlights -->
+  <circle cx="-5" cy="-18.5" r="0.9" fill="white" opacity="0.9"/>
+  <circle cx="4" cy="-18.5" r="0.9" fill="white" opacity="0.9"/>
+  <!-- LONG curved nose/beak - Gonzo's defining feature -->
+  <!-- Thick, curves forward then hooks down - like a banana shape -->
+  <path d="M -2,-10 C -2,-5 4,2 5,6 C 6,10 3,14 1,16"
+        fill="#F57C00" stroke="#E65100" stroke-width="0.6"/>
+  <path d="M 2,-10 C 2,-5 6,2 6,7 C 6,11 4,14 2,16"
+        fill="#FFB74D" stroke="none"/>
+  <!-- Nose tip - bulbous -->
+  <ellipse cx="1.5" cy="16" rx="2.5" ry="1.5" fill="#F57C00" stroke="#E65100" stroke-width="0.4"/>
+  <!-- Nose highlight -->
+  <path d="M 3,-6 Q 4,0 4,5" stroke="#FFCC80" stroke-width="1" fill="none" opacity="0.4" stroke-linecap="round"/>
+  <!-- Small mouth (under/behind the nose) -->
+  <path d="M -4,-8 Q -1,-6.5 2,-8" stroke="#3F51B5" stroke-width="0.6" fill="none" stroke-linecap="round"/>
+  <!-- Legs -->
+  <path d="M -3,12 L -4,15 L -6,16" stroke="#5C6BC0" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <path d="M 3,12 L 4,15 L 6,16" stroke="#5C6BC0" stroke-width="2" stroke-linecap="round" fill="none"/>
+</svg>

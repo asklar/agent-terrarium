@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-12 -28 24 44">
+  <!-- Paperclip wire - outer loop -->
+  <path d="M -5,14 Q -8,16 -3,16 Q 6,16 6,8 L 6,-18 Q 6,-24 0,-24 Q -8,-24 -8,-18 L -8,6 Q -8,12 -3,12 Q 2,12 2,6 L 2,-10"
+        fill="none" stroke="#B8B8B8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Metallic highlight on right wire -->
+  <path d="M 6,-18 L 6,6" stroke="rgba(255,255,255,0.45)" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- Metallic highlight on left wire -->
+  <path d="M -8,-16 L -8,2" stroke="rgba(255,255,255,0.35)" stroke-width="1" stroke-linecap="round"/>
+  <!-- Metallic shadow on inner wire -->
+  <path d="M 2,-8 L 2,4" stroke="rgba(0,0,0,0.1)" stroke-width="0.8" stroke-linecap="round"/>
+  <!-- Eyes - white sclera -->
+  <ellipse cx="-3" cy="-12" rx="4" ry="4.5" fill="white" stroke="#999" stroke-width="0.3"/>
+  <ellipse cx="5" cy="-12" rx="4" ry="4.5" fill="white" stroke="#999" stroke-width="0.3"/>
+  <!-- Pupils -->
+  <circle cx="-2" cy="-11.5" r="2" fill="#222"/>
+  <circle cx="6" cy="-11.5" r="2" fill="#222"/>
+  <!-- Eye highlights -->
+  <circle cx="-3" cy="-13" r="0.8" fill="white" opacity="0.9"/>
+  <circle cx="5" cy="-13" r="0.8" fill="white" opacity="0.9"/>
+  <!-- Eyebrows -->
+  <path d="M -6,-16 Q -3,-18 0,-16" stroke="#777" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+  <path d="M 2,-16 Q 5,-18 8,-16" stroke="#777" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+  <!-- Smile -->
+  <path d="M -1,-6 Q 1,-4 3,-6" stroke="#888" stroke-width="0.7" fill="none" stroke-linecap="round"/>
+</svg>

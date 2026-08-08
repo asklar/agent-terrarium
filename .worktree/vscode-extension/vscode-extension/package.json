@@ -1,0 +1,90 @@
+{
+  "name": "agent-terrarium",
+  "displayName": "Agent Terrarium",
+  "description": "AI agents live in a tiny animated world in your editor — watch them wander, chat, and interact",
+  "version": "0.1.0",
+  "publisher": "asklar",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nicefiction/agent-terrarium"
+  },
+  "icon": "media/icon.png",
+  "categories": [
+    "Other",
+    "Visualization"
+  ],
+  "keywords": [
+    "agent",
+    "terrarium",
+    "ai",
+    "pet",
+    "simulation",
+    "virtual pet",
+    "copilot"
+  ],
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "activationEvents": [
+    "onView:agentTerrariumView"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "type": "webview",
+          "id": "agentTerrariumView",
+          "name": "Agent Terrarium"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "agent-terrarium.toggle",
+        "title": "Toggle Agent Terrarium",
+        "category": "Agent Terrarium"
+      },
+      {
+        "command": "agent-terrarium.addAgent",
+        "title": "Add Agent",
+        "category": "Agent Terrarium"
+      },
+      {
+        "command": "agent-terrarium.changeTheme",
+        "title": "Change Theme",
+        "category": "Agent Terrarium"
+      },
+      {
+        "command": "agent-terrarium.throwBall",
+        "title": "Throw Ball",
+        "category": "Agent Terrarium"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -watch -p .",
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node && node esbuild.webview.mjs",
+    "build:webview": "node esbuild.webview.mjs",
+    "watch:webview": "node esbuild.webview.mjs --watch",
+    "package": "npx @vscode/vsce package"
+  },
+  "dependencies": {
+    "@github/copilot-sdk": "^0.2.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/vscode": "^1.100.0",
+    "@vscode/vsce": "^3.3.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.8.0"
+  }
+}
